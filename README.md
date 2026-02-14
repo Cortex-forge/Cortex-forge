@@ -17,10 +17,14 @@ We are **Cortex Forge** — a two-person studio combining human creativity with 
 
 ### Current Projects
 
-| Project | Description | Status |
-|---------|-------------|--------|
-| **POD AI Tool** | AI-generated Print-on-Demand designs for Etsy | Active |
-| **Kaspa Nexus** | Kaspa ecosystem dashboard & portfolio analyzer | Planned |
+**POD AI Tool** — *Active*
+> Smart tool that uses AI (Flux 2 Pro) to generate unique Print-on-Demand designs, automatically formats them for different product types, and prepares everything for Etsy listings. From prompt to shop in minutes.
+
+**Kaspa Nexus** — *Planned*
+> Real-time dashboard for the Kaspa blockchain ecosystem. Tracks tokens, coins, and DeFi projects. Includes an AI-powered portfolio analyzer that gives personalized investment insights. Built for Kaspa, ready for multi-chain.
+
+**Profil Tracker** — *Concept*
+> Analytics tool for social media profiles. Track growth, engagement, and performance across platforms with smart recommendations.
 
 ### Tech Stack
 
