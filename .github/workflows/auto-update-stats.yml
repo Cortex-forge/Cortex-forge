@@ -1,0 +1,44 @@
+name: 📊 Auto-Update Profile Stats
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 📊 Fetch repo stats
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fetch commit counts for all repos
+          TOTAL_COMMITS=0
+          for repo in pod-ai-tool lassirra-2 lassirra-scanner storyforge; do
+            COUNT=$(gh api "repos/Cortex-forge/$repo/commits?per_page=1" -i 2>/dev/null | grep -i 'link:' | grep -o 'page=[0-9]*' | tail -1 | cut -d= -f2 || echo "0")
+            TOTAL_COMMITS=$((TOTAL_COMMITS + COUNT))
+            echo "$repo: $COUNT commits"
+          done
+          echo "Total commits: $TOTAL_COMMITS"
+          echo "TOTAL_COMMITS=$TOTAL_COMMITS" >> $GITHUB_ENV
+
+      - name: 📝 Update README badges
+        run: |
+          # Update the Total_Commits badge
+          sed -i "s|Total_Commits-[0-9]*+-|Total_Commits-${TOTAL_COMMITS}+-|g" README.md
+
+      - name: 🚀 Commit & Push
+        run: |
+          git config user.name "Lassirra ✨"
+          git config user.email "lassirra@cortex-forge.dev"
+          git diff --quiet README.md || {
+            git add README.md
+            git commit -m "📊 Auto-update stats: ${TOTAL_COMMITS} total commits"
+            git push
+          }
