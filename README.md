@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Projects-5-06b6d4?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Total_Commits-580+-22c55e?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Total_Commits-0+-22c55e?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Review_Standard-Gesetzbuch_v2.4-f59e0b?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Review_Score-Ø_8.5+-8b5cf6?style=for-the-badge" />
 </p>
