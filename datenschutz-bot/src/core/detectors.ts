@@ -154,6 +154,25 @@ function isNotSurname(word: string): boolean {
 }
 
 /** Hauptwort, das auch ein häufiger Nachname ist ("Berg", "Sommer", "Koch"). */
+const POSSESSIVE_BEFORE_RE =
+  /(?<![\p{L}])(?:mein|meine|meiner|meinem|meinen|dein|deine|deiner|deinem|sein|seine|seiner|seinem|ihre|ihrer|ihrem|unsere|unserer|unserem|eure|eurer|eurem)[ \t]{1,3}$/iu;
+/** Nach einem Vornamen kein Nachname, auch wenn es einer sein kann; nach einer Anrede schon ("Frau Freitag"). */
+const NOT_AFTER_FIRST_NAME = new Set([
+  "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag", "Mai", "Morgen", "Abend", "Ende",
+  "Anfang", "Mitte", "Recht", "Glück",
+]);
+/** Wörter, mit denen ein Satz oder Nebensatz beginnt: nie ein Nachname ("Ob Anna mitkommt", "Lena M. Danach"). */
+const SENTENCE_WORDS = new Set([
+  "ob", "wenn", "weil", "falls", "sobald", "sofern", "als", "dass", "damit", "obwohl", "nachdem", "bevor", "während",
+  "seit", "bis", "und", "oder", "aber", "denn", "doch", "sondern", "da", "wie", "wo", "so", "dann", "danach", "davor",
+  "darauf", "also", "auch", "nur", "noch", "schon", "jetzt", "heute", "gestern", "morgen", "bitte", "danke", "leider",
+  "außerdem", "ansonsten", "anschließend", "trotzdem", "deshalb", "daher", "zudem", "übrigens", "inzwischen",
+  "allerdings", "natürlich", "vielleicht", "hoffentlich", "gerne", "gern",
+]);
+function isSentenceWord(word: string): boolean {
+  return SENTENCE_WORDS.has(word.toLowerCase());
+}
+
 function isNounSurname(word: string): boolean {
   return NOUN_SURNAMES.has(word) || NOUN_SURNAMES.has(capitalize(word));
 }
@@ -964,13 +983,15 @@ function nameAt(
     }
     if (!m) break;
     const token = m[0];
-    // Nach einer Initiale muss ein Nachname folgen, kein Allerweltswort ("S. Bitte" ist kein Name).
-    if (/^\p{Lu}\.$/u.test(tokens[tokens.length - 1] ?? "") && !particle && isNotSurname(token)) break;
+    // Nach einer Initiale muss ein Nachname folgen, kein Allerweltswort ("S. Bitte", "Lena M. Danach").
+    if (/^\p{Lu}\.$/u.test(tokens[tokens.length - 1] ?? "") && !particle && (isNotSurname(token) || isSentenceWord(token))) break;
     // Nach einem Zusatz ist auch ein Allerweltswort ein Nachname ("van der Berg"), aber keine Abteilung, kein
     // Betrieb, kein Verein und keine Domain ("Ferdinand vom Skiclub", "Thomas von der Rezeption", "von Booking.com").
     if (particle && !particleLeadsToName(text, token, p + token.length)) break;
-    // Nach einem Vornamen ist ein Hauptwort, das auch ein häufiger Nachname ist, der Nachname ("Maria Sommer").
-    const afterFirstName = tokens.length > 0 && isFirstName(tokens[tokens.length - 1] ?? "") && isNounSurname(token);
+    // Nach einem Vornamen ist ein Hauptwort, das auch ein häufiger Nachname ist, der Nachname ("Maria Sommer"), aber kein
+    // Zeitwort und keine Redewendung ("Lena Freitag Abend", "Lukas Ende Mai", "Maria Recht geben", Review Claude 4 #5).
+    const afterFirstName =
+      tokens.length > 0 && isFirstName(tokens[tokens.length - 1] ?? "") && isNounSurname(token) && !NOT_AFTER_FIRST_NAME.has(token);
     if (tokens.length > 0 && !particle && isNotSurname(token) && !afterFirstName) break;
     if (tokens.length === 0) firstParticle = particle;
     tokens.push(token);
@@ -1056,7 +1077,13 @@ const KIN_RE = new RegExp(
 );
 // Chat-Verläufe: "[16.10.26, 08:12] Wang Lei: …", "16.10.26, 08:12 - Wang Lei: …", "[Mo 06:47] Sepp (Unterwegerhof): …"
 const CHAT_SENDER_RE =
-  /^[ \t]{0,3}(?:\[[^\]\n]{3,30}\]|\d{1,2}[./]\d{1,2}[./]\d{2,4},?[ \t]{1,3}\d{1,2}:\d{2}(?::\d{2})?[ \t]{0,3}[-–])[ \t]{1,3}(?<name>[^:\n[\]]{2,60}?)[ \t]{0,3}:[ \t]/gmud;
+  /^[ \t]{0,3}(?:\[(?=[^\]\n]{0,20}\d{1,2}:\d{2})(?=[^\]\n]{0,20}(?:\d{1,2}[./]\d{1,2}|Mo|Di|Mi|Do|Fr|Sa|So|Mon|Tue|Wed|Thu|Fri|Sat|Sun))[^\]\n]{3,30}\]|\d{1,2}[./]\d{1,2}[./]\d{2,4},?[ \t]{1,3}\d{1,2}:\d{2}(?::\d{2})?[ \t]{0,3}[-–])[ \t]{1,3}(?<name>[^:\n[\]]{2,60}?)[ \t]{0,3}:[ \t]/gmud;
+// Ablaufpläne sehen aus wie Chats ("14:30 - Ankunft Innsbruck: Abholung"): Solche Wörter sind kein Absender.
+const ITINERARY_WORDS = new Set([
+  "Ankunft", "Abfahrt", "Anreise", "Abreise", "Treffpunkt", "Abholung", "Transfer", "Frühstück", "Mittagessen",
+  "Abendessen", "Termin", "Pause", "Start", "Beginn", "Ende", "Führung", "Ausflug", "Hinfahrt", "Rückfahrt", "Flug",
+  "Zug", "Bus", "Check-in", "Check-out", "Wichtig", "Hinweis", "Info",
+]);
 // Chinesische Namen, Familienname zuerst: "Wang Lei", "Chen Xiaoyu" (Vorname aus Pinyin-Silben).
 const PINYIN_SYLLABLE = "(?:zh|ch|sh|[bpmfdtnlgkhjqxrzcsyw])?(?:iang|iong|uang|ueng|ang|eng|ing|ong|ian|iao|uai|uan|ai|ei|ao|ou|an|en|in|un|ia|ie|iu|ua|uo|ui|ue|er|a|o|e|i|u)";
 const PINYIN_NAME_RE = new RegExp(`^(?:${PINYIN_SYLLABLE}){1,3}$`, "u");
@@ -1080,7 +1107,7 @@ function precedingSurname(text: string, index: number): { start: number; token: 
   const span = m ? groupSpan(m, "t") : null;
   if (!m?.groups || !span) return null;
   const token = m.groups.t ?? "";
-  if (!token || isNotSurname(token) || ACRONYMS.has(token) || isFirstName(token)) return null;
+  if (!token || isNotSurname(token) || ACRONYMS.has(token) || isFirstName(token) || isSentenceWord(token)) return null;
   if (BUSINESS_WORDS.has(token) || ROLE_WORDS.has(token)) return null;
   return { start: from + span[0], token, comma: Boolean(m.groups.comma) };
 }
@@ -1106,6 +1133,9 @@ export function detectPersons(text: string): Finding[] {
     if (/^(?:Fr|Hr)\.$/.test(m.groups?.sal ?? "") && !span.firstParticle && isNotSurname(first)) continue;
     // Abkürzung statt Name: "Hr. Nr. 5", "Fr. Tel. 0512 …"
     if (span.tokens.length === 1 && first.length <= 3 && /^\.[ \t]{0,2}(?:\d|\p{Ll})/u.test(text.slice(span.end, span.end + 4))) continue;
+    // Nach einem Possessiv ist "Frau" die Ehefrau und "Mann" kein Herr: Das regeln die Verwandten ("meiner Frau Blumen
+    // aufs Zimmer", Review Claude 4 #5).
+    if (POSSESSIVE_BEFORE_RE.test(text.slice(Math.max(0, m.index - 12), m.index))) continue;
     add(start, span.end, "person:anrede", withSurname(span, true));
   }
 
@@ -1262,6 +1292,9 @@ export function detectPersons(text: string): Finding[] {
     if (!span) continue;
     const first = span.tokens[0] ?? "";
     if (isNotSurname(first) || BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || MONTHS.has(first) || PLACE_PREFIXES.has(first)) continue;
+    // Im Dativ folgt oft ein Gegenstand ("meiner Frau Blumen aufs Zimmer", "meinem Mann Champagner"): dann nur ein
+    // bekannter Vorname (Review Claude 4 #5).
+    if (/^(?:meinem|meiner|unserem|unserer|seinem|seiner|ihrem|ihrer|deinem|deiner|eurem|eurer)[ \t]/iu.test(m[0]) && !isFirstName(first)) continue;
     add(start, span.end, "person:verwandt", withSurname(span));
   }
 
@@ -1275,6 +1308,7 @@ export function detectPersons(text: string): Finding[] {
     const baseStart = span[0] + raw.indexOf(base);
     if (/@|\d{3}/u.test(base) || LEGAL_FORM_ANY.test(base)) continue;
     const words = base.split(/[ \t]+/);
+    if (ITINERARY_WORDS.has(words[0] ?? "")) continue;
     if (words.some((w) => ROLE_WORDS.has(w) || BUSINESS_WORDS.has(w) || ROLE_WORDS.has(capitalize(w)) || BUSINESS_WORDS.has(capitalize(w)))) continue;
     if (words.length > 4 || !words.every((w) => /^[\p{L}'’.-]+$/u.test(w))) continue;
     add(baseStart, baseStart + base.length, "person:chat", words.length > 1 ? { nachname: words[words.length - 1] } : {});

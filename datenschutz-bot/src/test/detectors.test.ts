@@ -721,3 +721,27 @@ test("Gesundheit und Religion: Personenbezeichnungen, Diagnosen, Sinne, Zugehör
   // Gegenproben: "blind" ohne Personenbezug, Gläubiger in der Buchhaltung
   assert.equal(ki("Ein Blind Date im Restaurant, Gläubiger laut Liste."), "Ein Blind Date im Restaurant, Gläubiger laut Liste.");
 });
+
+// Review Claude 4 #5
+test("Personen: keine Zeitwörter als Nachname, kein Satzanfang, kein Gegenstand im Dativ, kein Ablaufplan als Chat", () => {
+  assert.equal(ki("Ich komme mit meiner Tochter Lena Freitag Abend an."), "Ich komme mit meiner Tochter [PERSON_1] Freitag Abend an.");
+  assert.equal(ki("Wir reisen mit Lukas Ende Mai an."), "Wir reisen mit [PERSON_1] Ende Mai an.");
+  assert.equal(ki("Da hat Maria Recht."), "Da hat [PERSON_1] Recht.");
+  const r = pseudonymize("Ob Anna mitkommt, weiß ich nicht.\nWenn Paul Zeit hat, kommt er auch.");
+  assert.equal(r.text, "Ob [PERSON_1] mitkommt, weiß ich nicht.\nWenn [PERSON_2] Zeit hat, kommt er auch.");
+  assert.ok(!reidentify("Liebe Frau [PERSON_1]", r.mapping).text.includes("Ob"));
+  for (const text of [
+    "Bitte stellen Sie meiner Frau Blumen aufs Zimmer und meinem Mann Champagner.",
+    "[Wichtig] Anreise: bitte bis 18 Uhr",
+    "12.05.2027, 14:30 - Ankunft Innsbruck: Abholung",
+    "[09:00] Treffpunkt Lobby: alle",
+  ]) {
+    assert.equal(ki(text), text);
+  }
+  assert.equal(ki("Grüße, Lena M. Danach gehen wir essen."), "Grüße, [PERSON_1] Danach gehen wir essen.");
+  // Gegenproben
+  assert.equal(ki("Sehr geehrte Frau Freitag, Maria Sommer kommt."), "Sehr geehrte Frau [PERSON_1], [PERSON_2] kommt.");
+  assert.equal(ki("Meine Frau Anna und ich kommen."), "Meine Frau [PERSON_1] und ich kommen.");
+  assert.equal(ki("[16.10.26, 08:12] Wang Lei: Hallo"), "[16.10.26, 08:12] [PERSON_1]: Hallo");
+  assert.equal(ki("Huber Anna, Zimmer 12"), "[PERSON_1], Zimmer 12");
+});
