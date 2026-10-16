@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
+import http from "node:http";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -96,14 +97,25 @@ class Cdp {
 
 const chromium = findChromium();
 
-// Review Codex 2 #13 (verspätete Antworten), #2 (Freigabe mit geprüfter Fassung), #7 (Auswahl mit Position)
-test("Oberfläche im Browser: überholte Antworten verworfen, Auswahl und Freigabe mit Stelle und Fassung, kein Austausch unter der Maus", {
+// Review Codex 2 #13 (verspätete Antworten), #2 (Freigabe mit geprüfter Fassung), #7 (Auswahl mit Position);
+// Codex 3 #2 (Zugang nicht an andere Dienste), #12 (verspätete Fehler)
+test("Oberfläche im Browser: Zugang bleibt bei der Seite, überholte Antworten und Fehler verworfen, Auswahl und Freigabe mit Stelle und Fassung", {
   skip: chromium ? false : "kein Chromium gefunden (DSB_CHROMIUM setzen)",
   timeout: 60_000,
 }, async () => {
   const port = await freePort();
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-ui-"));
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-ui-profil-"));
+  const downloads = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-ui-downloads-"));
+  // Ein anderer Dienst auf demselben Rechner (anderer Port): Er merkt sich, was der Browser ihm schickt.
+  const otherPort = await freePort();
+  const seen: http.IncomingHttpHeaders[] = [];
+  const other = http.createServer((req, res) => {
+    seen.push(req.headers);
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end("<!doctype html><title>Anderer Dienst</title><p>anderer Dienst</p>");
+  });
+  await new Promise<void>((resolve) => other.listen(otherPort, "127.0.0.1", resolve));
   const store = new JobStore(dataDir, CONFIG_DIR);
   const a = store.create({ art: "allgemein", betreff: "Dokument A", text: "Erstes Dokument." });
   const b = store.create({ art: "allgemein", betreff: "Dokument B", text: "Code ZORWIN und ZORWINBETA." });
@@ -119,7 +131,7 @@ test("Oberfläche im Browser: überholte Antworten verworfen, Auswahl und Freiga
   );
   let cdp: Cdp | undefined;
   try {
-    const [, startLink] = await waitForOutput(server, "stdout", /(\/start\?zugang=[A-Za-z0-9_-]+)/);
+    const [, startLink, token] = await waitForOutput(server, "stdout", /(\/#zugang=([A-Za-z0-9_-]+))/);
     const [, wsUrl] = await waitForOutput(browser, "stderr", /DevTools listening on (ws:\/\/\S+)/);
     cdp = await Cdp.connect(wsUrl ?? "");
     const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank" });
@@ -152,9 +164,25 @@ test("Oberfläche im Browser: überholte Antworten verworfen, Auswahl und Freiga
     });
     await send("Fetch.enable", { patterns: [{ urlPattern: "*/api/dokumente/D-*", requestStage: "Request" }] });
     await send("Page.enable");
-    // Über den Start-Link (setzt das Zugangs-Cookie), dann zur Seite für neue Dokumente.
+    await cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: downloads });
+    // Über den Start-Link: Die Seite übernimmt den Schlüssel und entfernt ihn aus der Adresse.
     await send("Page.navigate", { url: `http://127.0.0.1:${port}${startLink}` });
-    await waitFor(`location.pathname === "/" && !!document.querySelector("#f-text")`, "Seite geladen");
+    await waitFor(`location.href === "http://127.0.0.1:${port}/" && !!document.querySelector("#f-text")`, "Seite geladen");
+    await waitFor(`document.querySelectorAll(".doc-item").length === 2`, "Liste geladen");
+
+    // 0) Codex 3 #2: Ein anderer Dienst auf dem Rechner bekommt den Schlüssel nicht, es gibt kein Cookie.
+    await send("Page.navigate", { url: `http://127.0.0.1:${otherPort}/` });
+    await waitFor(`document.title === "Anderer Dienst"`, "anderer Dienst geladen");
+    assert.ok(seen.length > 0);
+    for (const headers of seen) {
+      assert.equal(headers.cookie, undefined, "kein Cookie an andere Dienste");
+      assert.ok(!JSON.stringify(headers).includes(token ?? "?"), "kein Schlüssel an andere Dienste");
+    }
+    const { cookies } = (await cdp.send("Storage.getCookies")) as { cookies: unknown[] };
+    assert.deepEqual(cookies, [], "der Browser speichert kein Cookie");
+    // Zurück zur Oberfläche ohne Start-Link: Der Tab kennt den Schlüssel noch.
+    await send("Page.navigate", { url: `http://127.0.0.1:${port}/` });
+    await waitFor(`document.querySelectorAll(".doc-item").length === 2`, "Liste wieder geladen");
 
     // 1) A anfragen, zu B wechseln; B antwortet zuerst, A zuletzt: sichtbar bleibt B.
     hold = true;
@@ -173,6 +201,28 @@ test("Oberfläche im Browser: überholte Antworten verworfen, Auswahl und Freiga
     await new Promise((r) => setTimeout(r, 500));
     assert.equal(await evaluate(`location.hash`), `#${b.id}`);
     assert.ok(String(await evaluate(`document.querySelector(".doc-head .sub").textContent`)).includes(b.id), "B bleibt sichtbar");
+
+    // 1b) Codex 3 #12: Ein verspäteter Fehler einer alten Anfrage löscht keinen angefangenen Entwurf.
+    hold = true;
+    await evaluate(`location.hash = ${JSON.stringify(a.id)}`);
+    for (let i = 0; i < 100 && held.length < 3; i++) await new Promise((r) => setTimeout(r, 20));
+    const late = held[2];
+    assert.ok(late?.url.endsWith(a.id), "Anfrage für A angehalten");
+    hold = false;
+    await evaluate(`location.hash = "neu"`);
+    await waitFor(`!!document.querySelector("#f-text")`, "Formular für ein neues Dokument");
+    await evaluate(`(() => { const t = document.querySelector("#f-text"); t.value = "Entwurf, bitte nicht verlieren"; t.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+    await send("Fetch.fulfillRequest", {
+      requestId: late?.requestId,
+      responseCode: 404,
+      responseHeaders: [{ name: "Content-Type", value: "application/json" }],
+      body: Buffer.from(JSON.stringify({ fehler: "Unbekanntes Dokument" })).toString("base64"),
+    });
+    await new Promise((r) => setTimeout(r, 500));
+    assert.equal(await evaluate(`document.querySelector("#f-text")?.value`), "Entwurf, bitte nicht verlieren");
+    assert.equal(await evaluate(`location.hash`), "#neu");
+    await evaluate(`location.hash = ${JSON.stringify(b.id)}`);
+    await waitFor(`document.querySelector(".doc-head .sub")?.textContent.includes(${JSON.stringify(b.id)})`, "B wieder angezeigt");
 
     // 2) Auswahl mitten im Wort schwärzen: Die Oberfläche schickt die genaue Stelle mit.
     await evaluate(`(() => {
@@ -211,11 +261,19 @@ test("Oberfläche im Browser: überholte Antworten verworfen, Auswahl und Freiga
     await waitFor(`document.querySelector(".doc-head .badge")?.textContent === "Freigegeben"`, "freigegeben");
     const fertig = store.detail(b.id).ergebnis;
     assert.equal(fertig?.art === "text" ? fertig.text : "", "Fassung B");
+
+    // 5) Herunterladen geht über die Seite (mit Schlüssel), nicht über einen einfachen Link.
+    await evaluate(`[...document.querySelectorAll("button")].find((x) => x.textContent === "Herunterladen").click()`);
+    const datei = path.join(downloads, `${b.id}.txt`);
+    for (let i = 0; i < 100 && !fs.existsSync(datei); i++) await new Promise((r) => setTimeout(r, 50));
+    assert.equal(fs.readFileSync(datei, "utf8"), "Fassung B\n");
   } finally {
     cdp?.close();
     browser.kill();
     server.kill();
+    other.close();
     await new Promise((r) => setTimeout(r, 200));
     fs.rmSync(profile, { recursive: true, force: true });
+    fs.rmSync(downloads, { recursive: true, force: true });
   }
 });

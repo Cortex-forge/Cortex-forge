@@ -39,7 +39,7 @@ Ob der KI-Anbieter überhaupt personenbezogene Daten erhält, ist nach EuGH C-41
 | Kein Zugriff lokaler KI-Agenten auf Daten und Schlüssel | dokumentiert, Sperre für Claude Code | Bot unter eigenem Benutzer oder in einem Container |
 | Datenschutz-Probe gegen Lösungsblatt vor jedem Merge | umgesetzt (`npm run probe`, Nachweis) | Probe mit echten, anonymisierten Dokumenten vor Ort |
 | Zugriff nur lokal (localhost) mit Host- und Origin-Prüfung; andere Adressen verweigert | umgesetzt | Login, Rollen, TLS bei Serverbetrieb |
-| Zugang zur Oberfläche nur über den Start-Link (Zugangs-Cookie), auch gegenüber anderen Programmen und Benutzern auf dem Rechner | umgesetzt | Benutzerkonten |
+| Zugang zur Oberfläche nur über den Start-Link (Schlüssel als Kopfzeile, kein Cookie), auch gegenüber anderen Programmen, Benutzern und lokalen Diensten auf dem Rechner | umgesetzt | Benutzerkonten |
 | Eingaben vor der Erkennung lesbar und einheitlich (MIME-Mails, HTML, Sonderzeichen, Zeichensatz); codierte Blöcke mit Text werden geschwärzt | umgesetzt | PDF/OCR |
 | Protokoll ohne Inhalte | umgesetzt | Aufbewahrungsfrist festlegen |
 | Löschen nach Abschluss | umgesetzt (manuell) | automatische Löschfrist |

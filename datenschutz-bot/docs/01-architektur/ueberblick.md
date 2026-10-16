@@ -61,7 +61,7 @@ data/
 
 ## Zugang zur Oberfläche
 
-Die Oberfläche läuft nur auf Loopback. Weil 127.0.0.1 jedes Programm und jeder Benutzer auf dem Rechner erreicht, braucht jede Anfrage an die Daten ein Zugangs-Cookie (HttpOnly, SameSite=Strict). Gesetzt wird es nur über den Start-Link, den der Bot beim Start im Konsolenfenster ausgibt; der Schlüssel darin ist zufällig und gilt bis zum nächsten Start. Änderungen verlangen zusätzlich den passenden Origin-Header, der Host-Header muss eine lokale Adresse sein (DNS-Rebinding).
+Die Oberfläche läuft nur auf Loopback. Weil 127.0.0.1 jedes Programm und jeder Benutzer auf dem Rechner erreicht, braucht jede Anfrage an die Daten den Zugangsschlüssel in der Kopfzeile `X-DSB-Zugang`. Er steht im Start-Link, den der Bot beim Start im Konsolenfenster ausgibt, hinter `#zugang=` (dieser Teil der Adresse geht nie an einen Server), ist zufällig und gilt bis zum nächsten Start. Die Seite hält ihn nur für ihren Tab (`sessionStorage`, an Adresse und Port gebunden) und lädt auch Dateien über `fetch` mit Schlüssel. Ein Cookie wäre bequemer, ginge aber auch an andere Programme auf demselben Rechner, denn Cookies gelten für alle Ports (Review Codex 3 #2). Änderungen verlangen zusätzlich den passenden Origin-Header, der Host-Header muss eine lokale Adresse sein (DNS-Rebinding).
 
 ## Platzhalter-Nummern
 

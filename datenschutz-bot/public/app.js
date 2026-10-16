@@ -14,6 +14,23 @@ let placeholderRe = /\[([A-Z]+)_(\d+)(?::[^\]\n]*)?\]/gi;
 const main = document.getElementById("main");
 const listEl = document.getElementById("doc-list");
 
+// Zugang: Der Start-Link enthält den Schlüssel hinter "#zugang=". Dieser Teil der Adresse geht nie an einen Server.
+// Gespeichert wird der Schlüssel nur für diesen Tab und diese Adresse (sessionStorage), mitgeschickt nur an die
+// eigene Seite. Andere Programme auf dem Rechner bekommen ihn nicht, auch nicht auf anderen Ports.
+const ZUGANG = "dsb_zugang";
+let zugang = "";
+{
+  const m = /^#zugang=([A-Za-z0-9_-]{20,100})$/.exec(location.hash);
+  try {
+    if (m) sessionStorage.setItem(ZUGANG, m[1]);
+    zugang = sessionStorage.getItem(ZUGANG) || "";
+  } catch {
+    zugang = m ? m[1] : "";
+  }
+  // Den Schlüssel nicht in der Adresszeile und im Verlauf stehen lassen.
+  if (m) history.replaceState(null, "", location.pathname + location.search);
+}
+
 // ---------------------------------------------------------------------------
 // Hilfsfunktionen
 
@@ -34,7 +51,7 @@ function h(tag, attrs, ...children) {
 }
 
 async function api(path, options = {}) {
-  const init = { method: options.method || "GET", headers: {} };
+  const init = { method: options.method || "GET", headers: { "X-DSB-Zugang": zugang } };
   if (options.body !== undefined) {
     init.headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(options.body);
@@ -43,6 +60,22 @@ async function api(path, options = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.fehler || `Fehler ${res.status}`);
   return data;
+}
+
+/** Herunterladen über fetch (mit Zugangsschlüssel); ein einfacher Link schickt keine Kopfzeilen mit. */
+async function download(path) {
+  const res = await fetch(path, { headers: { "X-DSB-Zugang": zugang } });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.fehler || `Fehler ${res.status}`);
+  }
+  const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")?.[1] || "download";
+  const url = URL.createObjectURL(await res.blob());
+  const link = h("a", { href: url, download: name, hidden: true });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function toast(message, isError) {
@@ -551,7 +584,7 @@ function viewFreigegeben(detail) {
     ),
     h("div", { class: "pane" }, h("h3", { text: "Ergebnis" }), resultView(detail)),
     h("div", { class: "bar" },
-      h("a", { class: "btn", href: `/api/dokumente/${id}/export`, download: "", text: "Herunterladen" }),
+      h("button", { type: "button", text: "Herunterladen", onclick: () => act(() => download(`/api/dokumente/${id}/export`)) }),
       copyButton(detail),
       h("button", { class: "danger", type: "button", text: detail.job.rechnungsnummer ? "Abschließen & archivieren" : "Abschließen & Originaldaten löschen", onclick: () => {
         const frage = detail.job.rechnungsnummer
@@ -577,7 +610,7 @@ function viewAbgeschlossen(detail) {
         ? `Original, Zuordnung und Platzhalter-Fassung wurden gelöscht. Die Rechnung ${nr} liegt verschlüsselt im Archiv.`
         : "Original, Zuordnung, Platzhalter-Fassung und Ergebnis wurden gelöscht. Übrig sind nur Verwaltungsdaten und das Protokoll.",
     ),
-    nr ? h("div", { class: "bar" }, h("a", { class: "btn", href: `/api/rechnungen/${nr}`, download: "", text: `Rechnung ${nr} herunterladen` })) : null,
+    nr ? h("div", { class: "bar" }, h("button", { type: "button", text: `Rechnung ${nr} herunterladen`, onclick: () => act(() => download(`/api/rechnungen/${nr}`)) })) : null,
   ];
 }
 
@@ -616,9 +649,17 @@ function renderDetail(detail) {
 
 async function loadDetail(id) {
   const seq = ++state.loadSeq;
-  const detail = await api(`/api/dokumente/${id}`);
-  // Inzwischen ein anderes Dokument gewählt oder neuer geladen: diese Antwort ist überholt.
-  if (seq !== state.loadSeq || location.hash !== `#${id}`) return;
+  // Inzwischen ein anderes Dokument gewählt, ein neues angefangen oder neuer geladen: diese Antwort ist überholt.
+  // Das gilt auch für Fehler: Ein verspäteter Fehler darf keinen angefangenen Entwurf ersetzen.
+  const overtaken = () => seq !== state.loadSeq || location.hash !== `#${id}`;
+  let detail;
+  try {
+    detail = await api(`/api/dokumente/${id}`);
+  } catch (err) {
+    if (overtaken()) return;
+    throw err;
+  }
+  if (overtaken()) return;
   // Frisch geladen ist immer die aktuelle Fassung.
   if (state.stale === id) {
     state.stale = null;
@@ -636,11 +677,15 @@ async function route() {
   const hash = location.hash.slice(1);
   try {
     if (/^D-[0-9a-f]{12}$/.test(hash)) await loadDetail(hash);
-    else if (hash === "hilfe") renderHelp();
-    else renderNew();
+    else {
+      // Laufende Detail-Anfragen sind damit überholt.
+      state.loadSeq++;
+      if (hash === "hilfe") renderHelp();
+      else renderNew();
+    }
   } catch (err) {
     toast(err.message, true);
-    renderNew();
+    if (location.hash.slice(1) === hash) renderNew();
   }
 }
 

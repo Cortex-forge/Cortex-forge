@@ -98,11 +98,27 @@ export function filesUnder(dir: string): Array<{ name: string; content: string }
     }));
 }
 
+/** Platzhalter in Stücke, die in ein Feld passen (die Werkzeuge begrenzen die Länge eines Felds). */
+function chunks(items: string[], max = 1500): string[] {
+  const out: string[] = [];
+  let cur = "";
+  for (const item of items) {
+    if (cur && cur.length + 1 + item.length > max) {
+      out.push(cur);
+      cur = "";
+    }
+    cur = cur ? `${cur} ${item}` : item;
+  }
+  return cur ? [...out, cur] : out;
+}
+
 /**
  * Legt alle Fälle in einem frischen Datenordner ab, gibt sie frei, liest sie über den echten MCP-Server und
- * speichert ein Ergebnis. Danach: Lösungsblatt gegen alle MCP-Antworten und alle Dateien.
+ * speichert über jedes Werkzeug ein Ergebnis. Danach: Lösungsblatt gegen alle MCP-Antworten und alle Dateien.
+ * Jeder Werkzeugaufruf muss gelingen (bzw. bei der absichtlich falschen Fassung scheitern); sonst steht er unter
+ * "fehler" und die Probe gilt als nicht bestanden, weil der Weg nicht geprüft wurde.
  */
-export async function runProbe(faelle: Fall[]): Promise<{ antworten: number; lecks: Leck[] }> {
+export async function runProbe(faelle: Fall[]): Promise<{ antworten: number; lecks: Leck[]; fehler: string[] }> {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-probe-"));
   try {
     const store = new JobStore(dataDir, CONFIG_DIR);
@@ -122,43 +138,53 @@ export async function runProbe(faelle: Fall[]): Promise<{ antworten: number; lec
         stderr: "ignore",
       }),
     );
-    const call = async (name: string, args: Record<string, unknown> = {}) => {
+    const fehler: string[] = [];
+    /** Ruft ein Werkzeug auf und prüft, ob es wie erwartet gelingt (bzw. scheitert). */
+    const call = async (fall: string, name: string, args: Record<string, unknown> = {}, sollScheitern = false) => {
       const result = await client.callTool({ name, arguments: args });
-      return (result.content as Array<{ text?: string }>).map((c) => c.text ?? "").join("\n");
+      const text = (result.content as Array<{ text?: string }>).map((c) => c.text ?? "").join("\n");
+      if ((result.isError === true) !== sollScheitern) {
+        fehler.push(`${fall} · ${name}: ${sollScheitern ? "hätte abgelehnt werden müssen" : `fehlgeschlagen (${text.slice(0, 160)})`}`);
+      }
+      return text;
     };
 
     const lecks: Leck[] = [];
     let antworten = 0;
     try {
-      const liste = await call("dokumente_auflisten");
+      const liste = await call("alle", "dokumente_auflisten");
       antworten++;
       for (const { fall, id } of jobs) {
-        const gelesen = await call("dokument_lesen", { id });
+        const gelesen = await call(fall.id, "dokument_lesen", { id });
         // Die "KI" antwortet mit allen Platzhaltern, die sie bekommen hat, plus einem falschen, und benutzt alle
-        // Speicherwerkzeuge (auch deren Antworten dürfen nichts verraten).
+        // Speicherwerkzeuge (auch deren Antworten dürfen nichts verraten). Lange Listen werden auf mehrere
+        // Buchungszeilen und Positionen verteilt, damit jedes Feld in die Grenzen der Werkzeuge passt.
         const platzhalter = gelesen.match(/\[[A-Z]+_\d+(?::[^\]\n]*)?\]/g) ?? [];
         const fassung = Number(/Fassung (\d+)/.exec(gelesen)?.[1]);
-        const alle = `${platzhalter.join(" ")} und [PERSON_999]`;
+        const teile = chunks([...platzhalter, "und [PERSON_999]"]);
+        const alle = teile.join(" ");
         const antwortenFall: Array<[string, string]> = [
           ["dokument_lesen", gelesen],
-          ["ergebnis_speichern", await call("ergebnis_speichern", { id, fassung, text: `Antwort mit ${alle}.` })],
+          ["ergebnis_speichern", await call(fall.id, "ergebnis_speichern", { id, fassung, text: `Antwort mit ${alle}.` })],
+          // Absichtlich mit falscher Fassung: muss scheitern, und auch die Fehlermeldung darf nichts verraten.
+          ["ergebnis_speichern (falsche Fassung)", await call(fall.id, "ergebnis_speichern", { id, fassung: fassung + 1, text: `Antwort mit ${alle}.` }, true)],
           [
             "buchungen_vorschlagen",
-            await call("buchungen_vorschlagen", {
+            await call(fall.id, "buchungen_vorschlagen", {
               id,
               fassung,
-              buchungen: [{ datum: "01.10.2026", belegnummer: platzhalter[0] ?? "1", konto: "7200", gegenkonto: "3300", text: `Buchung ${alle}`, netto: 100, ust_satz: 20 }],
+              buchungen: teile.map((t) => ({ datum: "01.10.2026", belegnummer: platzhalter[0] ?? "1", konto: "7200", gegenkonto: "3300", text: `Buchung ${t}`, netto: 100, ust_satz: 20 })),
             }),
           ],
           [
             "rechnung_erstellen",
-            await call("rechnung_erstellen", {
+            await call(fall.id, "rechnung_erstellen", {
               id,
               fassung,
               empfaenger: platzhalter[0] ?? "[PERSON_1]",
               empfaenger_adresse: platzhalter[1] ?? "",
-              positionen: [{ beschreibung: `Leistung ${alle}`, menge: 1, einzelpreis: 100, ust_satz: 10 }],
-              anmerkung: alle,
+              positionen: teile.map((t) => ({ beschreibung: `Leistung ${t}`, menge: 1, einzelpreis: 100, ust_satz: 10 })),
+              anmerkung: teile[0] ?? "",
             }),
           ],
         ];
@@ -183,7 +209,7 @@ export async function runProbe(faelle: Fall[]): Promise<{ antworten: number; lec
         }
       }
     }
-    return { antworten, lecks };
+    return { antworten, lecks, fehler };
   } finally {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }

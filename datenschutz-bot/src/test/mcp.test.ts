@@ -122,8 +122,17 @@ test("MCP: Kontenplan mit Personennamen kommt nur pseudonymisiert und wie geprü
 
 // Review Claude #8, Codex #14: Probe gegen das Lösungsblatt statt gegen die eigenen Funde
 test("Datenschutz-Probe mit Lösungsblatt: Beispiele über den echten MCP-Server", async () => {
-  const { antworten, lecks } = await runProbe(loadExamples());
+  const { antworten, lecks, fehler } = await runProbe(loadExamples());
   assert.ok(antworten >= 7);
+  assert.deepEqual(lecks, []);
+  assert.deepEqual(fehler, []);
+});
+
+// Review Codex 3 #13: Die Probe zählt nur Wege, die wirklich durchlaufen wurden
+test("Datenschutz-Probe: viele Angaben werden auf Felder verteilt, jeder Aufruf muss gelingen", async () => {
+  const text = Array.from({ length: 200 }, (_, i) => `gast${i}@example.com`).join(", ");
+  const { lecks, fehler } = await runProbe([{ id: "X1", art: "hotel", text, sensibel: [{ wert: "gast7@example.com", typ: "EMAIL" }] }]);
+  assert.deepEqual(fehler, []);
   assert.deepEqual(lecks, []);
 });
 
