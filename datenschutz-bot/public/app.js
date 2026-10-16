@@ -377,6 +377,7 @@ function viewNeu(detail) {
         )
       : h("div", { class: "callout info" },
           h("strong", { text: "Prüfe, was die KI sehen wird. " }),
+          "Die automatische Erkennung übersieht auf neuen Dokumenten noch etwa jede fünfte Angabe, vor allem Firmen, Gesundheitsangaben und Adressen. Bitte das Original ganz lesen. ",
           "Fehlt etwas? Markiere es links im Original und klicke „Schwärzen“. Zu viel ersetzt? „Nicht sensibel“ in der Tabelle.",
         ),
     h("div", { class: "panes" },
