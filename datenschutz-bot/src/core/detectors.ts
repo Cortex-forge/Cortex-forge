@@ -206,17 +206,21 @@ const IBAN_RE = new RegExp(
 export function detectIbans(text: string): Finding[] {
   const out: Finding[] = [];
   for (const m of matchAll(text, IBAN_RE)) {
-    // Am Ende können zusätzliche Zeichen mitgefangen werden: kürzen, bis die Prüfziffer stimmt.
+    // Am Ende können zusätzliche Zeichen mitgefangen werden: kürzen, bis die Prüfziffer stimmt. Weitergesucht wird
+    // am echten Ende, denn dort kann gleich die nächste IBAN beginnen (Review Codex 4 #3).
     let candidate = m[0];
+    let resume = m.index + 1;
     while (candidate.replace(/[\s–-]/g, "").length >= 15) {
       if (ibanIsValid(candidate)) {
         out.push(finding(text, m.index, m.index + candidate.length, "IBAN", "iban"));
+        resume = m.index + candidate.length;
         break;
       }
       const cut = Math.max(candidate.lastIndexOf(" "), candidate.lastIndexOf("-"), candidate.lastIndexOf("–"), candidate.lastIndexOf("\n"));
       if (cut <= 4) break;
       candidate = candidate.slice(0, cut).replace(/[\s–-]+$/u, "");
     }
+    IBAN_RE.lastIndex = resume;
   }
   return out;
 }
@@ -337,10 +341,32 @@ const MESSENGER_LINK_RE = /(?<![\p{L}\p{N}])(?:wa\.me|api\.whatsapp\.com\/send\?
 // Datum mit Punkten ("01.09.1953") ist keine Telefonnummer.
 const DATE_SHAPE = /^\d{1,2}\.\d{1,2}\.(?:\d{2}|\d{4})$/;
 
+/**
+ * Mehrere Nummern in einem Treffer ("0512 123456 / 0512 654321"): Teile ab jeder Zifferngruppe, die mit 0 beginnt.
+ * Die Teile werden einzeln geprüft (Review Codex 4 #4).
+ */
+function phoneParts(value: string): Array<[number, string]> {
+  const parts: Array<[number, string]> = [];
+  let from = 0;
+  for (const m of value.matchAll(/[ \t/.–-]{1,3}(?=0)/gu)) {
+    if (m.index > from) parts.push([from, value.slice(from, m.index)]);
+    from = m.index + m[0].length;
+  }
+  parts.push([from, value.slice(from)]);
+  return parts;
+}
+
 export function detectPhones(text: string): Finding[] {
   const out: Finding[] = [];
   const consider = (start: number, value: string, kind: "intl" | "national" | "context" | "fest") => {
     const digits = digitsOnly(value);
+    if (digits.length > 15 && (kind === "intl" || kind === "national")) {
+      const parts = phoneParts(value);
+      if (parts.length > 1) {
+        for (const [offset, part] of parts) consider(start + offset, part, /^(?:\+|00)/.test(part) ? "intl" : "national");
+      }
+      return;
+    }
     if (digits.length < 7 || digits.length > 15) return;
     if (DATE_SHAPE.test(value)) return;
     if (kind === "intl" && (value.startsWith("00") ? digits.length < 11 : digits.length < 8)) return;
@@ -1774,15 +1800,22 @@ export function normalizeValue(type: EntityType, value: string): string {
       return digitsOnly(v);
     case "IBAN":
     case "UID":
-    case "KENNZEICHEN":
     case "SVNR":
     case "STEUERNR":
     case "AUSWEIS":
       return v.replace(/[\s.-]/g, "").toUpperCase();
+    case "KENNZEICHEN":
+      // Bindestrich und Leerzeichen trennen Bezirk und Buchstaben: "B-AB 123" und "BA-B 123" sind zwei Autos
+      // (Review Codex 4 #5). Nur die Groß-/Kleinschreibung zählt nicht.
+      return v.toUpperCase();
     case "KUNDENNR":
       // Freie Kennungen: Bindestriche, Punkte und Groß-/Kleinschreibung können unterscheiden ("A-123" und "A123"
       // sind zwei Kunden). Lieber zwei Platzhalter für dieselbe Nummer als eine falsch eingesetzte.
       return v;
+    case "SONSTIGES":
+      // Wörter meinen in jeder Schreibweise dasselbe ("Edelweiss", "EDELWEISS"); in Codes mit Ziffern kann sie
+      // unterscheiden ("AB12" und "ab12", Review Codex 4 #5).
+      return /\p{N}/u.test(v) ? v : v.toLowerCase();
     default:
       return v.toLowerCase();
   }

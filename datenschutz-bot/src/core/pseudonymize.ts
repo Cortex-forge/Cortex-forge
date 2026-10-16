@@ -100,12 +100,14 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
       const b = full.toLowerCase();
       if (a === b) continue;
       // "Huber" und später "Anna Huber": der längere Name gewinnt. Verglichen wird Wort für Wort, nicht als
-      // Zeichenfolge ("Anna Huber" steckt nicht in "Hanna Huber"). Zwei verschiedene Namen: nicht eindeutig.
+      // Zeichenfolge ("Anna Huber" steckt nicht in "Hanna Huber"). Zwei verschiedene Namen: nicht eindeutig, und das
+      // bleibt so, auch wenn danach ein längerer Name kommt ("Anna Maria Huber", Review Codex 4 #6).
       if (containsWords(b, a)) {
         owners.set(key, {
           full,
           ...(p.nachname || prev.nachname ? { nachname: p.nachname ?? prev.nachname } : {}),
           ...(prev.lowercase ? { lowercase: true } : {}),
+          ...(prev.ambiguous ? { ambiguous: true } : {}),
         });
       } else if (!containsWords(a, b)) prev.ambiguous = true;
     }

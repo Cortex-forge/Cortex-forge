@@ -220,6 +220,8 @@ const ID_RE = /^D-[0-9a-f]{12}$/;
 /** Wie lange ein Vorgang auf eine Sperre wartet (für Tests per DSB_SPERRE_MS verkürzbar). */
 const LOCK_TIMEOUT_MS = Number(process.env.DSB_SPERRE_MS ?? 10_000);
 const NUMMER_RE = /^\d{4}-\d{4,}$/;
+const LEGACY_MESSAGE =
+  "Dieses Dokument stammt aus einer älteren Version ohne Prüfsumme. Es lässt sich nur noch ansehen und verwerfen: Bitte den Text kopieren, das Dokument verwerfen und neu ablegen.";
 
 function now(): string {
   return new Date().toISOString();
@@ -319,11 +321,12 @@ export class JobStore {
 
   /**
    * Prüfsumme kontrollieren. Eine falsche Prüfsumme heißt: Die Datei wurde außerhalb des Bots verändert. Ohne
-   * Prüfsumme (Dokumente aus Version 0.4) zeigt die Oberfläche das Dokument, die KI bekommt es aber nicht.
+   * Prüfsumme (Dokumente aus Version 0.5 und älter) zeigt die Oberfläche das Dokument nur noch an; ändern,
+   * freigeben und an die KI geben geht nicht mehr (siehe mutate).
    */
   private verify(job: StoredJob, forAi: boolean): void {
     if (job.pruefsumme === undefined) {
-      if (forAi) throw new JobError("Dieses Dokument stammt aus einer älteren Version. Bitte in der Oberfläche zurück zur Prüfung holen und neu freigeben.");
+      if (forAi) throw new JobError(LEGACY_MESSAGE);
       return;
     }
     const expected = Buffer.from(this.macOf(job));
@@ -389,9 +392,18 @@ export class JobStore {
     });
   }
 
-  private mutate<T>(id: string, fn: (job: StoredJob) => T, forAi = false): T {
+  /**
+   * Laden, ändern und speichern unter der Sperre. Ein Dokument ohne Prüfsumme lässt sich nur noch verwerfen: Sonst
+   * könnte jemand mit Schreibzugriff die Prüfsumme entfernen, ältere verschlüsselte Blöcke zurückspielen und der Bot
+   * würde die Datei beim nächsten Speichern als echt signieren (z. B. bei der Freigabe einer geprüften Fassung).
+   */
+  private mutate<T>(id: string, fn: (job: StoredJob) => T, opts: { forAi?: boolean; legacy?: boolean } = {}): T {
     this.file(id);
-    return this.withLock(`dokument-${id}`, () => fn(this.readStored(id, forAi)));
+    return this.withLock(`dokument-${id}`, () => {
+      const job = this.readStored(id, opts.forAi);
+      if (job.pruefsumme === undefined && !opts.legacy) throw new JobError(LEGACY_MESSAGE);
+      return fn(job);
+    });
   }
 
   private requireStatus(job: StoredJob, allowed: JobStatus[], action: string): void {
@@ -819,6 +831,7 @@ export class JobStore {
 
   /** Verwerfen. Rechnungen mit vergebener Nummer lassen sich nicht löschen (lückenlose Nummern, Aufbewahrung). */
   remove(id: string): void {
+    // Auch Dokumente ohne Prüfsumme: Verwerfen gibt nichts heraus und signiert nichts.
     this.mutate(id, (job) => {
       if (job.rechnungsnummer) {
         throw new JobError(
@@ -829,7 +842,7 @@ export class JobStore {
       // Auch Zwischendateien eines abgebrochenen Speicherns: Sie enthalten noch die verschlüsselten Originale.
       removeLeftovers(this.file(id));
       this.log(id, "Dokument verworfen und gelöscht", "oberflaeche");
-    });
+    }, { legacy: true });
   }
 
   /** Download des fertigen Ergebnisses. Nur nach der Freigabe; Rechnungen danach aus dem Archiv. */
@@ -1100,7 +1113,7 @@ export class JobStore {
         "ki",
       );
       return summen ? { pruefung, summen } : { pruefung };
-    }, true);
+    }, { forAi: true });
   }
 }
 

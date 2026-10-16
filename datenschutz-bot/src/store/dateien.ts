@@ -205,11 +205,12 @@ export function withFileLock<T>(lockFile: string, timeoutMs: number, fn: () => T
   const mine = lockContent();
   const deadline = Date.now() + timeoutMs;
   while (!createFileExclusive(lockFile, mine)) {
+    // Jede erfolglose Runde zählt, auch das Warten auf einen anderen Vorgang, der gerade aufräumt (Review Codex 4 #9).
+    if (Date.now() > deadline) timeout();
     const held = readOptional(lockFile);
     if (held !== undefined && lockAbandoned(lockFile, held)) {
       breakLock(lockFile, held, mine);
     } else if (held !== undefined) {
-      if (Date.now() > deadline) timeout();
       sleep(20);
     }
   }

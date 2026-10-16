@@ -133,14 +133,23 @@ export function decodeEntities(value: string): string {
 }
 
 /** Ein Block wie <script>…</script> entfernen, ohne Regex über den ganzen Text (lineare Laufzeit). */
+/** Das nächste Tag mit genau diesem Namen: "<head" trifft nicht "<header>" (Review Codex 4 #7). */
+function findTag(lower: string, prefix: string, from: number): number {
+  for (let i = lower.indexOf(prefix, from); i !== -1; i = lower.indexOf(prefix, i + 1)) {
+    const next = lower[i + prefix.length];
+    if (next === undefined || next === ">" || next === "/" || /\s/.test(next)) return i;
+  }
+  return -1;
+}
+
 function dropBlocks(html: string, tag: string): string {
   const lower = html.toLowerCase();
   let out = "";
   let pos = 0;
   for (;;) {
-    const start = lower.indexOf(`<${tag}`, pos);
+    const start = findTag(lower, `<${tag}`, pos);
     if (start === -1) break;
-    const end = lower.indexOf(`</${tag}`, start);
+    const end = findTag(lower, `</${tag}`, start);
     out += html.slice(pos, start);
     if (end === -1) return out;
     const close = lower.indexOf(">", end);

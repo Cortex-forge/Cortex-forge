@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -9,6 +9,7 @@ import { CONFIG_DIR, EXAMPLES_DIR, PROJECT_ROOT } from "../config.js";
 import { KeyError, loadOrCreateKey, recordMac } from "../core/vault.js";
 import { filesUnder } from "../scripts/probe-lib.js";
 import type { RechnungsPosition } from "../core/invoice.js";
+import { withFileLock } from "../store/dateien.js";
 import { JobError, JobStore, type ErgebnisKi } from "../store/jobs.js";
 import { ConfigError } from "../store/settings.js";
 
@@ -308,6 +309,30 @@ test("Buchungen: Belegnummer wird zurückübersetzt, Platzhalter in Konten nur a
   assert.ok(!pruefung.nichtVerwendet.includes("SONSTIGES_1"));
   assert.ok(pruefung.hinweise.some((h) => h.includes("Im Feld Konto ist kein Platzhalter erlaubt")));
   assert.ok(!JSON.stringify(pruefung).includes("Anna"), "Prüfhinweise enthalten keine Originale");
+});
+
+// Review Codex 4 #8
+test("Kontenplan: Kontonummern sind Ziffern, sonst bricht die Ablage ab", () => {
+  const configDir = configCopy();
+  const store = new JobStore(tempDir(), configDir);
+  const plan = (nummer: string) =>
+    fs.writeFileSync(path.join(configDir, "kontenplan.json"), JSON.stringify({ konten: [{ nummer, name: "Privatkonto" }] }));
+  plan("anna.huber@example.com");
+  const fehler = (() => {
+    try {
+      store.create({ art: "buchhaltung", text: "Rechnung über 100 EUR" });
+    } catch (err) {
+      return err as Error;
+    }
+    return undefined;
+  })();
+  assert.ok(fehler instanceof ConfigError);
+  assert.match(fehler.message, /Kontonummern bestehen nur aus Ziffern/);
+  assert.ok(!fehler.message.includes("anna.huber"), "der Wert steht nicht in der Meldung");
+  for (const gut of ["7200", "3300.1", "3300/01", "200001"]) {
+    plan(gut);
+    assert.equal(store.create({ art: "buchhaltung", text: "Rechnung über 100 EUR" }).art, "buchhaltung");
+  }
 });
 
 // Review Claude #12
@@ -858,4 +883,46 @@ test("Prüfsumme: Status, Fassung und verschlüsselte Teile lassen sich ohne Sch
   fs.writeFileSync(file, JSON.stringify(ohne));
   assert.equal(store.detail(neu.id).job.status, "bereit");
   assert.throws(() => store.readForAi(neu.id), /älteren Version/);
+});
+
+// Review Codex 4 #1
+test("Prüfsumme entfernt und alte Blöcke zurückgespielt: Freigabe und jede Änderung abgelehnt, nur Verwerfen geht", () => {
+  const store = tempStore();
+  const neu = store.create({ art: "allgemein", text: "Termin mit Zorwin Xylander am Montag." });
+  const file = docFile(store, neu.id);
+  const alt = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+  store.mark(neu.id, { value: "Zorwin Xylander", type: "PERSON" });
+  const geprueft = store.detail(neu.id).job;
+  assert.match((geprueft as { textKi?: string }).textKi ?? "", /\[PERSON_1\] am Montag/);
+  // Ohne Schlüssel: geprüfte Fassung behalten, verschlüsselte Teile von vorher, Prüfsumme weg.
+  const jetzt = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+  const ohne: Record<string, unknown> = { ...jetzt, kopf: alt.kopf, ki: alt.ki, geheim: alt.geheim };
+  delete ohne.pruefsumme;
+  fs.writeFileSync(file, JSON.stringify(ohne));
+  assert.throws(() => store.releaseForAi(neu.id, geprueft.rev), /ohne Prüfsumme/);
+  assert.throws(() => store.mark(neu.id, { value: "Montag", type: "SONSTIGES" }), /ohne Prüfsumme/);
+  assert.throws(() => store.exclude(neu.id, "Montag"), /ohne Prüfsumme/);
+  assert.throws(() => store.readForAi(neu.id), /ohne Prüfsumme/);
+  assert.deepEqual(store.listForAi(), []);
+  // Die Datei wurde nicht neu signiert.
+  assert.equal((JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>).pruefsumme, undefined);
+  store.remove(neu.id);
+  assert.equal(fs.existsSync(file), false);
+});
+
+// Review Codex 4 #9
+test("Sperre: Die Wartezeit gilt auch, wenn ein anderer Vorgang gerade aufräumt und hängt", () => {
+  const lock = path.join(tempDir(), "dokument.lock");
+  // Hauptsperre eines beendeten Prozesses, Aufräum-Sperre eines laufenden (hier dieser Prozess), der nicht fertig wird.
+  fs.writeFileSync(lock, `${spawnSync(process.execPath, ["-e", ""]).pid}:1`);
+  fs.writeFileSync(`${lock}.aufraeumen`, JSON.stringify({ pid: process.pid }));
+  const t0 = Date.now();
+  assert.throws(
+    () => withFileLock(lock, 50, () => "nie", () => {
+      throw new Error("Zeit abgelaufen");
+    }),
+    /Zeit abgelaufen/,
+  );
+  assert.ok(Date.now() - t0 < 2000, `wartete ${Date.now() - t0} ms`);
+  assert.ok(fs.existsSync(`${lock}.aufraeumen`), "fremde Aufräum-Sperre bleibt");
 });

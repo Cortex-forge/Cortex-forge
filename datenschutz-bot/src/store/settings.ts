@@ -49,8 +49,19 @@ const firmaSchema = z.object({
   email: z.string().optional(),
 });
 
+// Kontonummern sind Ziffern ("7200", auch "3300.1" oder "3300/01"). Ersetzt werden nur die Bezeichnungen: Eine Kennung
+// wie eine Mailadresse käme sonst unverändert zur KI (Review Codex 4 #8).
+const KONTONUMMER_RE = /^\d[\d./-]{0,11}$/;
+
 const kontenSchema = z.object({
-  konten: z.array(z.object({ nummer: z.string().min(1), name: z.string() })).default([]),
+  konten: z
+    .array(
+      z.object({
+        nummer: z.string().regex(KONTONUMMER_RE, "Kontonummern bestehen nur aus Ziffern, auch mit Punkt, Schrägstrich oder Bindestrich (z. B. 7200)"),
+        name: z.string(),
+      }),
+    )
+    .default([]),
 });
 
 export function loadCompanies(configDir: string): CompanyEntry[] {

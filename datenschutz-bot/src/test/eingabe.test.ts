@@ -64,6 +64,12 @@ test("HTML wird zu Text, Entities werden aufgelöst; lineare Laufzeit auch bei v
     "Sehr geehrte Frau [PERSON_1],\nGruß, [PERSON_2]\nTel. [TELEFON_1]",
   );
   assert.equal(htmlToText("<div>a &lt; b</div><script>alert(1)</script>c"), "a < b\nc");
+  // Review Codex 4 #7: Der sichtbare Kopfbereich <header> bleibt, nur der unsichtbare <head> fällt weg.
+  assert.equal(htmlToText("<header>Rechnung Nr. 55</header><p>Gesamt 100 EUR</p>"), "Rechnung Nr. 55\nGesamt 100 EUR");
+  assert.equal(
+    htmlToText("<html><head>\n<title>Intern</title><meta charset=utf-8></head><body><header>Kopf</header><p>Text</p></body></html>"),
+    "Kopf\nText",
+  );
   const t0 = performance.now();
   htmlToText("<p>" + "<".repeat(200_000) + "x");
   htmlToText("<p>" + "<a ".repeat(70_000));

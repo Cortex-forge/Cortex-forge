@@ -205,9 +205,11 @@ function renderNew() {
   state.current = null;
   renderList();
   const arten = state.info.arten;
-  const form = h("form", { class: "card", onsubmit: (e) => { e.preventDefault(); submit(); } });
-  const textArea = h("textarea", { id: "f-text", required: true, placeholder: "E-Mail, Rechnung oder Notiz hier einfügen …" });
-  const betreff = h("input", { id: "f-betreff", type: "text", placeholder: "z. B. Anfrage Februar" });
+  // autocomplete="off": Sonst legt der Browser den eingefügten Originaltext unverschlüsselt im Profil ab
+  // (Wiederherstellen der Sitzung, Vorschläge für Eingabefelder).
+  const form = h("form", { class: "card", autocomplete: "off", onsubmit: (e) => { e.preventDefault(); submit(); } });
+  const textArea = h("textarea", { id: "f-text", required: true, autocomplete: "off", spellcheck: "false", placeholder: "E-Mail, Rechnung oder Notiz hier einfügen …" });
+  const betreff = h("input", { id: "f-betreff", type: "text", autocomplete: "off", placeholder: "z. B. Anfrage Februar" });
   const fileInput = h("input", { type: "file", accept: ".txt,.eml,.md,.csv,text/plain,message/rfc822", onchange: async (e) => {
     const file = e.target.files[0];
     if (file) textArea.value = await readTextFile(file);

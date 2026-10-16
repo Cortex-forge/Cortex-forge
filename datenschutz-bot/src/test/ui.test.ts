@@ -280,6 +280,37 @@ test("Oberfläche im Browser: Zugang bleibt bei der Seite, überholte Antworten 
     const datei = path.join(downloads, `${b.id}.txt`);
     for (let i = 0; i < 100 && !fs.existsSync(datei); i++) await new Promise((r) => setTimeout(r, 50));
     assert.equal(fs.readFileSync(datei, "utf8"), "Fassung B\n");
+
+    // 6) Codex 4 #2: Eingefügter Originaltext landet nicht im Browserprofil (Wiederherstellen der Sitzung).
+    const marker = "FiktiverPruefwertQXRV45321709";
+    await evaluate(`location.hash = "neu"`);
+    await waitFor(`!!document.querySelector("#f-text")`, "Formular für ein neues Dokument");
+    await evaluate(`(() => {
+      const t = document.querySelector("#f-text");
+      t.value = "Notiz ${marker} für morgen";
+      t.dispatchEvent(new Event("input", { bubbles: true }));
+      document.querySelector("#f-betreff").value = "Betreff ${marker}";
+      document.querySelector("form").requestSubmit();
+    })()`);
+    await waitFor(`location.hash.startsWith("#D-") && !!document.getElementById("orig")`, "Original angezeigt");
+    await evaluate(`location.hash = ${JSON.stringify(b.id)}`);
+    await waitFor(`document.querySelector(".doc-head .sub")?.textContent.includes(${JSON.stringify(b.id)})`, "B angezeigt");
+    const closed = new Promise((resolve) => browser.once("exit", resolve));
+    await cdp.send("Browser.close").catch(() => undefined);
+    await closed;
+    const funde: string[] = [];
+    const scan = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) scan(full);
+        else if (entry.isFile()) {
+          const buf = fs.readFileSync(full);
+          if (buf.includes(Buffer.from(marker, "utf8")) || buf.includes(Buffer.from(marker, "utf16le"))) funde.push(path.relative(profile, full));
+        }
+      }
+    };
+    scan(profile);
+    assert.deepEqual(funde, [], "Originaltext im Browserprofil");
   } finally {
     cdp?.close();
     browser.kill();

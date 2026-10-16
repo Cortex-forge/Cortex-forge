@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ibanIsValid, manualMatches, manualSpans } from "../core/detectors.js";
+import { detectPhones, ibanIsValid, manualMatches, manualSpans } from "../core/detectors.js";
 import { pseudonymize } from "../core/pseudonymize.js";
 import { reidentify } from "../core/reidentify.js";
 
@@ -602,4 +602,39 @@ test("Betriebe mit Branchenwort und Name; Nachnamen wie Sommer werden nachgezoge
     ki("Sehr geehrte Frau Sommer,\nIm Sommer wandern wir. Letzten Sommer auch. Sommer bringt den Schlüssel."),
     "Sehr geehrte Frau [PERSON_1],\nIm Sommer wandern wir. Letzten Sommer auch. [PERSON_1] bringt den Schlüssel.",
   );
+});
+
+// Review Codex 4 #3, #4
+test("Zwei IBANs oder zwei Telefonnummern direkt hintereinander werden beide ersetzt", () => {
+  assert.equal(ki("IBAN: AT61 1904 3002 3457 3201 DE89 3704 0044 0532 0130 00"), "IBAN: [IBAN_1] [IBAN_2]");
+  // Die erste mit Tippfehler: Die zweite wird trotzdem gefunden.
+  assertHidden("IBAN: AT61 1904 3002 3457 3202 DE89 3704 0044 0532 0130 00", ["DE89", "0532"]);
+  assert.equal(ki("Tel.: 0512 123456 / 0512 654321"), "Tel.: [TELEFON_1] / [TELEFON_2]");
+  assert.equal(ki("Tel. 0043 512 123456 / 0043 512 654321"), "Tel. [TELEFON_1] / [TELEFON_2]");
+  assert.equal(ki("Tel.: +43 512 123456 / +43 664 1234567"), "Tel.: [TELEFON_1] / [TELEFON_2]");
+  // Gegenprobe: Eine lange Ziffernfolge ohne neue Vorwahl wird nicht in Telefonnummern zerlegt.
+  assert.deepEqual(detectPhones("Auftrag 0512 1234 5678 9012 3456 erledigt."), []);
+});
+
+// Review Codex 4 #5, #6
+test("Verschieden geschriebene Kennungen und mehrdeutige Nachnamen werden nicht zusammengelegt", () => {
+  const roundtrip = (text: string, options = {}) => {
+    const r = pseudonymize(text, options);
+    return { ki: r.text, zurueck: reidentify(r.text, r.mapping).text };
+  };
+  assert.deepEqual(roundtrip("Kennzeichen: B-AB 123 und Kennzeichen: BA-B 123"), {
+    ki: "Kennzeichen: [KENNZEICHEN_1] und Kennzeichen: [KENNZEICHEN_2]",
+    zurueck: "Kennzeichen: B-AB 123 und Kennzeichen: BA-B 123",
+  });
+  assert.deepEqual(roundtrip("Code AB12 und Code ab12", { manual: [{ value: "AB12", type: "SONSTIGES" }] }), {
+    ki: "Code [SONSTIGES_1] und Code [SONSTIGES_2]",
+    zurueck: "Code AB12 und Code ab12",
+  });
+  // Gegenprobe: dasselbe Kennzeichen zweimal bleibt ein Platzhalter.
+  assert.equal(roundtrip("Kennzeichen: B-AB 123, nochmals Kennzeichen: B-AB 123").ki, "Kennzeichen: [KENNZEICHEN_1], nochmals Kennzeichen: [KENNZEICHEN_1]");
+  // "Huber" allein gehört zu keiner der drei Personen.
+  const text = "Anna Huber kommt. Hanna Huber kommt. Anna Maria Huber kommt. Huber zahlt.";
+  const r = roundtrip(text);
+  assert.equal(r.zurueck, text);
+  assert.equal(r.ki, "[PERSON_1] kommt. [PERSON_2] kommt. [PERSON_3] kommt. [PERSON_4] zahlt.");
 });
