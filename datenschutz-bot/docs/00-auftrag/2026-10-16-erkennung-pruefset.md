@@ -29,7 +29,7 @@ Weniger übersehene Angaben auf echten Dokumenten, belegt durch eine Messung an 
 - [x] Prüfset 1 deutlich besser (72,8 % → 99,1 %), Entwicklungsset weiter 100 %, Gegenproben grün
 - [x] Messung an Prüfset 2 abgelegt: 82,0 % / 90,7 %, Ziele verfehlt
 - [x] Tests grün, Nachweis erzeugt (`npm run nachweis`, nicht bestanden wegen der Ziele)
-- [ ] Reviews nach `docs/04-reviews/README.md` (vierte Runde)
+- [ ] Reviews nach `docs/04-reviews/README.md` (vierte Runde: Codex 6,0, alle 9 Befunde behoben in `1f9acd7`; Claude läuft; Hürde 7,5/8,0 nicht erreicht)
 
 ## Risiken und offene Fragen
 - Regeln, die auf Prüfset 1 zugeschnitten sind, übertragen sich schlecht. Prüfset 2 zeigt das; bleibt der Abstand groß, ist das lokale Modell (#2) der nächste Schritt.

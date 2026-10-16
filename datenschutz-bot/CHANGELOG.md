@@ -1,5 +1,24 @@
 # Änderungen
 
+## [0.6.1] – 2026-10-16 – Befunde aus der vierten Codex-Prüfung
+
+### Datenschutz
+- Der Browser legt eingefügten Originaltext nicht mehr im Profil ab (Wiederherstellen des Formulars und Eingabevorschläge aus)
+- Dokumente ohne Prüfsumme (vor 0.6.0) lassen sich nur noch ansehen und verwerfen; Freigeben und Ändern werden abgelehnt
+- Kontenplan: Kontonummern nur aus Ziffern, sonst bricht die Ablage ab
+
+### Erkennung
+- Zwei IBANs oder zwei Telefonnummern direkt hintereinander werden beide ersetzt
+- Verschiedene Kennzeichen („B-AB 123“, „BA-B 123“) und Codes („AB12“, „ab12“) bekommen eigene Platzhalter
+- Ein Nachname mehrerer Personen bleibt mehrdeutig, auch wenn danach ein längerer Name kommt
+- HTML: Der sichtbare Kopfbereich (`<header>`) bleibt erhalten
+
+### Ablage
+- Die Wartezeit einer Sperre gilt auch, wenn ein anderer Vorgang gerade aufräumt
+
+### Qualität
+- 117 Tests; der Browser-Test durchsucht nach dem Schließen das ganze Profil nach dem eingefügten Text
+
 ## [0.6.0] – 2026-10-16 – Erkennung nach Prüfset 1, Befunde aus der dritten Claude-Prüfung
 
 ### Erkennung

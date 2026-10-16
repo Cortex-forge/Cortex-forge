@@ -16,6 +16,7 @@ Jeder Stand, der gemergt werden soll, wird von drei unabhängigen Prüfern bewer
 | 2026-10-16 | Claude, zweite Runde (unabhängiger Prüf-Agent) | Claude | `d79b5cc` | **4,6** | 2 → 0 | [`2026-10-16-claude-2.md`](2026-10-16-claude-2.md), 22 Befunde behoben, 1 teilweise (`937e572` bis `4eb0486`) |
 | 2026-10-16 | Codex, dritte Runde | GPT-6-Astra, Denkstufe „ultra“ | `1fdd842` | **5,5** | 1 → 0 | [`2026-10-16-codex-3.md`](2026-10-16-codex-3.md), 14 Befunde behoben (`9b94227` bis `2934b0a`) |
 | 2026-10-16 | Claude, dritte Runde (unabhängiger Prüf-Agent) | Claude | `1fdd842` | **5,2** | 1 (Erkennung, offen) | [`2026-10-16-claude-3.md`](2026-10-16-claude-3.md), 19 behoben, 1 teilweise, 2 offen (`5c685d4` bis `b6550c8`); blindes Prüfset 2: 82,0 % |
+| 2026-10-16 | Codex, vierte Runde | GPT-6-Astra, Denkstufe „ultra“ | `0db88aa` | **6,0** | 2 → 0 | [`2026-10-16-codex-4.md`](2026-10-16-codex-4.md), 9 Befunde behoben in `1f9acd7` |
 | – | Gemini | | | | | nicht dabei (Entscheidung Peter, 2026-10-16), siehe unten |
 
 ## So läuft ein Codex-Review
