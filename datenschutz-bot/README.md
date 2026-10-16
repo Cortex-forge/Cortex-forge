@@ -18,7 +18,7 @@ Voraussetzung: Node.js 20 oder neuer.
 cd datenschutz-bot
 npm install
 npm run build
-npm test          # alle Tests: Erkennung, Rechnen, Ablage, MCP-Server, Oberfläche, Laufzeit
+npm test          # alle Tests: Erkennung, Rechnen, Ablage, MCP-Server, Web-Server, Oberfläche im Browser, Laufzeit
 npm run demo      # ganzer Ablauf ohne KI-Konto: ein Skript spielt die KI
 npm run probe     # Datenschutz-Probe mit Lösungsblatt über den echten MCP-Server
 npm run messung   # Trefferquote und Genauigkeit am Testset (Bericht nach messungen/)
@@ -62,10 +62,12 @@ Dann in Claude oder Codex sagen: „Bearbeite die freigegebenen Dokumente im Dat
 | Werkzeug | Was es tut |
 |---|---|
 | `dokumente_auflisten` | Listet die freigegebenen Dokumente (nur Platzhalter) |
-| `dokument_lesen` | Gibt ein Dokument mit Platzhaltern, Legende und bei Buchhaltung den Kontenplan zurück |
+| `dokument_lesen` | Gibt ein Dokument mit Platzhaltern, Legende, Fassung und bei Buchhaltung den geprüften Kontenplan (ebenfalls mit Platzhaltern) zurück |
 | `ergebnis_speichern` | Speichert einen Text (Antwort-Mail, Bericht) mit Platzhaltern |
 | `buchungen_vorschlagen` | Speichert Buchungsvorschläge; der Bot rechnet USt und Brutto selbst und vergleicht mit dem Beleg |
 | `rechnung_erstellen` | Erstellt einen Rechnungsentwurf; der Bot rechnet, setzt eure Firmendaten ein und vergibt die Nummer erst bei der Freigabe |
+
+Jedes Speicherwerkzeug nennt die `fassung`, die `dokument_lesen` ausgegeben hat. Wurde das Dokument inzwischen geändert (zurück zur Prüfung, neu markiert, neu freigegeben), lehnt der Bot das Ergebnis ab: Die Platzhalter könnten dann andere Personen bezeichnen.
 
 Die Antworten der Werkzeuge enthalten nur die Platzhalter-Fassung. Ob dabei etwas durchrutscht, prüft die **Datenschutz-Probe gegen Lösungsblätter**: `examples/loesungen.json` und `testset/faelle.json` listen unabhängig von der Erkennung jede sensible Angabe; `npm run probe` schickt alle Dokumente durch den echten MCP-Server und sucht diese Angaben in jeder Antwort und in jeder Datei im Datenordner. Die Probe findet also auch, was die Erkennung übersieht. Sie läuft in den Tests (Beispiele) und im Nachweis (Beispiele und Testset). Was weder Erkennung noch Lösungsblatt kennen, kann trotzdem durchrutschen; dafür gibt es den Prüfschritt vor der Freigabe.
 
@@ -73,7 +75,7 @@ Die Antworten der Werkzeuge enthalten nur die Platzhalter-Fassung. Ob dabei etwa
 
 | Art | Beispiele |
 |---|---|
-| Personen | Anrede („Frau Huber“, „Frau von der Leyen“), Vorstellung („mein Name ist …“, „er hieß …“), bekannte Vornamen (auch „Huber, Anna“, „HUBER Anna“, kleingeschrieben in lockeren Texten), Felder („Gast:“, „Fahrer:“, „Anwesend: A, B, C“), Tabellen mit Spaltenköpfen, Signatur, E-Mail-Kopf, Geburtsname („geb. Gruber“) |
+| Personen | Anrede („Frau Huber“, „Frau von der Leyen“), Vorstellung („mein Name ist …“, „er hieß …“), bekannte Vornamen (auch „Huber, Anna“, „HUBER Anna“, kleingeschrieben in lockeren Texten), Felder („Gast:“, „Fahrer:“, „Anwesend: A, B, C“), Tabellen mit Spaltenköpfen (CSV auch mit Anführungszeichen und mehrzeiligen Zellen), Signatur, E-Mail-Kopf, Geburtsname („geb. Gruber“); ein erkannter Name wird überall nachgezogen, auch in anderer Schreibweise („ANNA HUBER“, später „Huber“) |
 | Firmen | Rechtsform (GmbH, KG, OG, e.U., AG, Ltd, S.r.l. …) und das Firmenverzeichnis `config/firmen.json` mit Kategorie für die KI, z. B. `[FIRMA_1: Elektroinstallateur]` |
 | Kontakt | E-Mail (auch mit Umlaut-Domain), Telefon (AT/DE/IT/US/international, auch nach „Telefonnummer:“ oder „unter der Nummer“), Social-Media-Konten |
 | Finanzen | IBAN (mit Prüfziffer), Kreditkarte inkl. Amex und Kartenprüfnummer (Luhn-Prüfung), UID-Nummer, Steuernummer |
@@ -81,18 +83,19 @@ Die Antworten der Werkzeuge enthalten nur die Platzhalter-Fassung. Ob dabei etwa
 | Kennnummern | Geburtsdatum, Ausweis/Reisepass, Kfz-Kennzeichen, Kunden-/Vertragsnummer, SV-Nummer |
 | Besondere Kategorien (Art. 9 DSGVO) | Gesundheit (Allergien, Krankheiten, Operationen, Hilfsmittel, Behinderung, Schwangerschaft …), Religion (Konfessionen, Gotteshäuser, Speiseregeln, Feiertage) |
 
-Beträge, Daten, Mengen und Zimmerwünsche bleiben stehen, weil die KI sie zum Arbeiten braucht. Was fehlt, markiert der Mitarbeiter in der Oberfläche („Schwärzen“). Was zu viel ersetzt wurde, nimmt er heraus („Nicht sensibel“).
+Beträge, Daten, Mengen und Zimmerwünsche bleiben stehen, weil die KI sie zum Arbeiten braucht. Was fehlt, markiert der Mitarbeiter in der Oberfläche („Schwärzen“); die markierte Stelle wird immer geschwärzt, weitere Vorkommen als ganzes Wort ebenfalls. Was zu viel ersetzt wurde, nimmt er heraus („Nicht sensibel“).
 
 ## Sicherheit
 
-- Die KI sieht ein Dokument erst, nachdem ein Mitarbeiter die Platzhalter-Fassung geprüft und freigegeben hat. Fällt später noch etwas auf: „Zurück zur Prüfung“ nimmt der KI den Zugriff.
+- Die KI sieht ein Dokument erst, nachdem ein Mitarbeiter die Platzhalter-Fassung geprüft und freigegeben hat, und zwar genau die angezeigte Fassung: Hat sie sich inzwischen geändert (z. B. in einem zweiten Fenster), lehnt der Bot die Freigabe ab. Fällt später noch etwas auf: „Zurück zur Prüfung“ nimmt der KI den Zugriff.
+- Bei Buchhaltung geht der Kontenplan mit an die KI. Er läuft durch dieselbe Erkennung („Lieferant Anna Huber“ wird „Lieferant [PERSON_1]“), steht in der Vorschau und geht nur so an die KI, wie er geprüft wurde.
 - Alle Inhalte liegen nur AES-256-GCM-verschlüsselt auf der Platte: Original, Zuordnung, Platzhalter-Fassung, Ergebnis und Prüfhinweise. Jeder Block ist an Dokument und Feld gebunden (kein Austausch zwischen Dateien). Im Klartext stehen nur Verwaltungsdaten (Status, Zeiten, Anzahl).
 - Schlüssel: `DSB_KEY` (Base64, 32 Byte), sonst `DSB_KEY_FILE` (empfohlen: außerhalb des Datenordners, nur für den Bot-Benutzer lesbar), sonst `data/.schluessel`. Jedes Dokument trägt die Kennung seines Schlüssels; ein falscher Schlüssel fällt sofort auf, und neben vorhandenen Dokumenten legt der Bot nie still einen zweiten Schlüssel an.
 - „Abschließen“ löscht Original, Zuordnung, Platzhalter-Fassung und Ergebnis. Rechnungen mit Nummer kommen vorher verschlüsselt ins Archiv (`data/rechnungen/`) und lassen sich nicht löschen.
 - Die Freigabe gilt genau für die geprüfte Fassung. Ersetzt die KI ihr Ergebnis, muss neu geprüft werden.
-- Oberfläche und MCP-Server laufen als getrennte Prozesse. Jede Änderung eines Dokuments läuft unter einer Dateisperre; es geht nichts verloren und Gelöschtes kehrt nicht zurück.
+- Oberfläche und MCP-Server laufen als getrennte Prozesse. Jede Änderung eines Dokuments läuft unter einer Dateisperre; es geht nichts verloren und Gelöschtes kehrt nicht zurück. Die Sperre entsteht in einem Schritt mit ihrem Besitzer, nur der Besitzer gibt sie frei, und aufgeräumt wird sie nur, wenn der Besitzer-Prozess nicht mehr läuft (nie nur wegen ihres Alters).
 - Nach einer Anrede setzt der Bot nur den Nachnamen ein („Frau Huber“, „Frau von Trapp“). Erfundene, falsch geschriebene oder nicht verwendete Platzhalter und von der KI selbst geschriebene Kontaktdaten werden als Prüfhinweis gemeldet. Prüfhinweise an die KI enthalten nur, was die KI selbst geschrieben hat.
-- Steuern und Summen rechnet der Bot in ganzen Cent (kaufmännisch gerundet), nicht die KI. Rechnungsnummern werden erst bei der Freigabe vergeben. Der CSV-Export entschärft Tabellenformeln.
+- Steuern und Summen rechnet der Bot in ganzen Cent (kaufmännisch gerundet), nicht die KI. Rechnungsnummern werden erst bei der Freigabe vergeben und erst gezählt, wenn das Dokument gespeichert ist; ein Fehler verbraucht keine Nummer, und keine Nummer wird doppelt vergeben. Eine Rechnung ist einheitlich netto oder brutto und zeigt Mengen und Preise so genau, wie gerechnet wurde (Menge bis 3, Einzelpreis bis 4 Nachkommastellen). Der CSV-Export entschärft Tabellenformeln.
 - Die Oberfläche läuft nur auf localhost (andere Adressen verweigert sie, weil es kein Login gibt) und prüft Host- und Origin-Header. Sie setzt eine Content-Security-Policy, die Rechnung wird in einem Sandbox-iframe angezeigt.
 - **KI-Agenten auf demselben Rechner** (Claude Code, Codex): nie im Projekt- oder Datenordner starten und den Zugriff auf `data/` sperren (für Claude Code steht eine Sperre in `.claude/settings.json`). Ein Agent mit Dateizugriff könnte sonst Schlüssel und Daten lesen. Besser: Bot unter eigenem Benutzer oder in einem Container betreiben (siehe offene Punkte).
 
@@ -144,4 +147,4 @@ Wir bauen mit Menschen, Claude und Codex gemeinsam. Damit sich alle auskennen:
 - **Reviews mit Codex:** Ablauf und Prüfauftrag in [`docs/04-reviews/README.md`](docs/04-reviews/README.md).
 - **Vor jedem Merge:** `npm run nachweis`, Reviews ablegen, OK von Peter.
 
-Umgebungsvariablen: `DSB_DATA_DIR` (Datenordner, Standard `./data`), `DSB_CONFIG_DIR`, `DSB_PORT` (Standard 4317), `DSB_HOST` (nur `127.0.0.1`, `localhost` oder `::1`), `DSB_KEY` (32-Byte-Schlüssel, Base64) oder `DSB_KEY_FILE` (Pfad zur Schlüsseldatei). Oberfläche und MCP-Server müssen dieselbe Schlüsselquelle nutzen; für Claude Desktop und Codex die Variable in der MCP-Konfiguration unter `env` mitgeben.
+Umgebungsvariablen: `DSB_DATA_DIR` (Datenordner, Standard `./data`), `DSB_CONFIG_DIR`, `DSB_PORT` (Standard 4317), `DSB_HOST` (nur `127.0.0.1`, `localhost` oder `::1`), `DSB_KEY` (32-Byte-Schlüssel, Base64) oder `DSB_KEY_FILE` (Pfad zur Schlüsseldatei). Oberfläche und MCP-Server müssen dieselbe Schlüsselquelle nutzen; für Claude Desktop und Codex die Variable in der MCP-Konfiguration unter `env` mitgeben. Nur für Tests: `DSB_CHROMIUM` (Pfad zu Chrome/Chromium für den Browser-Test; ohne Browser wird er übersprungen), `DSB_SPERRE_MS` (Wartezeit auf eine Sperre).

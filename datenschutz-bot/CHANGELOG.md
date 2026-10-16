@@ -1,5 +1,24 @@
 # Änderungen
 
+## [0.3.0] – 2026-10-16 – Befunde aus der zweiten Codex-Prüfung
+
+### Datenschutz
+- Kontenplan geht bei Buchhaltung nur pseudonymisiert und wie geprüft an die KI; er steht in der Vorschau und lässt sich schwärzen
+- Freigabe für die KI nennt die geprüfte Fassung; ein veraltetes Fenster kann keine geänderte Fassung freigeben
+- KI-Ergebnisse nennen die gelesene Fassung (`fassung`); Ergebnisse zu einer überholten Zuordnung werden abgelehnt
+- CSV mit Anführungszeichen, verdoppelten Anführungszeichen und mehrzeiligen Zellen; bei verrutschten Spalten werden alle in Frage kommenden geschützt
+- Namen werden in jeder Schreibweise nachgezogen („ANNA HUBER“, „Huber“, „huber“), kleingeschriebene Alltagswörter nicht
+- Schwärzen trifft immer die markierte Stelle, auch mitten in einem Wort
+
+### Ablage und Abläufe
+- Sperre in einem Schritt mit Besitzer, Freigabe nur durch den Besitzer, Aufräumen nur bei beendetem Prozess oder anderem Systemstart; funktioniert auch ohne Hardlinks
+- Rechnungsnummer erst nach dem Speichern gezählt, keine Lücken durch Fehler, keine doppelten Nummern; Abschluss wiederholbar
+- Rechnungen zeigen Mengen und Preise in voller Genauigkeit, gemischte Brutto- und Nettopreise werden abgelehnt
+- Oberfläche verwirft verspätete Antworten
+
+### Tests
+- 72 Tests, darunter ein Browser-Test der Oberfläche (Chromium über das DevTools-Protokoll, ohne neue Abhängigkeit), Sperren-Fälle, simulierte Schreibfehler, Laufzeit der manuellen Suche
+
 ## [0.2.0] – 2026-10-16 – Befunde aus den Reviews von Claude und Codex
 
 ### Datenschutz

@@ -7,58 +7,79 @@
 │                                                                                                │
 │  Oberfläche (src/web, public)      Ablage (src/store)            MCP-Server (src/mcp)          │
 │  ─ ablegen, prüfen, schwärzen ──►  ─ Status, Protokoll     ◄──── ─ liest nur KI-Sicht ─────────┼──► KI (Claude, Codex)
-│  ─ Ergebnis prüfen, freigeben      ─ verschlüsselte Geheimnisse   ─ speichert Ergebnisse       │     sieht nur Platzhalter
-│                                    ─ Rechnungsnummern                                          │
+│  ─ Ergebnis prüfen, freigeben      ─ alles verschlüsselt          ─ speichert Ergebnisse       │     sieht nur Platzhalter
+│                                    ─ Sperren, Rechnungsnummern                                 │
 │                     └──────────── Kern (src/core): Erkennung, Platzhalter, ────────────┘       │
 │                                   Rückübersetzung, Verschlüsselung, Rechnen                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Oberfläche und MCP-Server sind zwei getrennte Prozesse. Sie teilen sich den Datenordner (`DSB_DATA_DIR`, Standard `./data`) und damit den Schlüssel.
+Oberfläche und MCP-Server sind zwei getrennte Prozesse. Sie teilen sich den Datenordner (`DSB_DATA_DIR`, Standard `./data`) und damit den Schlüssel. Jede Änderung an einem Dokument läuft unter einer prozessübergreifenden Sperre (siehe unten).
 
 ## Datenfluss
 
-1. **Ablegen:** Der Mitarbeiter fügt Text ein. Der Kern erkennt sensible Stellen und erzeugt die KI-Sicht mit Platzhaltern. Original, Zuordnung und Fundstellen werden verschlüsselt gespeichert, die KI-Sicht im Klartext.
-2. **Prüfen:** Die Oberfläche zeigt Original und KI-Sicht nebeneinander. Der Mitarbeiter schwärzt Fehlendes oder nimmt Fehlalarme heraus, dann gibt er frei.
-3. **KI arbeitet:** Über den MCP-Server sieht die KI nur freigegebene Dokumente, und zwar nur die KI-Sicht. Sie speichert Text, Buchungen oder eine Rechnung, jeweils mit Platzhaltern.
+1. **Ablegen:** Der Mitarbeiter fügt Text ein. Der Kern erkennt sensible Stellen und erzeugt die KI-Sicht mit Platzhaltern. Bei Buchhaltung laufen die Bezeichnungen aus dem Kontenplan durch dieselbe Erkennung (dieselbe Person bekommt dort denselben Platzhalter). Original, Zuordnung, Fundstellen **und die KI-Sicht** werden verschlüsselt gespeichert: Auch die KI-Sicht kann übersehene Angaben enthalten.
+2. **Prüfen:** Die Oberfläche zeigt Original und KI-Sicht nebeneinander, bei Buchhaltung auch den Kontenplan. Der Mitarbeiter schwärzt Fehlendes (die markierte Stelle geht mit) oder nimmt Fehlalarme heraus, dann gibt er frei. Die Freigabe nennt die angezeigte Fassung (`rev`); hat sich das Dokument inzwischen geändert, etwa in einem zweiten Fenster, lehnt der Bot ab.
+3. **KI arbeitet:** Über den MCP-Server sieht die KI nur freigegebene Dokumente, und zwar nur die geprüfte KI-Sicht samt geprüftem Kontenplan. `dokument_lesen` nennt die **Fassung**; jedes Speicherwerkzeug muss sie angeben. Nach „Zurück zur Prüfung“ und neuer Freigabe steigt die Fassung, Ergebnisse zur alten Fassung werden abgelehnt, weil Platzhalter dann andere Personen bezeichnen können.
 4. **Zurückübersetzen:** Der Bot setzt die Originale ein, rechnet Steuern und Summen nach und erzeugt Prüfhinweise. Das fertige Ergebnis liegt verschlüsselt. Die KI bekommt als Antwort nur Hinweise und Beträge.
-5. **Freigeben und abschließen:** Der Mitarbeiter prüft und gibt frei. Rechnungen erhalten erst jetzt ihre Nummer. „Abschließen“ löscht Original, Zuordnung und Ergebnis.
+5. **Freigeben und abschließen:** Der Mitarbeiter prüft und gibt frei; auch hier nennt die Freigabe die geprüfte Version des Ergebnisses (`ergebnisRev`). Rechnungen erhalten erst jetzt ihre Nummer. „Abschließen“ löscht Original, Zuordnung und Ergebnis; Rechnungen mit Nummer kommen vorher verschlüsselt ins Archiv.
 
 ## Statusablauf
 
 ```
-neu ──(für KI freigeben)──► bereit ──(KI speichert)──► zur_pruefung ──(freigeben)──► freigegeben ──(abschließen)──► abgeschlossen
-                              ▲                             │
-                              └──────(zurück an die KI)─────┘
+neu ──(für KI freigeben, mit rev)──► bereit ──(KI speichert, mit Fassung)──► zur_pruefung ──(freigeben, mit ergebnisRev)──► freigegeben ──(abschließen)──► abgeschlossen
+                                       ▲                                         │
+                                       └────────────(zurück an die KI)───────────┘
+
+bereit oder zur_pruefung ──(zurück zur Prüfung)──► neu   (Ergebnis verworfen, KI hat keinen Zugriff mehr)
 ```
 
 | Status | Darf die KI lesen? | Darf die KI speichern? | Originale vorhanden? |
 |---|---|---|---|
 | neu | nein | nein | ja (verschlüsselt) |
-| bereit | ja | ja | ja |
-| zur_pruefung | ja | ja (Korrektur) | ja |
+| bereit | ja | ja, mit aktueller Fassung | ja |
+| zur_pruefung | ja | ja (Korrektur, neue Prüfung nötig) | ja |
 | freigegeben | nein | nein | ja |
-| abgeschlossen | nein | nein | nein, gelöscht |
+| abgeschlossen | nein | nein | nein, gelöscht (Rechnung im Archiv) |
 
 ## Ablage auf der Platte
 
 ```
 data/
-├── .schluessel                 AES-256-Schlüssel (0600), alternativ Umgebungsvariable DSB_KEY
-├── dokumente/D-xxxxxx.json     ein Dokument: KI-Sicht im Klartext, Rest im Feld "geheim" verschlüsselt
+├── .schluessel                 AES-256-Schlüssel (0600), alternativ DSB_KEY oder DSB_KEY_FILE
+├── dokumente/D-xxxxxxxxxxxx.json
+│                               Verwaltungsdaten im Klartext (Status, Zeiten, Versionen, Rechnungsnummer),
+│                               Inhalte in drei verschlüsselten Teilen: "kopf" (Titel), "ki" (KI-Sicht,
+│                               Kontenplan der KI, Ergebnis der KI, Prüfhinweise), "geheim" (Original,
+│                               Zuordnung, Markierungen, fertiges Ergebnis). AES-256-GCM, jeder Teil an
+│                               Dokument und Feld gebunden.
+├── rechnungen/JJJJ-NNNN.json   archivierte Rechnungen, verschlüsselt
+├── sperren/                    Sperrdateien (kurzlebig)
 ├── protokoll.jsonl             Ereignisse ohne Inhalte
 └── rechnungsnummern.json       Zähler je Jahr
 ```
+
+## Sperren
+
+Oberfläche und MCP-Server können gleichzeitig auf dasselbe Dokument zugreifen. Laden, Prüfen und Speichern geschehen deshalb immer unter einer Sperre je Dokument (`sperren/dokument-<id>.lock`), Rechnungsnummern unter einer eigenen Sperre.
+
+- Die Sperrdatei entsteht in einem Schritt mit vollständigem Inhalt (Prozessnummer, Systemstart, Startzeit des Prozesses, Zufallskennung): erst in eine eigene Datei geschrieben, dann per Hardlink veröffentlicht. Dateisysteme ohne Hardlinks (FAT, manche Netzlaufwerke) legen exklusiv an und schreiben danach; eine kurz leere Sperrdatei gilt dann als belegt.
+- Freigeben darf nur der Besitzer (Vergleich der Kennung).
+- Eine Sperre gilt nur als verwaist, wenn ihr Besitzer sicher nicht mehr da ist: anderer Systemstart, Prozess beendet oder (Linux) Prozessnummer inzwischen an einen anderen Prozess vergeben. Nie nur wegen ihres Alters. Aufräumen darf immer nur ein Vorgang zugleich, und nur, wenn die Sperre noch dieselbe ist.
+
+## Rechnungsnummern
+
+Die Nummer wird bei der Freigabe unter der Nummern-Sperre vergeben: Firmendaten werden vorher gelesen, dann wird das Dokument mit der Nummer gespeichert und erst danach der Zähler erhöht. Scheitert das Speichern, ist keine Nummer verbraucht. Die nächste Nummer richtet sich nach dem Zähler und nach den Nummern, die tatsächlich in Dokumenten und im Archiv stehen; so gibt es auch nach einem Absturz zwischen Speichern und Zählen keine Nummer doppelt. Ein unterbrochener Abschluss lässt sich wiederholen: Liegt genau diese Rechnung (gleiches Dokument, gleicher Inhalt) schon im Archiv, gilt der Schritt als erledigt.
 
 ## MCP-Werkzeuge
 
 | Werkzeug | Liest/Schreibt | Antwort an die KI |
 |---|---|---|
 | `dokumente_auflisten` | liest | IDs, Art, Betreff (KI-Sicht) |
-| `dokument_lesen` | liest | KI-Sicht, Platzhalter-Legende, ggf. Kontenplan |
-| `ergebnis_speichern` | schreibt | Prüfhinweise |
-| `buchungen_vorschlagen` | schreibt | Prüfhinweise, vom Bot berechnete Summen |
-| `rechnung_erstellen` | schreibt | Prüfhinweise, vom Bot berechnete Summen |
+| `dokument_lesen` | liest | KI-Sicht, Fassung, Platzhalter-Legende, bei Buchhaltung der geprüfte Kontenplan (mit Platzhaltern) |
+| `ergebnis_speichern` | schreibt (mit `fassung`) | Prüfhinweise |
+| `buchungen_vorschlagen` | schreibt (mit `fassung`) | Prüfhinweise, vom Bot berechnete Summen |
+| `rechnung_erstellen` | schreibt (mit `fassung`) | Prüfhinweise, vom Bot berechnete Summen |
 
 ## Entscheidungen
 

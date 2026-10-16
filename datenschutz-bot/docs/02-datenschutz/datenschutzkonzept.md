@@ -24,13 +24,15 @@ Ob der KI-Anbieter überhaupt personenbezogene Daten erhält, ist nach EuGH C-41
 | Zahlungsdaten | IBAN, Kreditkarte | nein, Platzhalter |
 | Besondere Kategorien (Art. 9 DSGVO) | Allergien, Behinderung, religiös begründete Essenswünsche | nein, Platzhalter mit Typ (`[GESUNDHEIT_1]`) |
 | Geschäftsinhalt | Reisedaten, Zimmerwunsch, Beträge, Leistungen | ja, die KI braucht sie zum Arbeiten |
+| Kontenplan (nur Buchhaltung) | Kontonummern und -bezeichnungen, auch Personenkonten („Lieferant Anna Huber“) | ja, aber Bezeichnungen durch dieselbe Erkennung (`Lieferant [PERSON_1]`), geprüft wie das Dokument |
 
 ## Technische und organisatorische Maßnahmen (Art. 32 DSGVO)
 
 | Maßnahme | Stand Prototyp | Für den Pilot |
 |---|---|---|
 | Pseudonymisierung vor der KI | umgesetzt | zweite Erkennungsstufe mit lokalem Modell |
-| Menschliche Prüfung vor Freigabe an die KI | umgesetzt | |
+| Menschliche Prüfung vor Freigabe an die KI; die Freigabe gilt genau für die angezeigte Fassung, samt Kontenplan | umgesetzt | |
+| Ergebnisse der KI nur zur aktuell freigegebenen Fassung (keine falsche Zuordnung nach Änderungen) | umgesetzt | |
 | Menschliche Prüfung vor Versand oder Buchung | umgesetzt | |
 | Verschlüsselung aller gespeicherten Inhalte (AES-256-GCM, an Dokument und Feld gebunden), auch der Platzhalter-Fassung | umgesetzt | Schlüssel in KMS/HSM bzw. Schlüsselbund des Betriebssystems |
 | Schlüssel getrennt von den Daten (`DSB_KEY`/`DSB_KEY_FILE`), Schlüsselkennung je Dokument | umgesetzt (optional) | Pflicht im Echtbetrieb |

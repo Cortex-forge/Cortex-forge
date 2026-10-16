@@ -1,8 +1,12 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // dist/config.js liegt eine Ebene unter dem Projektordner.
 export const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+/** Version aus package.json, damit der MCP-Server immer die richtige meldet. */
+export const VERSION = (JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf8")) as { version: string }).version;
 
 export const DATA_DIR = path.resolve(process.env.DSB_DATA_DIR ?? path.join(PROJECT_ROOT, "data"));
 export const CONFIG_DIR = path.resolve(process.env.DSB_CONFIG_DIR ?? path.join(PROJECT_ROOT, "config"));

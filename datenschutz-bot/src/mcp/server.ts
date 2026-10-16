@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import type { RechnungInhalt } from "../core/invoice.js";
+import { VERSION } from "../config.js";
 import { formatEuro } from "../core/money.js";
 import { formatPlaceholder } from "../core/pseudonymize.js";
 import { ENTITY_LABELS } from "../core/types.js";
@@ -78,7 +79,7 @@ function describeCheck(pruefung: Pruefung, summen?: { netto: number; ust: number
 }
 
 const server = new McpServer(
-  { name: "datenschutz-bot", version: "0.1.0" },
+  { name: "datenschutz-bot", version: VERSION },
   { instructions: INSTRUCTIONS },
 );
 

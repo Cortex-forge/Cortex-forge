@@ -1,6 +1,6 @@
 {
   "name": "datenschutz-bot",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Datenschutz-Schleuse zwischen Dokumenten und KI: ersetzt personenbezogene Daten durch Platzhalter, die KI arbeitet nur mit Platzhaltern, danach werden die echten Daten wieder eingesetzt.",
   "type": "module",
