@@ -86,10 +86,12 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
   for (const p of findings) {
     if (p.type !== "PERSON") continue;
     const full = (p.canonical ?? p.value).trim().replace(/\s+/g, " ");
-    const parts = nameParts(full);
+    const whole = nameParts(full);
     // Mehr als acht Namensteile sind keine einzelne Person, sondern eine Aufzählung ("Anna Lena Paul Maria …"):
     // nicht nachziehen. Das hält die Laufzeit linear (Review Claude 4 #12).
-    if (parts.length > 8) continue;
+    if (whole.length > 8) continue;
+    // Auch die Teile eines Doppelnamens verweisen auf die Person ("Huber-Moosbrugger" → "Huber", Review Claude 4 #2).
+    const parts = [...whole, ...whole.flatMap((t) => (t.includes("-") ? nameParts(t.split("-").join(" ")) : []))];
     const b = full.toLowerCase();
     for (const part of parts) {
       const key = part.toLowerCase();
@@ -156,7 +158,14 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
   // Ein Durchgang über alle Wörter, jedes wird nachgeschlagen (lineare Laufzeit, auch bei vielen Namen).
   const extra: Finding[] = [];
   for (const m of text.matchAll(/[\p{L}\p{N}_'’-]+/gu)) {
-    const key = m[0].toLowerCase();
+    const word = m[0].toLowerCase();
+    // Gebeugte Formen eines bekannten Namens: "die Moosbruggers", "Whitcombe's invoice", "Annas Koffer" (Review Claude 4
+    // #2). Nur großgeschrieben, damit Alltagswörter mit -s nicht mitkommen.
+    const inflected =
+      owners.has(word) || !/^\p{Lu}/u.test(m[0])
+        ? undefined
+        : [/^(.{3,})['’]s$/u, /^(.{3,})s$/u, /^(.{3,})es$/u].map((re) => re.exec(word)?.[1]).find((b) => b !== undefined && owners.has(b));
+    const key = inflected ?? word;
     const owner = owners.get(key);
     if (!owner) continue;
     const start = m.index;

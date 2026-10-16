@@ -60,10 +60,14 @@ const NUMERIC_TYPES = new Set(["TELEFON", "IBAN", "KREDITKARTE", "SVNR", "STEUER
 export function leakedPart(haystack: string, value: string, typ: string, erlaubt: string[] = []): string | undefined {
   if (containsValue(haystack, value)) return value;
   if (typ === "PERSON") {
+    // Auch Teile von Doppelnamen und gebeugte Formen ("Huber" aus "Huber-Moosbrugger", "Moosbruggers", "Whitcombe's").
+    const inflected = (t: string) =>
+      new RegExp(String.raw`(?<![\p{L}\p{N}])${escapeRegExp(t)}(?:['’]s|es|s)?(?![\p{L}\p{N}])`, "u").test(haystack);
     return value
       .split(/[\s,]+/)
+      .flatMap((t) => (t.includes("-") ? [t, ...t.split("-")] : [t]))
       .filter((t) => t.length >= 3 && !PARTICLE_WORDS.has(t.toLowerCase()) && !erlaubt.includes(t))
-      .find((t) => containsValue(haystack, t));
+      .find((t) => inflected(t));
   }
   if (typ === "EMAIL") {
     const local = value.split("@")[0] ?? "";

@@ -168,6 +168,11 @@ test("Originale, die wie Platzhalter aussehen, kommen nicht über Prüfhinweise 
 // Review Claude 2 #17: auch Teil-Lecks zählen
 test("Datenschutz-Probe erkennt Teil-Lecks: Nachname ohne Vorname, IBAN ohne letzte Ziffer, Name vor dem @", () => {
   assert.equal(leakedPart("Hallo [PERSON_1] Hofstätter", "Gernot Hofstätter", "PERSON"), "Hofstätter");
+  // Review Claude 4 #2/#15: gebeugte Formen und Teile von Doppelnamen sind auch Lecks
+  assert.equal(leakedPart("Die Moosbruggers reisen an", "Anna Moosbrugger", "PERSON"), "Moosbrugger");
+  assert.equal(leakedPart("Please send Whitcombe's invoice", "Jonathan Whitcombe", "PERSON"), "Whitcombe");
+  assert.equal(leakedPart("nicht an Huber", "Anna Huber-Moosbrugger", "PERSON"), "Huber");
+  assert.equal(leakedPart("Die Bergstraße", "Thomas Berg", "PERSON"), undefined);
   assert.equal(leakedPart("IBAN AT61 1904 3002 3457 320", "AT61 1904 3002 3457 3201", "IBAN"), "AT61190");
   assert.equal(leakedPart("Mail an anna.huber bitte", "anna.huber@example.com", "EMAIL"), "anna.huber");
   assert.equal(leakedPart("Bitte an euren Koch weitergeben.", "Thomas Koch", "PERSON", ["Koch"]), undefined);

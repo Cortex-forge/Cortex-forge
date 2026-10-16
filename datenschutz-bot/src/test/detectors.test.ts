@@ -764,3 +764,18 @@ test("Nachnamen nach Titel, Briefkürzel, Ehepaar und allein unter dem Gruß", (
     assert.equal(ki(text), text);
   }
 });
+
+// Review Claude 4 #2
+test("Bekannte Nachnamen auch gebeugt und als Teil eines Doppelnamens", () => {
+  assert.equal(
+    ki("Anna Moosbrugger bucht für die ganze Familie. Die Moosbruggers reisen am Freitag an, Moosbruggers Hund kommt mit."),
+    "[PERSON_1] bucht für die ganze Familie. Die [PERSON_1] reisen am Freitag an, [PERSON_1] Hund kommt mit.",
+  );
+  assert.equal(
+    ki("Mr Jonathan Whitcombe booked room 12. Please send Whitcombe's invoice. The Whitcombes will arrive on Friday."),
+    "Mr [PERSON_1] booked room 12. Please send [PERSON_1] invoice. The [PERSON_1] will arrive on Friday.",
+  );
+  assert.equal(ki("Anna Huber-Moosbrugger bucht. Bitte die Rechnung nicht an Huber."), "[PERSON_1] bucht. Bitte die Rechnung nicht an [PERSON_1].");
+  // Gegenproben: Hauptwörter mit Endung nach Artikel bleiben
+  assert.equal(ki("Maria Sommer kommt. Das Ende des Sommers naht."), "[PERSON_1] kommt. Das Ende des Sommers naht.");
+});
