@@ -21,6 +21,7 @@ npm run build
 npm test          # 25 Tests, inkl. MCP-Durchlauf mit Datenschutz-Probe
 npm run demo      # ganzer Ablauf ohne KI-Konto: ein Skript spielt die KI
 npm start         # Oberfläche: http://127.0.0.1:4317
+npm run nachweis  # Nachweis für den Merge: Build, Typprüfung, Tests, Datenschutz-Probe
 ```
 
 `npm run demo` legt drei Beispiele ab (Hotel-Anfrage, Eingangsrechnung, Rechnungsauftrag), bearbeitet sie über den MCP-Server und prüft am Ende, dass kein einziger Originalwert in einer Antwort an die KI vorkommt. Danach liegen die drei Ergebnisse in der Oberfläche zur Prüfung.
@@ -111,6 +112,9 @@ Beträge, Daten, Mengen und Zimmerwünsche bleiben stehen, weil die KI sie zum A
 
 ```
 datenschutz-bot/
+├── AGENTS.md        Regeln für alle (Codex liest sie automatisch)
+├── CLAUDE.md        Ergänzungen für Claude
+├── CHANGELOG.md     Änderungen je Version
 ├── src/core/        Erkennung, Platzhalter, Rückübersetzung, Verschlüsselung, Rechnungen, Buchungen
 ├── src/store/       Ablage mit Status, Protokoll, Rechnungsnummern, Konfiguration
 ├── src/mcp/         MCP-Server für Claude, Codex & Co.
@@ -118,8 +122,19 @@ datenschutz-bot/
 ├── src/scripts/     Demo-Skript
 ├── src/test/        Tests (node:test)
 ├── public/          HTML, CSS, JavaScript der Oberfläche
+├── scripts/         Nachweis-Skript für Merges
 ├── config/          eigene Firmendaten, Firmenverzeichnis, Kontenplan (Beispieldaten)
-└── examples/        Beispiel-Dokumente
+├── examples/        Beispiel-Dokumente
+└── docs/            Projektordner: Auftrag, Architektur, Datenschutz, Qualität, Reviews, Nachweise, Berichte, Roadmap
 ```
+
+## Projektordner und Zusammenarbeit
+
+Wir bauen mit Menschen, Claude und Codex gemeinsam. Damit sich alle auskennen:
+
+- **Regeln:** [`AGENTS.md`](AGENTS.md) gilt für alle. Codex liest die Datei automatisch, Claude über [`CLAUDE.md`](CLAUDE.md).
+- **Projektordner:** [`docs/README.md`](docs/README.md) zeigt, was wo liegt: Auftrag (G1), Architektur und Entscheidungen, Datenschutz, Qualität mit Phase-0-Gate (G11), Reviews (G8), Nachweise (G12), Berichte (G9) und Roadmap.
+- **Reviews mit Codex:** Ablauf und Prüfauftrag in [`docs/04-reviews/README.md`](docs/04-reviews/README.md).
+- **Vor jedem Merge:** `npm run nachweis`, Reviews ablegen, OK von Peter.
 
 Umgebungsvariablen: `DSB_DATA_DIR` (Datenordner, Standard `./data`), `DSB_CONFIG_DIR`, `DSB_PORT` (Standard 4317), `DSB_HOST` (Standard 127.0.0.1), `DSB_KEY` (32-Byte-Schlüssel, Base64).

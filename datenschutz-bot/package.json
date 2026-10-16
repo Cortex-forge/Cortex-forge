@@ -13,7 +13,9 @@
     "mcp": "node dist/mcp/server.js",
     "demo": "node dist/scripts/demo.js",
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "nachweis": "node scripts/nachweis.mjs",
+    "messung": "node dist/scripts/messung.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",

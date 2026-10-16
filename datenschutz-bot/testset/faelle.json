@@ -1,0 +1,885 @@
+{
+  "_hinweis": "Erfundene Testfälle mit Lösungsblatt. Alle Namen, Adressen, Nummern und Domains sind erfunden bzw. Beispielwerte. 'sensibel' listet jede Angabe, die die KI nicht sehen darf, so wie sie im Text steht.",
+  "version": 1,
+  "faelle": [
+    {
+      "id": "T01",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Familienanfrage mit Zöliakie",
+      "text": "Von: Katharina Moser <k.moser@example.com>\nBetreff: Familienurlaub Ostern\n\nGrüß Gott,\n\nwir (2 Erwachsene, 2 Kinder mit 4 und 9 Jahren) würden gerne vom 28.03. bis 04.04.2027 bei Ihnen Urlaub machen. Gibt es ein Familienzimmer mit Balkon?\n\nMein Mann Florian ist Zöliakie-Patient, wir bräuchten also glutenfreies Frühstück.\n\nDanke und liebe Grüße\nKatharina Moser\nTel. 0676 9876543",
+      "sensibel": [
+        {
+          "wert": "Katharina Moser",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "k.moser@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Florian",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Zöliakie",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "glutenfreies",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "0676 9876543",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Kleingeschrieben, Dialekt, ohne Anrede",
+      "text": "hallo, hier ist die steffi vom tennisclub kitzbühel 🙂\nwir bräuchten für unser turnier vom 12.–14. juni 8 doppelzimmer. abrechnung bitte an den verein, rechnung an obmann gerhard lechner, sportplatzweg 3, 6370 kitzbühel.\nlg steffi\n0664/555 12 34",
+      "sensibel": [
+        {
+          "wert": "steffi",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "gerhard lechner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "sportplatzweg 3, 6370 kitzbühel",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "0664/555 12 34",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T03",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "Englisch, Namen nicht in der Liste, O'Neill",
+      "text": "From: James O'Neill <james.oneill@example.co.uk>\nSubject: Booking enquiry – ski week\n\nHi there,\n\nMy name is James O'Neill and I'd like to book two rooms from 6 to 13 February 2027 for myself, my wife Siobhan and our friends Tom and Grace Walker.\nMy wife is pregnant, so a quiet room close to the lift would be great.\n\nYou can reach me on +44 7700 900123.\n\nCheers,\nJames",
+      "sensibel": [
+        {
+          "wert": "James O'Neill",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "james.oneill@example.co.uk",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Siobhan",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Tom",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Grace Walker",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "pregnant",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "+44 7700 900123",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "James",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T04",
+      "art": "hotel",
+      "sprache": "it",
+      "beschreibung": "Italienisch, Handynummer ohne 0",
+      "text": "Buongiorno,\nmi chiamo Luca Bianchi e vorrei prenotare una camera doppia dal 20 al 27 agosto 2027 per me e mia moglie Chiara.\nAbitiamo in Via Garibaldi 21, 37121 Verona.\nIl mio cellulare è 347 1234567, email luca.bianchi@example.it.\nGrazie mille,\nLuca Bianchi",
+      "sensibel": [
+        {
+          "wert": "Luca Bianchi",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Chiara",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Via Garibaldi 21, 37121 Verona",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "347 1234567",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "luca.bianchi@example.it",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "art": "hotel",
+      "sprache": "nl",
+      "beschreibung": "Niederländisch, van der, Postleitzahl mit Buchstaben",
+      "text": "Beste,\nWij zijn de familie van der Berg en willen graag van 1 t/m 8 juli 2027 een appartement huren voor 2 volwassenen en 3 kinderen.\nOnze dochter heeft een notenallergie.\nMet vriendelijke groet,\nJohannes van der Berg\nKeizersgracht 123, 1015 CJ Amsterdam\n+31 6 12345678",
+      "sensibel": [
+        {
+          "wert": "van der Berg",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Johannes van der Berg",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "notenallergie",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Keizersgracht 123, 1015 CJ Amsterdam",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+31 6 12345678",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T06",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Seminar mit Titeln, Firma, UID",
+      "text": "Sehr geehrte Damen und Herren,\n\nfür unser Seminar vom 9. bis 11. November 2026 reservieren wir 4 Einzelzimmer für:\n- Frau Mag. Elisabeth Wieser\n- Herrn Dr. Konrad Pichler\n- Herrn Thomas Egger\n- Frau Sabine Hofer-Kranz\n\nRechnung bitte an die Alpentech Consulting GmbH, UID ATU45678912, Bahnhofstraße 7, 6300 Wörgl.\n\nMit freundlichen Grüßen\nMag. Daniel Strasser\nAssistenz der Geschäftsführung",
+      "sensibel": [
+        {
+          "wert": "Elisabeth Wieser",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Konrad Pichler",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Thomas Egger",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Sabine Hofer-Kranz",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Alpentech Consulting GmbH",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "ATU45678912",
+          "typ": "UID"
+        },
+        {
+          "wert": "Bahnhofstraße 7, 6300 Wörgl",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Daniel Strasser",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T07",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Beschwerde, Nachname ohne Anrede",
+      "text": "Betreff: Beschwerde Zimmer 214\n\nGuten Tag,\n\nleider war unser Aufenthalt vom 2. bis 5. Oktober enttäuschend. Ihr Mitarbeiter an der Rezeption (ich glaube, er hieß Novak) war unfreundlich. Bitte leiten Sie das an Herrn Gruber weiter.\n\nIch erwarte eine Rückmeldung an bernd.k@example.de oder telefonisch unter 0049 171 2345678.\n\nBernd Kowalski",
+      "sensibel": [
+        {
+          "wert": "Novak",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Gruber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "bernd.k@example.de",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "0049 171 2345678",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Bernd Kowalski",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T08",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Meldedaten mit Geburtsdatum, Pass, Kreditkarte",
+      "text": "Meldedaten für die Anreise am 15.12.2026:\nName: Petra Lindner, geb. am 3. März 1984\nStaatsangehörigkeit: deutsch\nReisepass: C01X00T47\nKreditkarte zur Garantie: 5555 5555 5555 4444, gültig bis 08/29",
+      "sensibel": [
+        {
+          "wert": "Petra Lindner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "3. März 1984",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "C01X00T47",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "5555 5555 5555 4444",
+          "typ": "KREDITKARTE"
+        }
+      ]
+    },
+    {
+      "id": "T09",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Religion (koscher, Schabbat)",
+      "text": "Hallo,\nwir sind eine Gruppe von 12 Personen und kommen vom 3. bis 6. Mai. Wir essen ausschließlich koscher und bräuchten am Freitagabend einen ruhigen Raum für den Schabbat.\nAnsprechpartnerin: Miriam Rosenbaum, Tel. +49 30 1234567",
+      "sensibel": [
+        {
+          "wert": "koscher",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "Schabbat",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "Miriam Rosenbaum",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+49 30 1234567",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T10",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Rollstuhl",
+      "text": "Guten Tag,\nmein Vater ist auf den Rollstuhl angewiesen. Haben Sie ein barrierefreies Zimmer frei vom 20. bis 24. Jänner?\nViele Grüße\nInes Wallner",
+      "sensibel": [
+        {
+          "wert": "Rollstuhl",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Ines Wallner",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T11",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "Weitergeleitete Buchung eines Portals",
+      "text": "---------- Weitergeleitete Nachricht ---------\nVon: Booking Team <reservations@example-booking.example>\nDatum: Mo., 12. Okt. 2026 um 09:14 Uhr\nBetreff: New reservation 4711-0815\nAn: <info@hotel-alpenrose.example>\n\nGuest: Mr Hiroshi Tanaka\nPhone: +81 90 1234 5678\nEmail: h.tanaka@example.jp\nArrival 18 Dec 2026, departure 22 Dec 2026, 1 Double Room, breakfast included.",
+      "sensibel": [
+        {
+          "wert": "reservations@example-booking.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "info@hotel-alpenrose.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Hiroshi Tanaka",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+81 90 1234 5678",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "h.tanaka@example.jp",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "T12",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Interne Notiz, kleingeschrieben",
+      "text": "notiz: rechnung an mario rossi schicken (mario.rossi@example.it), zimmer 12, 3 nächte, hund dabei.",
+      "sensibel": [
+        {
+          "wert": "mario rossi",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "mario.rossi@example.it",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "T13",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Handwerkerrechnung, Firma mit &, Kunde ohne Rechtsform",
+      "text": "Müller & Söhne OG\nInstallationen · Heizung · Sanitär\nGewerbepark 4, 6111 Volders\nUID: ATU77123456 · St.Nr. 81 234/5678\n\nRechnung Nr. R-2026-1187 vom 02.10.2026\nKunde: Gasthof Sonnhof, z. Hd. Herrn Peter Unterberger, Kirchweg 2, 6112 Wattens\nKd.-Nr. 40217\n\nReparatur Boiler Küche        3,5 Std. à 78,00 €     273,00 €\nMaterial                                                 112,40 €\nSumme netto                                              385,40 €\n20 % USt                                                  77,08 €\nGesamt                                                   462,48 €\n\nBankverbindung: AT25 2011 1822 2121 9200",
+      "sensibel": [
+        {
+          "wert": "Müller & Söhne OG",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Gewerbepark 4, 6111 Volders",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "ATU77123456",
+          "typ": "UID"
+        },
+        {
+          "wert": "81 234/5678",
+          "typ": "STEUERNR"
+        },
+        {
+          "wert": "Gasthof Sonnhof",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Peter Unterberger",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Kirchweg 2, 6112 Wattens",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "40217",
+          "typ": "KUNDENNR"
+        },
+        {
+          "wert": "AT25 2011 1822 2121 9200",
+          "typ": "IBAN"
+        }
+      ]
+    },
+    {
+      "id": "T14",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Telekom-Rechnung, Hotline-Nummer",
+      "text": "Bergnetz Telekom GmbH · Kundenservice 0800 123 456\nRechnung Oktober 2026\nRechnungsempfänger: Pension Alpenblick, Maria Hechenberger, Dorfplatz 9, 6150 Steinach am Brenner\nVertragsnummer: BT-552-9910\nInternet & Telefonie 100 Mbit      49,90 € netto\nUSt 20 %                           9,98 €\nGesamt                            59,88 €\nAbbuchung von IBAN AT48 3200 0000 1234 5864 am 15.11.2026",
+      "sensibel": [
+        {
+          "wert": "Bergnetz Telekom GmbH",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "0800 123 456",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Pension Alpenblick",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Maria Hechenberger",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Dorfplatz 9, 6150 Steinach am Brenner",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "BT-552-9910",
+          "typ": "KUNDENNR"
+        },
+        {
+          "wert": "AT48 3200 0000 1234 5864",
+          "typ": "IBAN"
+        }
+      ]
+    },
+    {
+      "id": "T15",
+      "art": "buchhaltung",
+      "sprache": "it",
+      "beschreibung": "Italienische Lieferantenrechnung",
+      "text": "Fattura n. 2026/0457 del 30/09/2026\nFornitore: Caseificio Alto Adige S.r.l., Via dei Mille 12/b, 39100 Bolzano, P.IVA IT01234567890\nCliente: Hotel Alpenrose\nFormaggi assortiti      kg 18      € 23,50      € 423,00\nIVA 10%                                           € 42,30\nTotale                                            € 465,30\nIBAN IT60 X054 2811 1010 0000 0123 456\nReferente: Giulia Ferrari, tel. 0471 987654",
+      "sensibel": [
+        {
+          "wert": "Caseificio Alto Adige S.r.l.",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Via dei Mille 12/b, 39100 Bolzano",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "IT01234567890",
+          "typ": "UID"
+        },
+        {
+          "wert": "IT60 X054 2811 1010 0000 0123 456",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Giulia Ferrari",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0471 987654",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T16",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Deutsche Rechnung, Adresse mit Mittelpunkt getrennt",
+      "text": "Druckerei Weißblau GmbH · Am Mühlbach 4 · 83022 Rosenheim\nGeschäftsführer: Stefan Brandl · HRB 12345 · USt-IdNr. DE123456789 · Steuernr. 156/123/45678\n\nRechnung 9 - 2026 - 033\nAn: Hotel Alpenrose, Dorfstraße 1, 6094 Axams\nFlyer A5, 2.000 Stück             310,00 €\nzzgl. 19 % USt                     58,90 €\nGesamt                            368,90 €\nZahlbar an DE09 1001 0010 1234 5678 90",
+      "sensibel": [
+        {
+          "wert": "Druckerei Weißblau GmbH",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Am Mühlbach 4",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "83022 Rosenheim",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Stefan Brandl",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "DE123456789",
+          "typ": "UID"
+        },
+        {
+          "wert": "156/123/45678",
+          "typ": "STEUERNR"
+        },
+        {
+          "wert": "Dorfstraße 1, 6094 Axams",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "DE09 1001 0010 1234 5678 90",
+          "typ": "IBAN"
+        }
+      ]
+    },
+    {
+      "id": "T17",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Tankbeleg ohne Personendaten",
+      "text": "TANKSTELLE INNTAL\nSuper 95   42,31 l   x 1,689 €/l   71,46 €\ndavon 20 % MwSt.                    11,91 €\nKartenzahlung Maestro **** 4821\nDanke für Ihren Besuch!",
+      "sensibel": []
+    },
+    {
+      "id": "T18",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Lohnzettel mit SV-Nummer und Krankenstand",
+      "text": "Lohnzettel Oktober 2026\nDienstnehmer: Herr Lukas Pfeifer\nSV-Nr.: 1234 150590\nGeburtsdatum: 15.05.1990\nWohnadresse: Leopoldstraße 31/4, 6020 Innsbruck\nBrutto 2.850,00 € · Netto 2.012,37 €\nAuszahlung auf AT25 2011 1822 2121 9200\nKrankenstand: 3 Tage (Grippe)",
+      "sensibel": [
+        {
+          "wert": "Lukas Pfeifer",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "1234 150590",
+          "typ": "SVNR"
+        },
+        {
+          "wert": "15.05.1990",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "Leopoldstraße 31/4, 6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "AT25 2011 1822 2121 9200",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Krankenstand",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Grippe",
+          "typ": "GESUNDHEIT"
+        }
+      ]
+    },
+    {
+      "id": "T19",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Bewirtungsbeleg mit Teilnehmern",
+      "text": "Bewirtung 14.10.2026, Restaurant Goldener Adler\nTeilnehmer: Anna Berger (Kundin), Michael Steiner, ich\nAnlass: Projektbesprechung Umbau Seehotel\nBetrag: 186,40 € inkl. 10 % und 20 % USt",
+      "sensibel": [
+        {
+          "wert": "Anna Berger",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Michael Steiner",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T20",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Mahnung mit Kundennummer 'KdNr'",
+      "text": "2. Mahnung\nSehr geehrte Frau Margarete Pichler,\nleider ist unsere Rechnung 2026-0712 über 1.240,00 € (KdNr 88231) noch offen.\nBitte überweisen Sie bis 30.10.2026.",
+      "sensibel": [
+        {
+          "wert": "Margarete Pichler",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "88231",
+          "typ": "KUNDENNR"
+        }
+      ]
+    },
+    {
+      "id": "T21",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Bewerbung mit Sonderzeichen im Namen",
+      "text": "Bewerbung als Rezeptionistin\nMein Name ist Jovana Petrović, ich bin 27 Jahre alt und wohne in der Anichstraße 12, 6020 Innsbruck.\nErreichbar: jovana.p@example.com, 0699 11223344\nIch habe eine leichte Gehbehinderung, die mich bei der Arbeit nicht einschränkt.",
+      "sensibel": [
+        {
+          "wert": "Jovana Petrović",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Anichstraße 12, 6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "jovana.p@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "0699 11223344",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Gehbehinderung",
+          "typ": "GESUNDHEIT"
+        }
+      ]
+    },
+    {
+      "id": "T22",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Dienstplan mit Vornamen",
+      "text": "Dienstplan KW 43\nMo: Sandra (Früh), Kevin (Spät)\nDi: Aylin (Früh), Marco (Spät)\nMi: Sandra, Jürgen",
+      "sensibel": [
+        {
+          "wert": "Sandra",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Kevin",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Aylin",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Marco",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Jürgen",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T23",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Speisekarte (nichts Sensibles)",
+      "text": "Abendkarte\nTiroler Gröstl mit Spiegelei        16,90 €\nKaspressknödel in der Suppe          9,50 €\nWiener Schnitzel vom Kalb           26,00 €\nKaiserschmarrn mit Zwetschkenröster 14,50 €\nAlle Preise inkl. 10 % USt.",
+      "sensibel": []
+    },
+    {
+      "id": "T24",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Anreise-Info (nichts Sensibles)",
+      "text": "Anreise mit der Bahn: Ab Innsbruck Hauptbahnhof fahren Busse alle 30 Minuten nach Axams. Check-in ab 15 Uhr, Check-out bis 10 Uhr. Parkplatz 3 und 4 sind für E-Autos reserviert.",
+      "sensibel": []
+    },
+    {
+      "id": "T25",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Newsletter (nichts Sensibles)",
+      "text": "Liebe Gäste,\nder Winter kommt! Ab 5. Dezember haben unsere Lifte geöffnet. Frühbucher sparen bis 15. November 10 % auf alle Zimmer. Wir freuen uns auf Sie!\nIhr Team vom Hotel Alpenrose",
+      "sensibel": []
+    },
+    {
+      "id": "T26",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Storno mit Erkrankung und IBAN",
+      "text": "Betreff: Storno Buchung 88-4412\n\nSehr geehrtes Team,\nleider müssen wir unsere Buchung (Familie Oberhofer, 2 Zimmer, 5.–9. Jänner) stornieren, da mein Mann erkrankt ist.\nBitte überweisen Sie die Anzahlung auf mein Konto: NL91 ABNA 0417 1643 00 (Kontoinhaberin: Hanneke Oberhofer-de Vries).\nMit freundlichen Grüßen\nHanneke Oberhofer-de Vries",
+      "sensibel": [
+        {
+          "wert": "Oberhofer",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "erkrankt",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "NL91 ABNA 0417 1643 00",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Hanneke Oberhofer-de Vries",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T27",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "US-Adresse",
+      "text": "Hello,\nwe are the Johnson family from Denver and would like to stay 3 nights in March.\nAddress for the invoice: 1420 Pine Street, Denver, CO 80202, USA.\nThanks, Emily Johnson\nemily.johnson@example.com | +1 303 555 0142",
+      "sensibel": [
+        {
+          "wert": "Johnson",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "1420 Pine Street, Denver, CO 80202",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Emily Johnson",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "emily.johnson@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "+1 303 555 0142",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T28",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Hochzeit, Telefon mit (0)",
+      "text": "Anfrage Hochzeitsgesellschaft\nBrautpaar: Lisa Haslwanter & Markus Plattner\nTermin: Samstag, 18. September 2027, ca. 80 Gäste\nKontakt: +43 (0)512 / 58 49 21 oder lisa.haslwanter@example.at",
+      "sensibel": [
+        {
+          "wert": "Lisa Haslwanter",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Markus Plattner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+43 (0)512 / 58 49 21",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "lisa.haslwanter@example.at",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "T29",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Kassabericht (nichts Sensibles)",
+      "text": "Kassabericht 15.10.2026\nAnfangsbestand 300,00 €, Einnahmen bar 1.845,50 €, Ausgaben 62,30 € (Blumen Deko), Endbestand 2.083,20 €.\nKassiert: MS",
+      "sensibel": []
+    },
+    {
+      "id": "T30",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Stammgast mit Instagram-Namen",
+      "text": "Hey! Wir waren letztes Jahr schon da (Zimmer 305) und wollen wieder kommen 😊 2 Nächte ab 10.04. Ich bin übrigens @bergliebe_tirol auf Insta, vielleicht können wir was zusammen machen?\nSophia",
+      "sensibel": [
+        {
+          "wert": "@bergliebe_tirol",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "Sophia",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T31",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Kreditkartenabrechnung",
+      "text": "Kreditkartenabrechnung 09/2026 · Karteninhaber: Walter Kofler\nKarte **** **** **** 1234\n13.09. Booking.com     Provision    412,00 €\n21.09. Hetzner Online  Server        39,90 €",
+      "sensibel": [
+        {
+          "wert": "Walter Kofler",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T32",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Zitierte Antwort",
+      "text": "> Am 14.10.2026 schrieb Familie Brunner <brunner.familie@example.at>:\n> Wir hätten gerne das Zimmer mit Bergblick.\nSelbstverständlich, liebe Familie Brunner – wir haben Zimmer 12 für Sie reserviert.",
+      "sensibel": [
+        {
+          "wert": "Brunner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "brunner.familie@example.at",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "T33",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Lieferschein mit Fahrer und Kennzeichen",
+      "text": "Lieferschein 55120\nLieferung an: Hotel Alpenrose, Dorfstraße 1, 6094 Axams\nFahrer: Ömer Yılmaz, Kennzeichen IL-748 KM\n3 Paletten Getränke\nEmpfang bestätigt: ______________",
+      "sensibel": [
+        {
+          "wert": "Dorfstraße 1, 6094 Axams",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Ömer Yılmaz",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "IL-748 KM",
+          "typ": "KENNZEICHEN"
+        }
+      ]
+    },
+    {
+      "id": "T34",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "Diabetes, Insulin, Allergie",
+      "text": "Dear team,\nI'm travelling with my son who has type 1 diabetes and needs to store insulin in a fridge. Also I'm allergic to shellfish.\nKind regards,\nMargaret Ellis",
+      "sensibel": [
+        {
+          "wert": "diabetes",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "insulin",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "allergic to shellfish",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Margaret Ellis",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T35",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Protokoll mit Nachnamen ohne Anrede",
+      "text": "Besprechung Umbau Wellnessbereich, 13.10.2026\nAnwesend: Gstrein, Kathrein, Auer (Architekt)\nGstrein schlägt vor, die Sauna in den Keller zu verlegen. Kathrein prüft die Kosten bis Freitag.",
+      "sensibel": [
+        {
+          "wert": "Gstrein",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Kathrein",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Auer",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T36",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "IBAN und Kreditkarte ohne Leerzeichen",
+      "text": "Anzahlung 200 € bitte von meinem Konto DE09100100101234567890 abbuchen. Alternativ Visa 4111111111111111.\nDanke, Tobias Reiter",
+      "sensibel": [
+        {
+          "wert": "DE09100100101234567890",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "4111111111111111",
+          "typ": "KREDITKARTE"
+        },
+        {
+          "wert": "Tobias Reiter",
+          "typ": "PERSON"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phasenbericht Phase 0 – Datenschutz-Bot</title>
+<style>
+  :root {
+    --text: #1c2230; --muted: #5e6778; --border: #e1e4ea; --bg: #ffffff; --soft: #f5f6f8;
+    --accent: #0f766e; --accent-soft: #e0f2ef; --ok: #157f3b; --ok-soft: #e5f6eb; --warn: #8a5a00; --warn-soft: #fff4d6;
+  }
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--soft); color: var(--text); font: 10.5pt/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .page { max-width: 210mm; margin: 0 auto; background: var(--bg); padding: 18mm 16mm; }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 10px; margin-bottom: 18px; }
+  .kicker { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 9pt; }
+  h1 { font-size: 22pt; margin: 4px 0 2px; }
+  .meta { color: var(--muted); font-size: 9.5pt; }
+  h2 { font-size: 13pt; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  p { margin: 6px 0; }
+  .summary { background: var(--accent-soft); border-radius: 8px; padding: 12px 14px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .kpi { border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+  .kpi b { display: block; font-size: 16pt; }
+  .kpi span { color: var(--muted); font-size: 9pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 6px 0; }
+  th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--text); padding: 5px 6px; }
+  td { border-bottom: 1px solid var(--border); padding: 5px 6px; vertical-align: top; }
+  .flow { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; margin: 8px 0; }
+  .flow div { flex: 1 1 0; min-width: 110px; border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 9pt; }
+  .flow b { display: block; color: var(--accent); }
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  figure { margin: 0; break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--border); border-radius: 6px; }
+  figcaption { color: var(--muted); font-size: 8.5pt; margin-top: 3px; }
+  .tag { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 8.5pt; font-weight: 600; }
+  .ok { background: var(--ok-soft); color: var(--ok); }
+  .open { background: var(--warn-soft); color: var(--warn); }
+  h2 { break-after: avoid; }
+  table, .flow, .kpis, .summary { break-inside: avoid; }
+  .shots figure img { max-height: 120mm; object-fit: cover; object-position: top; }
+  footer { margin-top: 24px; padding-top: 8px; border-top: 1px solid var(--border); color: var(--muted); font-size: 8.5pt; }
+  @media print { body { background: #fff; } .page { padding: 0; max-width: none; } }
+  @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, 1fr); } .shots { grid-template-columns: 1fr; } .page { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="kicker">Cortex Forge · Phasenbericht (Gesetzbuch G9)</div>
+    <h1>Datenschutz-Bot – Phase 0: Prototyp</h1>
+    <div class="meta">Stand 16.10.2026 · Branch <code>ccr-80b4aca8-cfz53v</code> · Prototyp-Commit <code>ff0aeb0</code> · erstellt von Claude</div>
+  </header>
+
+  <section>
+    <h2>Ergebnis</h2>
+    <div class="summary">
+      <p><strong>Der Prototyp funktioniert von Anfang bis Ende.</strong> Mitarbeiter legen ein Dokument ab, der Bot ersetzt alle persönlichen Angaben durch Platzhalter, die KI (Claude oder Codex) arbeitet nur mit diesen Platzhaltern, und der Bot setzt danach die echten Daten wieder ein. Kein einziger Originalwert hat in den Tests den Bot verlassen.</p>
+      <p>Offen bis zum Pilot: Erkennung messen, Reviews von Codex und Gemini, Peters Go.</p>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b>25 / 25</b><span>Tests bestanden</span></div>
+      <div class="kpi"><b>0</b><span>Originalwerte in KI-Antworten (Datenschutz-Probe)</span></div>
+      <div class="kpi"><b>5</b><span>MCP-Werkzeuge für Claude und Codex</span></div>
+      <div class="kpi"><b>4 / 7</b><span>Prüfungen des Phase-0-Gates erfüllt</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>So funktioniert es</h2>
+    <div class="flow">
+      <div><b>1 Ablegen</b>Text oder Datei in der Oberfläche</div>
+      <div><b>2 Prüfen</b>Original und KI-Sicht nebeneinander, nachschwärzen, freigeben</div>
+      <div><b>3 KI arbeitet</b>über MCP, sieht nur Platzhalter</div>
+      <div><b>4 Zurück</b>Bot setzt Daten ein, rechnet nach, meldet Auffälligkeiten</div>
+      <div><b>5 Freigeben</b>Mitarbeiter prüft, Rechnungsnummer, danach Originale löschen</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Was gebaut wurde</h2>
+    <table>
+      <tr><th>Baustein</th><th>Inhalt</th></tr>
+      <tr><td>Erkennung</td><td>Personen, Firmen, E-Mail, Telefon, IBAN (Prüfziffer), Kreditkarte (Luhn), UID, Steuernummer, Adressen, Kennnummern, Gesundheit und Religion; Deutsch, Englisch, Italienisch, Niederländisch</td></tr>
+      <tr><td>Rückübersetzung</td><td>Anrede-Regel („Frau Huber“), Meldung unbekannter Platzhalter und von der KI erfundener Kontaktdaten</td></tr>
+      <tr><td>Ablage</td><td>AES-256-GCM-verschlüsselt, Statusablauf, Protokoll ohne Inhalte, Löschen beim Abschluss</td></tr>
+      <tr><td>MCP-Server</td><td>auflisten, lesen, Text speichern, Buchungen vorschlagen, Rechnung erstellen</td></tr>
+      <tr><td>Rechnen</td><td>USt je Steuersatz, Brutto- und Nettorechnung, Gegenprobe zum Beleg, Rechnungsnummer erst bei Freigabe</td></tr>
+      <tr><td>Oberfläche</td><td>nur localhost, Host- und Origin-Prüfung, Content-Security-Policy, Handyansicht</td></tr>
+      <tr><td>Projektordner</td><td>AGENTS.md, CLAUDE.md, Auftrag, Architektur mit 5 Entscheidungen, Datenschutzkonzept, DSFA-Entwurf, AVV-Checkliste, Testkonzept, Reviews, Nachweise, Roadmap</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Oberfläche</h2>
+    <div class="shots">
+      <figure><img src="../assets/oberflaeche-pruefen.png" alt="Prüfansicht mit Original und KI-Sicht"><figcaption>Prüfen: links Original, rechts was die KI sieht</figcaption></figure>
+      <figure><img src="../assets/oberflaeche-ergebnis.png" alt="Ergebnis mit echten Daten"><figcaption>Antwort der KI mit wieder eingesetzten Daten</figcaption></figure>
+      <figure><img src="../assets/oberflaeche-buchung.png" alt="Buchungsvorschlag"><figcaption>Buchungsvorschlag, vom Bot nachgerechnet</figcaption></figure>
+      <figure><img src="../assets/oberflaeche-rechnung.png" alt="Freigegebene Rechnung"><figcaption>Rechnung nach Freigabe mit Nummer 2026-0001</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Reviews (G8)</h2>
+    <table>
+      <tr><th>Reviewer</th><th>Stand</th><th>Ergebnis</th></tr>
+      <tr><td>Claude (unabhängiger Prüf-Agent)</td><td><span class="tag open">läuft</span></td><td>Bericht folgt in <code>docs/04-reviews/</code></td></tr>
+      <tr><td>Codex</td><td><span class="tag open">offen</span></td><td>Ablauf mit offiziellem Plugin in <code>docs/04-reviews/README.md</code></td></tr>
+      <tr><td>Gemini</td><td><span class="tag open">offen</span></td><td>gleicher Prüfauftrag</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Grenzen und Risiken</h2>
+    <table>
+      <tr><th>Punkt</th><th>Gegenmaßnahme</th></tr>
+      <tr><td>Regelbasierte Erkennung kann Namen ohne Anrede übersehen</td><td>Prüfschritt vor Freigabe; Messung mit Testset; lokales Modell als zweite Stufe</td></tr>
+      <tr><td>Nur Text, kein PDF und keine Scans</td><td>Text-Extraktion und OCR im Pilot</td></tr>
+      <tr><td>Kein Login, Einzelplatz, Schlüssel neben den Daten</td><td>Login, Rollen, KMS vor Serverbetrieb</td></tr>
+      <tr><td>Rechtliche Einordnung (Pseudonymisierung)</td><td>Datenschutzkonzept und DSFA mit Jurist finalisieren</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Nächste Schritte</h2>
+    <table>
+      <tr><th>Schritt</th><th>Aufwand</th></tr>
+      <tr><td>Erkennung messen: Testset mit Lösungsblatt</td><td>2–3 Tage</td></tr>
+      <tr><td>Reviews von Codex und Gemini, Befunde einarbeiten</td><td>1–2 Tage</td></tr>
+      <tr><td>Lokales Modell als zweite Erkennungsstufe</td><td>1–2 Wochen</td></tr>
+      <tr><td>PDF und Scans; Login, Rollen, EU-Hosting</td><td>2–4 Wochen</td></tr>
+      <tr><td>Test vor Ort bei einem Pilotkunden</td><td>1–2 Tage</td></tr>
+    </table>
+    <p>Etwa 4–7 Wochen bis zum Pilot, ohne Anbindungen an BMD, RZL, DATEV oder Hotelsoftware.</p>
+  </section>
+
+  <section>
+    <h2>Phase-0-Gate (G11)</h2>
+    <table>
+      <tr><th>Prüfung</th><th>Status</th></tr>
+      <tr><td>Auftrag und Abnahmekriterien</td><td><span class="tag ok">erfüllt</span></td></tr>
+      <tr><td>Architektur und Entscheidungen</td><td><span class="tag ok">erfüllt</span></td></tr>
+      <tr><td>Datenschutzkonzept und DSFA-Entwurf</td><td><span class="tag ok">erfüllt</span> (Entwurf)</td></tr>
+      <tr><td>Tests und Datenschutz-Probe, Nachweis</td><td><span class="tag ok">erfüllt</span></td></tr>
+      <tr><td>Erkennung gemessen</td><td><span class="tag open">offen</span></td></tr>
+      <tr><td>Triple-Review mit Mindestnoten</td><td><span class="tag open">offen</span></td></tr>
+      <tr><td>Go von Peter</td><td><span class="tag open">offen</span></td></tr>
+    </table>
+  </section>
+
+  <footer>Datenschutz-Bot · Cortex Forge · Phasenbericht Phase 0 · Alle Beispieldaten in diesem Bericht sind erfunden.</footer>
+</div>
+</body>
+</html>
