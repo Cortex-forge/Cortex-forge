@@ -2,10 +2,10 @@
 // damit beide dieselben Anreden kennen.
 
 /** Anreden vor einem Namen: "Frau Huber", "Herrn Dr. Müller", "Mr Smith", "Sig.ra Rossi". */
-export const SALUTATION = String.raw`(?:Herrn?|Frau|Hr\.|Fr\.|Familie|Fam\.|Mr\.?|Mrs\.?|Ms\.?|Miss|Mx\.?|Sig\.ra|Sig\.na|Sig\.|Signora|Signor|Sr\.|Sra\.|Mme\.?|Madame|Monsieur|Mevr\.|Mevrouw|Meneer|Dhr\.)`;
+export const SALUTATION = String.raw`(?:Herrn?|Frau|Hr\.|Fr\.|Familie|Fam\.|Mr\.?|Mrs\.?|Ms\.?|Miss|Mx\.?|Sig\.ra|Sig\.na|Sig\.|Signora|Signore|Signor|Signorina|Sr\.|Sra\.|Mme\.?|Madame|Monsieur|Mevr\.|Mevrouw|Meneer|Dhr\.|De[ \t]heer|herrn?|frau|signora|signore|signor|signorina|sig\.ra|sig\.|mevrouw|meneer|mevr\.|dhr\.|de[ \t]heer|madame|monsieur)`;
 
 /** Ein akademischer Titel. */
-export const TITLE = String.raw`(?:Dr\.(?:in)?|Mag\.(?:a)?|MMag\.|Ing\.|DI|Dipl\.-Ing\.|Prof\.|BSc|MSc|MBA|PhD)`;
+export const TITLE = String.raw`(?:Dr\.(?:in)?|DDr\.|Mag\.(?:a)?|MMag\.|Ing\.|DI|Dipl\.-Ing\.|Dkfm\.|Prof\.|Univ\.-Prof\.|Professor|Professorin|Doktor|Prim\.|Hofrat|Dott\.(?:ssa)?|dott\.(?:ssa)?|Avv\.|Arch\.|BSc|MSc|MBA|PhD)`;
 
 /** Beliebig viele Titel, jeweils mit Leerraum dahinter. */
 export const TITLES = String.raw`(?:${TITLE}[ \t]+)*`;

@@ -1,5 +1,5 @@
 import { detectAll, normalizeValue } from "./detectors.js";
-import { COMMON_LOWERCASE_WORDS, DETERMINERS, LOWERCASE_STOPWORDS, NOT_SURNAME, NOUN_SURNAMES } from "./names.js";
+import { BUSINESS_WORDS, COMMON_LOWERCASE_WORDS, DETERMINERS, LOWERCASE_STOPWORDS, NOT_SURNAME, NOUN_SURNAMES, ROLE_WORDS } from "./names.js";
 import { formatPlaceholder, placeholderId, placeholderRegex } from "./placeholders.js";
 import { PARTICLE_WORDS } from "./salutations.js";
 import type {
@@ -28,6 +28,9 @@ function titleCase(word: string): string {
 function nameParts(name: string): string[] {
   return name.split(/[\s,]+/).filter((t) => {
     if (t.length < 2 || PARTICLE_WORDS.has(t.toLowerCase())) return false;
+    // Initialen ("M.") und Betriebs- oder Rollenwörter ("Kanzlei", "Team") verweisen nicht auf die Person.
+    if (/^\p{Lu}\.$/u.test(t) || BUSINESS_WORDS.has(t) || ROLE_WORDS.has(t)) return false;
+    if (/^(?:Dr|DDr|Prof|Mag|MMag|Ing|DI|Dipl|Dkfm|Prim|Univ|Dott|Avv|Arch)\.?$/u.test(t)) return false;
     // Kurze Nachnamen ("Herr Wu"): nur in der Form "Wu", nie als Allerweltswort ("Am", "In", "So").
     if (t.length === 2) return /^\p{Lu}\p{Ll}$/u.test(t) && !NOT_SURNAME.has(t) && !LOWERCASE_STOPWORDS.has(t.toLowerCase());
     if (/^\p{Lu}/u.test(t)) return !NOT_SURNAME.has(t) && !NOT_SURNAME.has(titleCase(t));

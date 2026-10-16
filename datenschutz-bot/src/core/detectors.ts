@@ -1,6 +1,9 @@
 import {
   BUSINESS_WORDS,
+  CHINESE_SURNAMES,
+  COMMON_LOWERCASE_WORDS,
   FIRST_NAMES,
+  KIN_WORDS,
   NOUN_SURNAMES,
   LOWERCASE_STOPWORDS,
   LOWERCASE_UNSAFE_NAMES,
@@ -134,8 +137,15 @@ function isCaps(word: string): boolean {
   return /^\p{Lu}[\p{Lu}-]+$/u.test(word);
 }
 
-function isFirstName(word: string): boolean {
+function isSingleFirstName(word: string): boolean {
   return FIRST_NAMES.has(word) || ((isCaps(word) || /^\p{Ll}/u.test(word)) && FIRST_NAMES.has(capitalize(word)));
+}
+
+/** Bekannter Vorname, auch als Doppelvorname mit Bindestrich ("Karl-Heinz", "Lisa-Marie"; nicht "Baden-Baden"). */
+function isFirstName(word: string): boolean {
+  if (isSingleFirstName(word)) return true;
+  const parts = word.split("-");
+  return parts.length >= 2 && parts.length <= 3 && parts.every((p) => p.length >= 2 && isSingleFirstName(p));
 }
 
 function isNotSurname(word: string): boolean {
@@ -673,6 +683,8 @@ const TOKEN_END = String.raw`(?![\p{L}\p{N}'’])`;
 const NAME_WORD_Y = new RegExp(`(?:${NAME_WORD})${TOKEN_END}`, "uy");
 const CAPS_WORD_Y = new RegExp(`(?:${CAPS_WORD})${TOKEN_END}`, "uy");
 const PARTICLE_Y = new RegExp(String.raw`${PARTICLE}[ \t]{1,20}(?=${UP})`, "uy");
+// Initiale vor einem Nachnamen: "M. Leitgeb", "K. Dijkstra", "S. van Dijk" (nie am Ende eines Namens).
+const INITIAL_Y = new RegExp(String.raw`${UP}\.(?=[ \t]{1,3}(?:${PARTICLE}[ \t]{1,3})?${UP}${LO})`, "uy");
 // Zwischen Namensteilen höchstens drei Leerzeichen (sonst eher Tabellenspalten).
 const GAP_Y = /[ \t]{1,3}/y;
 
@@ -719,6 +731,21 @@ function nameAt(
         particle = true;
       }
     }
+    if (!particle) {
+      INITIAL_Y.lastIndex = p;
+      const initial = INITIAL_Y.exec(text);
+      if (initial) {
+        if (tokens.length === 0) firstParticle = false;
+        tokens.push(initial[0]);
+        lastStart = partStart;
+        end = p + initial[0].length;
+        GAP_Y.lastIndex = end;
+        const g = GAP_Y.exec(text);
+        if (!g) break;
+        pos = end + g[0].length;
+        continue;
+      }
+    }
     NAME_WORD_Y.lastIndex = p;
     let m = NAME_WORD_Y.exec(text);
     if (!m && opts.caps) {
@@ -728,6 +755,8 @@ function nameAt(
     }
     if (!m) break;
     const token = m[0];
+    // Nach einer Initiale muss ein Nachname folgen, kein Allerweltswort ("S. Bitte" ist kein Name).
+    if (/^\p{Lu}\.$/u.test(tokens[tokens.length - 1] ?? "") && !particle && isNotSurname(token)) break;
     // Nach einem Zusatz ist auch ein Allerweltswort ein Nachname ("van der Berg"), aber keine Abteilung, kein
     // Betrieb, kein Verein und keine Domain ("Ferdinand vom Skiclub", "Thomas von der Rezeption", "von Booking.com").
     if (particle && !particleLeadsToName(text, token, p + token.length)) break;
@@ -742,6 +771,16 @@ function nameAt(
     const g = GAP_Y.exec(text);
     if (!g) break;
     pos = end + g[0].length;
+  }
+  // Eine Initiale allein oder am Ende ist kein Name.
+  while (tokens.length && /^\p{Lu}\.$/u.test(tokens[tokens.length - 1] ?? "")) {
+    tokens.pop();
+    if (!tokens.length) return null;
+    // Ende des letzten verbliebenen Teils neu bestimmen
+    const last = tokens[tokens.length - 1] ?? "";
+    const idx = text.lastIndexOf(last, end);
+    end = idx + last.length;
+    lastStart = idx;
   }
   return tokens.length ? { start, end, tokens, lastStart, firstParticle } : null;
 }
@@ -780,7 +819,7 @@ const FAMILY_AFTER_RE = new RegExp(String.raw`(?<![\p{L}])[Tt]he[ \t]{1,20}(?<n>
 const FAMILY_BEFORE_RE = /(?<![\p{L}])(?:familie|famiglia|famille|family)[ \t]{1,20}/gu;
 const BIRTH_NAME_RE = /(?<![\p{L}])(?:geb\.|geborene|geborener|née|nee|nata|nato)[ \t]{1,20}(?=\p{Lu})/gu;
 const LOWER_CONTEXT_RE =
-  /(?:^|[\s,.;:!?(])(?:die|der|den|dem|an|von|mit|für|bei|und|hier ist|ich bin|obmann|obfrau|chef|chefin|kollege|kollegin|frau|herr|lg|vg|glg|grüße|gruß|liebe|lieber|dank|danke|hallo|hi|hey|servus|ciao|cheers|thanks|grazie|saluti|groetjes)[ \t]{1,20}$/iu;
+  /(?:^|[\s,.;:!?(])(?:die|der|den|dem|an|von|mit|für|bei|und|hier ist|ich bin|obmann|obfrau|chef|chefin|kollege|kollegin|frau|herr|lg|vg|glg|grüße|gruß|liebe|lieber|dank|danke|hallo|hi|hey|servus|ciao|cheers|thanks|grazie|saluti|groetjes|griaß[ \t]{1,3}di|griass[ \t]{1,3}di|grüß[ \t]{1,3}di|grüß[ \t]{1,3}dich|pfiat[ \t]{1,3}di|servas|moin|hoi)[ \t]{1,20}$/iu;
 
 function lowercaseSurname(text: string, pos: number): number | null {
   GAP_Y.lastIndex = pos;
@@ -795,6 +834,29 @@ function lowercaseSurname(text: string, pos: number): number | null {
   if (/(?:en|ern|eln|st|te|ten|test|tet|t)$/u.test(word) && !/(?:dt|tt)$/u.test(word)) return null;
   return start + word.length;
 }
+
+// Vor einem Namen wie eine Anrede, aber mit vollem Namen danach: "t.n.v. S. van Dijk", "z. Hd. M. Leitgeb", "Attn. …"
+const NAME_PREFIX_RE = new RegExp(
+  String.raw`(?<![\p{L}])(?:t\.[ \t]?n\.[ \t]?v\.|t\.[ \t]?a\.[ \t]?v\.|z\.[ \t]?Hd\.?|z\.[ \t]?H\.|c\/o|Attn\.?|attn\.?|Attention|a\.[ \t]?c\.[ \t]?a\.)[ \t:]{1,20}(?:${SALUTATION}[ \t]{1,20})?${TITLES}(?=(?:${PARTICLE}[ \t]{1,20})?${UP})`,
+  "gu",
+);
+// Verwandte: "unser Sohn Lukas", "My wife Noura", "Onze dochter Fenna", "mia moglie Giulia"
+const KIN_RE = new RegExp(
+  String.raw`(?<![\p{L}])(?:mein|meine|meinem|meinen|meiner|mei|unser|unsere|unserem|unseren|unserer|sein|seine|seinem|seinen|seiner|ihr|ihre|ihrem|ihren|ihrer|my|our|his|her|their|mia|mio|la[ \t]mia|il[ \t]mio|nostra|nostro|onze|ons|mijn|zijn|haar)[ \t]{1,3}(?<kin>\p{L}{2,20})[ \t,]{1,3}${TITLES}(?=${UP}${LO})`,
+  "giud",
+);
+// Chat-Verläufe: "[16.10.26, 08:12] Wang Lei: …", "16.10.26, 08:12 - Wang Lei: …", "[Mo 06:47] Sepp (Unterwegerhof): …"
+const CHAT_SENDER_RE =
+  /^[ \t]{0,3}(?:\[[^\]\n]{3,30}\]|\d{1,2}[./]\d{1,2}[./]\d{2,4},?[ \t]{1,3}\d{1,2}:\d{2}(?::\d{2})?[ \t]{0,3}[-–])[ \t]{1,3}(?<name>[^:\n[\]]{2,60}?)[ \t]{0,3}:[ \t]/gmud;
+// Chinesische Namen, Familienname zuerst: "Wang Lei", "Chen Xiaoyu" (Vorname aus Pinyin-Silben).
+const PINYIN_SYLLABLE = "(?:zh|ch|sh|[bpmfdtnlgkhjqxrzcsyw])?(?:iang|iong|uang|ueng|ang|eng|ing|ong|ian|iao|uai|uan|ai|ei|ao|ou|an|en|in|un|ia|ie|iu|ua|uo|ui|ue|er|a|o|e|i|u)";
+const PINYIN_NAME_RE = new RegExp(`^(?:${PINYIN_SYLLABLE}){1,3}$`, "u");
+const CHINESE_NAME_RE = new RegExp(String.raw`(?<![\p{L}\p{N}])(?<s>${UP}${LO}{1,5})[ \t](?<g>${UP}${LO}{2,9})(?![\p{L}\p{N}])`, "gud");
+// Kleingeschriebene Anrede mit kleingeschriebenem Nachnamen im Chat-Stil: "hallo frau moosbrugger"
+const LOWER_SALUTATION_RE = /(?<![\p{L}])(?:frau|herr|herrn)[ \t]{1,3}(?<n>\p{Ll}{3,25})(?![\p{L}\p{N}'’-])/gud;
+// Italienisches "Mia" vor Verwandten ist "meine" ("Mia moglie Giulia"), kein Name.
+const ITALIAN_POSSESSIVE_AFTER =
+  /^[ \t]{1,3}(?:moglie|figlia|madre|mamma|sorella|nonna|zia|cugina|amica|nipote|suocera|compagna|fidanzata|collega|famiglia|cara|carissima|bambina|piccola)(?![\p{L}])/u;
 
 const PRECEDING_SURNAME_RE = new RegExp(
   String.raw`(?:^|[:;|(•–-][ \t]{0,20})(?<t>${NAME_WORD}|${CAPS_WORD})(?<comma>[ \t]{0,20},)?[ \t]{1,20}$`,
@@ -833,6 +895,8 @@ export function detectPersons(text: string): Finding[] {
     if (NOT_NAME_AFTER_SALUTATION.has(first) || BUSINESS_WORDS.has(first)) continue;
     // "Fr. Anreise" (Freitag): bei abgekürzten Anreden keine Allerweltswörter.
     if (/^(?:Fr|Hr)\.$/.test(m.groups?.sal ?? "") && !span.firstParticle && isNotSurname(first)) continue;
+    // Abkürzung statt Name: "Hr. Nr. 5", "Fr. Tel. 0512 …"
+    if (span.tokens.length === 1 && first.length <= 3 && /^\.[ \t]{0,2}(?:\d|\p{Ll})/u.test(text.slice(span.end, span.end + 4))) continue;
     add(start, span.end, "person:anrede", withSurname(span, true));
   }
 
@@ -863,8 +927,15 @@ export function detectPersons(text: string): Finding[] {
     if (!span) continue;
     // "Jan." und "Max." als Abkürzung (Januar, Maximum) überspringen.
     if (span.tokens.length === 1 && /^(?:Jan|Max)$/i.test(word) && text[span.end] === ".") continue;
+    if (word === "Mia" && ITALIAN_POSSESSIVE_AFTER.test(text.slice(span.end, span.end + 20))) continue;
     let start = m.index;
     const extra: Partial<Finding> = withSurname(span);
+    // Vorname mit Initiale des Nachnamens: "Jelena M."
+    const initial = /^[ \t]\p{Lu}\.(?![\p{L}\p{N}])/u.exec(text.slice(span.end, span.end + 4));
+    if (span.tokens.length === 1 && initial) {
+      add(start, span.end + initial[0].length, "person:vorname", extra);
+      continue;
+    }
     if (span.tokens.length === 1) {
       const pre = precedingSurname(text, m.index);
       if (pre) {
@@ -953,6 +1024,69 @@ export function detectPersons(text: string): Finding[] {
     if (span && (span.firstParticle || !isNotSurname(span.tokens[0] ?? ""))) {
       add(start, span.end, "person:familie", withSurname(span, true));
     }
+  }
+
+  // j) "t.n.v. S. van Dijk", "z. Hd. M. Leitgeb"
+  for (const m of matchAll(text, NAME_PREFIX_RE)) {
+    const start = m.index + m[0].length;
+    const span = nameAt(text, start, 3, { caps: true, particleFirst: true });
+    if (!span) continue;
+    const first = span.tokens[0] ?? "";
+    if (BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || (isNotSurname(first) && !span.firstParticle)) continue;
+    add(start, span.end, "person:zuhanden", withSurname(span, true));
+  }
+
+  // k) Verwandte: "unser Sohn Lukas", "My wife Noura"
+  for (const m of matchAll(text, KIN_RE)) {
+    const kin = m.groups?.kin ?? "";
+    if (!KIN_WORDS.has(kin) && !KIN_WORDS.has(kin.toLowerCase()) && !KIN_WORDS.has(capitalize(kin))) continue;
+    const start = m.index + m[0].length;
+    const span = nameAt(text, start, 3, { caps: false });
+    if (!span) continue;
+    const first = span.tokens[0] ?? "";
+    if (isNotSurname(first) || BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || MONTHS.has(first) || PLACE_PREFIXES.has(first)) continue;
+    add(start, span.end, "person:verwandt", withSurname(span));
+  }
+
+  // l) Absender in Chat-Verläufen
+  for (const m of matchAll(text, CHAT_SENDER_RE)) {
+    const span = groupSpan(m, "name");
+    if (!span) continue;
+    const raw = text.slice(span[0], span[1]);
+    const paren = /^(?<base>[^()]{2,60}?)[ \t]{0,3}\((?<extra>[^()\n]{2,40})\)$/u.exec(raw);
+    const base = (paren?.groups?.base ?? raw).trim();
+    const baseStart = span[0] + raw.indexOf(base);
+    if (/@|\d{3}/u.test(base) || LEGAL_FORM_ANY.test(base)) continue;
+    const words = base.split(/[ \t]+/);
+    if (words.some((w) => ROLE_WORDS.has(w) || BUSINESS_WORDS.has(w) || ROLE_WORDS.has(capitalize(w)) || BUSINESS_WORDS.has(capitalize(w)))) continue;
+    if (words.length > 4 || !words.every((w) => /^[\p{L}'’.-]+$/u.test(w))) continue;
+    add(baseStart, baseStart + base.length, "person:chat", words.length > 1 ? { nachname: words[words.length - 1] } : {});
+    // Zusatz in Klammern ("Sepp (Unterwegerhof)"): Hof, Betrieb oder Familie, ebenfalls schützen.
+    const extra = paren?.groups?.extra?.trim();
+    if (extra && /^\p{Lu}[\p{L}'’-]{2,40}$/u.test(extra) && !ROLE_WORDS.has(extra) && !isNotSurname(extra)) {
+      const at = span[0] + raw.lastIndexOf(extra);
+      out.push(finding(text, at, at + extra.length, "FIRMA", "firma:chat"));
+    }
+  }
+
+  // m) Chinesische Namen mit Familienname zuerst
+  for (const m of matchAll(text, CHINESE_NAME_RE)) {
+    const surname = m.groups?.s ?? "";
+    const given = m.groups?.g ?? "";
+    if (!CHINESE_SURNAMES.has(surname) || !PINYIN_NAME_RE.test(given.toLowerCase())) continue;
+    if (`${surname} ${given}` === "Hong Kong" || isNotSurname(given)) continue;
+    add(m.index, m.index + m[0].length, "person:chinesisch", { nachname: surname });
+  }
+
+  // n) Kleingeschriebene Anrede mit Nachnamen: "hallo frau moosbrugger"
+  for (const m of matchAll(text, LOWER_SALUTATION_RE)) {
+    const span = groupSpan(m, "n");
+    if (!span) continue;
+    const word = text.slice(span[0], span[1]);
+    if (LOWERCASE_STOPWORDS.has(word) || COMMON_LOWERCASE_WORDS.has(word) || isNotSurname(word)) continue;
+    if (NOT_NAME_AFTER_SALUTATION.has(capitalize(word)) || NOT_NAME_AFTER_SALUTATION.has(word)) continue;
+    if (/(?:en|ern|eln|st|te|ten|test|tet|t)$/u.test(word) && !/(?:dt|tt)$/u.test(word)) continue;
+    add(span[0], span[1], "person:anrede", { nachname: word });
   }
 
   // i) Geburtsname: "Maria Huber, geb. Gruber", "née Dupont"
@@ -1317,7 +1451,8 @@ export function detectTables(text: string): Finding[] {
   while (pos < text.length) {
     const lineEnd = lineEndOf(text, pos);
     const headerLine = text.slice(pos, lineEnd);
-    const delimiter = [";", "\t", ","].find((d) => headerLine.includes(d));
+    // Auch Tabellen mit senkrechten Strichen ("Name | Mo | Di"), wie sie aus Tabellenprogrammen und Chats kommen.
+    const delimiter = [";", "\t", "|", ","].find((d) => headerLine.includes(d));
     let next = lineEnd + 1;
     if (delimiter) {
       const header = readCsvRecord(text, pos, delimiter, lineEnd).fields.map((f) => text.slice(f.start, f.end).trim());
@@ -1341,7 +1476,11 @@ export function detectTables(text: string): Finding[] {
             const extra = Math.max(0, fields.length - header.length);
             fields.forEach(({ start, end }, c) => {
               const type = cellType(types, c, extra);
-              if (type && end > start) out.push(finding(text, start, end, type, `tabelle:${type.toLowerCase()}`));
+              if (!type || end <= start) return;
+              // In Namensspalten keine Platzhalter für Striche, Rollen und Allerweltswörter ("–", "Aushilfe", "frei").
+              const value = text.slice(start, end);
+              if (type === "PERSON" && (!/\p{L}/u.test(value) || value.split(/[ \t]+/).every((w) => ROLE_WORDS.has(w) || isNotSurname(w) || LOWERCASE_STOPWORDS.has(w)))) return;
+              out.push(finding(text, start, end, type, `tabelle:${type.toLowerCase()}`));
             });
           }
           row = record.next;

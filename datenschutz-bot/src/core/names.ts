@@ -81,6 +81,36 @@ Vladimir Yulia Olena Oleksandr Mykola Taras Andriy
 Dimitrios Georgios Ioannis Konstantinos Nikos Eleni Katerina Vasileios
 Hiroshi Takashi Kenji Yuki Yuko Akiko Haruto Sakura Yumi Kenta Satoshi Naoko Wei Ming Jing Xiao Priya Rahul Amit
 Anjali Arjun Deepak Neha Pooja Ravi Sanjay Sunita Vikram
+` + /* Erweiterung 2026-10-16: Irland, Großbritannien, Türkei, arabischer Raum, Polen, Balkan, Ungarn, China, Nepal,
+Indien, Niederlande, Italien, Spanien, Portugal, Frankreich, Tiroler Kosenamen. Weggelassen wie oben: Namen, die auch
+Wörter sind (Lei, Fang, Gang, Jun, Ton, Karma, Mercedes, Hugo, Constance, Ginevra, Alba …). */ `
+Ciarán Siobhán Aoife Saoirse Oisín Oisin Cian Darragh Seán Pádraig Padraig Róisín Caoimhe Aisling Orla Fionn Sinéad
+Eimear Clodagh Gráinne Grainne Colm Cormac Diarmuid Fergal Rory Connor Harriet Imogen Poppy Florence Freddie Alfie
+Archie Isla Ava Lily Evie Phoebe Matilda Toby Hamish Angus Fraser Euan Ewan Morag Kirsty Ailsa Eilidh Moira Gwen
+Gwyneth Rhys Bethan Carys Ffion Siân Sian Imran Noura Umar Ayse Leyla Samira Tariq Aysha Maryam Nour Salma Faisal
+Bilal Hamza Ismail Derya Ece Omer Tolga Ayşegül Ozlem Orhan Osman Serdar Sinan Uğur Ugur Yasin Yunus Büşra Dilara
+Gizem Hande İrem Irem Pınar Tuba Yeliz Arda Baran Berk Kaan Kerem Onur Oğuz Ozan Taner Umut Eren Farid Farah Reza
+Mehdi Navid Parisa Shirin Arash Kamran Rashid Saeed Sami Sana Tahir Usman Zara Aziz Anwar Asif Bashir Faruk Adnan
+Nermin Emina Alma Aida Ajla Azra Dino Damir Kenan Tarik Sead Admir Malgorzata Pawel Lukasz Kacper Mateusz Wiktoria
+Zuzanna Jolanta Bożena Grażyna Iwona Justyna Kinga Weronika Nenad Mirjana Dragana Branko Tomislav Josip Ante Filip
+Domagoj Hrvoje Krešimir Zeljko Ljiljana Danijela Andrija Vladimír Ladislav Andrej Zuzana Réka Reka Zsofia Ágnes
+Eszter Zoltan Laszlo Gabor Balazs Tamas Gergely Levente Marton Ákos Akos Krisztina Ildiko Anikó Aniko Orsolya Dóra
+Noémi Fanni Boglárka Lilla Hajnalka Tünde Enikő Gyula Imre Sandor Lajos József Jozsef Istvan Béla Bela Xiaoyu Hui
+Ying  Hao Jie Xin Qiang Mei Lan Ling Jian Yong Xiaoming Xiaoling Xiaohong Jianguo Zhiwei Haoran Yuxuan Zihan
+Yichen Ruoxi Mingyu Xinyi Yuting Jiahui Wenjie Shuang Pemba Tenzin Dawa Lhakpa Nima Pasang Mingma Dorje Sonam Phurba
+Chhiring Ngawang Kami Pema Lobsang Tashi Norbu Jigme Kamala Rohan Rohit Aditya Ananya Aarav Vivaan Ishaan Kavya Diya
+Saanvi Meera Lakshmi Ganesh Suresh Ramesh Mahesh Rajesh Prakash Anil Sunil Vijay Ajay Manoj Pradeep Sandeep Harpreet
+Gurpreet Manpreet Jaspreet Simran Navjot Kiran Asha Usha Shanti Sita Gita Radha Nisha Rekha Shilpa Divya Swati
+Preeti Ritu Sneha Shreya Joke Hidde Jorrit Siebe Tjeerd Wietske Fenne Jip Tess Evi Roos Saskia Annelies Annemiek
+Mieke Truus Arjen Floris Thom Teun Bente Isa Yara Liv Burgi Wastl Hias Loisl Schorsch Gretl Liesl Mitzi Franzi Kathl
+Moidl Nannerl Wiggerl Bertl Ferdl Pepi Poldi Rudl Gitti Hermine Fritzi Zenzi Sissi Lotti Christl Traudl Gustl Hiasl
+Lenz Michl Ludovica Edoardo Mattia Daniele Samuele Elia Alessandra Monica Eleonora Benedetta Rosaria Giovanna
+Patrizia Lorella Ornella Donatella Fiorella Graziella Franca Gina Debora Veronica Stefania Tiziana Pilar Dolores
+Rocío Inés Nuria Ainhoa Itziar Begoña Montserrat Raul Álvaro Alvaro Iñaki Unai Aitor Jon Mikel Xabier Joaquín
+Joaquin Rodrigo Joao Nuno Duarte Leonor Beatriz Mariana Catarina Margarida Amelie Aurelie Elodie Juliette Clement
+Théo Baptiste Quentin Romain Sebastien Thibault Gaëlle Gaelle Sandrine Celine Laetitia Solène Agathe Apolline
+Capucine Clémence Eugénie Héloïse Joséphine Ophélie Benoit Francois Jerome Gilles Patrice Régis Xavier Didier Hervé
+Herve
 `;
 
 export const FIRST_NAMES: ReadonlySet<string> = new Set(words(FIRST_NAMES_RAW));
@@ -89,7 +119,8 @@ export const FIRST_NAMES: ReadonlySet<string> = new Set(words(FIRST_NAMES_RAW));
 // Kleingeschrieben werden sie deshalb nie als Name gewertet.
 export const LOWERCASE_UNSAFE_NAMES: ReadonlySet<string> = new Set(
   words(`max mia otto ali vera rosa chiara serena aurora bianca ben fleur sara roman reiner jack bas jan pascal grace holly
-  heather molly frank kim robin jean jordan rob bob ella clara regina victoria deniz melek sevgi yasemin mees sandy`),
+  heather molly frank kim robin jean jordan rob bob ella clara regina victoria deniz melek sevgi yasemin mees sandy
+  joke lily roos merel alma ante isa liv ana bert lenz mei lan ling hong noor sana dino`),
 );
 
 // Großgeschriebene Wörter, die nach einem Vornamen stehen können, aber kein Nachname sind.
@@ -145,7 +176,10 @@ export const NOT_NAME_AFTER_SALUTATION: ReadonlySet<string> = new Set(
 export const NOUN_SURNAMES: ReadonlySet<string> = new Set(
   words(`Koch Berg Bauer Fischer Jäger Wolf Fuchs Hahn Vogel Strauß Winter Sommer Kaiser König Graf Richter Gärtner
    Maurer Metzger Bäcker Wirt Stein Bach Meister Schmied Schäfer Fleischer Kellner Förster Fink Adler Engel Stern Mond
-   Sonne Rose Busch Wald Feld Hof Haus Baum Brand Hirsch Bär Löwe Falke Pfarrer Herzog Ritter Wächter Schreiber`),
+   Sonne Rose Busch Wald Feld Hof Haus Baum Brand Hirsch Bär Löwe Falke Pfarrer Herzog Ritter Wächter Schreiber
+   Keller Glück Ende Herbst Frühling Sonntag Montag Freitag Mai Morgen Abend Recht Schnee Wein Fisch Burg Kraft Nagel
+   Hammer Pfeffer Zucker Honig Korn Moos Heide Brunnen Graben Turm Bischof Probst Vogt Fürst Knecht Bote Hirt Schenk
+   Winzer Köhler Hase Specht Taube Rabe Hecht Lachs Blum Blume Strauch Acker Wiese Hügel Kirchner Ochs Storch`),
 );
 
 // Kleingeschrieben gewöhnliche Wörter, die auch Namen sind ("Peter Klein" – "ein klein wenig", "Grace Park" –
@@ -189,7 +223,9 @@ export const ROLE_WORDS: ReadonlySet<string> = new Set(
   words(`Team Service Support Info Office Reservations Reservation Reservierung Reservierungen Booking Bookings
    Rezeption Buchhaltung Verwaltung Newsletter Noreply Kundenservice Kundendienst Vertrieb Sales Marketing Einkauf
    Personal Personalabteilung Sekretariat Zentrale Helpdesk Hotline Abteilung Department Desk Customer Guest Relations
-   Front Accounting Billing Admin Administration System Mailer Notification Benachrichtigung Portal`),
+   Front Accounting Billing Admin Administration System Mailer Notification Benachrichtigung Portal Accounts Payable
+   Receivable Purchasing Procurement Finance Reception Management Housekeeping Concierge Aushilfe Aushilfen Praktikant
+   Praktikantin Lehrling Azubi Springer Vertretung Hotelleitung Küche Service Haustechnik`),
 );
 
 // Wörter am Anfang von Betriebsnamen ("Gasthof Sonnhof", "Pension Alpenblick").
@@ -205,4 +241,26 @@ export const MONTHS: ReadonlySet<string> = new Set(
   words(`Januar Jänner Februar Feber März April Mai Juni Juli August September Oktober November Dezember January
    February March May June July October December Gennaio Febbraio Marzo Aprile Maggio Giugno Luglio Agosto Settembre
    Ottobre Novembre Dicembre Januari Februari Maart Juni Juli Augustus Oktober`),
+);
+
+// Häufige chinesische Familiennamen. Weggelassen, weil auch gewöhnliche Wörter: He, Ma, Du, Ye, Su, Long, Song, Fan,
+// Pan, Tan, Ding.
+export const CHINESE_SURNAMES: ReadonlySet<string> = new Set(
+  words(`Wang Li Zhang Liu Chen Yang Huang Zhao Wu Zhou Xu Sun Zhu Hu Guo Lin Luo Gao Zheng Liang Xie Tang Han Feng Deng
+   Cao Peng Zeng Xiao Tian Dong Yuan Cai Jiang Yu Cheng Wei Lu Ren Shen Yao Zhong Jin Fang Shi Liao Zou Xiong Qiu Qin Jia
+   Hou Meng Bai Kong Mao Qian Duan Lei Hao Gu Wan Xue Yin Yan Lai Shao Kang Wen Fu Hong Bao`),
+);
+
+// Verwandte und Partner vor einem Namen ("unser Sohn Lukas", "my wife Noura", "onze dochter Fenna", "mia moglie Giulia").
+export const KIN_WORDS: ReadonlySet<string> = new Set(
+  words(`Sohn Tochter Frau Mann Ehefrau Ehemann Gattin Gatte Partner Partnerin Lebensgefährte Lebensgefährtin Freund
+   Freundin Mutter Vater Mama Papa Oma Opa Großmutter Großvater Tante Onkel Schwester Bruder Cousine Cousin Nichte Neffe
+   Enkel Enkelin Schwiegermutter Schwiegervater Schwägerin Schwager Kollege Kollegin Kind Baby
+   son daughter wife husband partner fiancé fiancée fiance fiancee boyfriend girlfriend mother father mum mom dad
+   grandmother grandfather grandma grandpa aunt uncle sister brother cousin niece nephew grandson granddaughter colleague
+   child baby kid
+   figlio figlia moglie marito compagno compagna fidanzato fidanzata madre padre mamma papà nonna nonno zia zio sorella
+   fratello cugino cugina nipote collega bambino bambina
+   zoon dochter vrouw man echtgenote echtgenoot partner vriend vriendin moeder vader mama papa oma opa tante oom zus
+   broer neef nicht kleinzoon kleindochter collega kind`),
 );

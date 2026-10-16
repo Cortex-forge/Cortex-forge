@@ -438,3 +438,55 @@ test("Kundennummern, die sich nur in Bindestrich oder Punkt unterscheiden, bleib
   // Formatierte Nummern mit fester Form werden weiter zusammengeführt.
   assert.equal(ki("IBAN AT61 1904 3002 3457 3201, also AT611904300234573201"), "IBAN [IBAN_1], also [IBAN_1]");
 });
+
+// ---------------------------------------------------------------------------
+// Dritte Claude-Prüfung und freigegebenes Prüfset 1
+
+// Review Claude 3 #2, #3, #4
+test("Doppelvornamen, Initialen und Nachnamen, die auch Hauptwörter sind", () => {
+  assert.equal(ki("Anreise: Karl-Heinz Gruber mit Tochter Anna-Lena am 12. Mai."), "Anreise: [PERSON_1] mit Tochter [PERSON_2] am 12. Mai.");
+  assert.equal(ki("Hallo, ich bin Anna-Lena und frage für meine Eltern an."), "Hallo, ich bin [PERSON_1] und frage für meine Eltern an.");
+  assert.equal(ki("Sehr geehrte Frau A. Moosbrugger, danke für Ihre Nachricht."), "Sehr geehrte Frau [PERSON_1], danke für Ihre Nachricht.");
+  assert.equal(ki("z. Hd. Herrn Dr. M. Leitgeb, Buchhaltung"), "z. Hd. Herrn Dr. [PERSON_1], Buchhaltung");
+  assert.equal(ki("Mit freundlichen Grüßen\nM. Leitgeb"), "Mit freundlichen Grüßen\n[PERSON_1]");
+  assert.equal(ki("t.a.v. de heer K. Dijkstra"), "t.a.v. de heer [PERSON_1]");
+  assert.equal(ki("Thomas Keller bucht für 3 Nächte."), "[PERSON_1] bucht für 3 Nächte.");
+  assert.equal(ki("Jelena M. hat Frühdienst."), "[PERSON_1] hat Frühdienst.");
+  // Gegenproben
+  for (const text of [
+    "Wir fahren nach Baden-Baden und ins Rhein-Main-Gebiet.",
+    "Fr. Anreise am Montag. Hr. Nr. 5 ruft an. S. 12 im Katalog.",
+    "Wir kommen im Winter und gehen in den Keller.",
+    "Attn. Accounts Payable",
+  ]) {
+    assert.equal(ki(text), text);
+  }
+});
+
+// Review Claude 3 #10 (Anreden), Prüfset 1 (Verwandte, Chats, Reihenfolge Familienname zuerst, Tabellen mit Strichen)
+test("Namen nach Verwandten, in Chats, nach Anreden in anderen Sprachen und in Tabellen mit senkrechten Strichen", () => {
+  assert.equal(ki("My wife Noura needs a quiet room. Our daughter Lily is 6."), "My wife [PERSON_1] needs a quiet room. Our daughter [PERSON_2] is 6.");
+  assert.equal(ki("Onze dochter Fenna (8) komt mee."), "Onze dochter [PERSON_1] (8) komt mee.");
+  assert.equal(ki("hallo frau moosbrugger, passt das für euch?"), "hallo frau [PERSON_1], passt das für euch?");
+  assert.equal(ki("Gentile signora Hechenblaikner, ecco i dati."), "Gentile signora [PERSON_1], ecco i dati.");
+  assert.equal(ki("Herr Professor von Hagenberg kommt."), "Herr Professor [PERSON_1] kommt.");
+  assert.equal(
+    ki("[16.10.26, 08:12] Wang Lei: Good morning!\n[16.10.26, 08:13] Hotel Alpenrose Rezeption: Guten Morgen!"),
+    "[16.10.26, 08:12] [PERSON_1]: Good morning!\n[16.10.26, 08:13] Hotel Alpenrose Rezeption: Guten Morgen!",
+  );
+  assert.equal(ki("[Mo 06:47] Sepp (Unterwegerhof): passt"), "[Mo 06:47] [PERSON_1] ([FIRMA_1]): passt");
+  assert.equal(ki("My wife is Chen Xiaoyu."), "My wife is [PERSON_1].");
+  assert.equal(
+    ki("Name        | Mo   | Di\n------------|------|-----\nKowalski    | U    | U\nAushilfe    | –    | S"),
+    "Name        | Mo   | Di\n------------|------|-----\n[PERSON_1]    | U    | U\nAushilfe    | –    | S",
+  );
+  // Gegenproben
+  for (const text of [
+    "die frau kommt morgen, meine frau hat urlaub",
+    "Mia moglie è incinta.",
+    "We fly via Hong Kong.",
+    "Herr Professor hat angerufen.",
+  ]) {
+    assert.equal(ki(text).replace(/\[GESUNDHEIT_1\]/, "incinta"), text);
+  }
+});
