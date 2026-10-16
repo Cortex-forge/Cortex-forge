@@ -5,7 +5,7 @@ Bekannte Grenzen und Aufgaben. Neue Punkte unten ergänzen, erledigte mit Datum 
 | # | Punkt | Priorität | Quelle | Status |
 |---|---|---|---|---|
 | 1 | Erkennung messen (Testset mit Lösungsblatt, Messskript) | hoch | Testkonzept | erledigt 2026-10-16 (`e0437a0`, Typvergleich und Prüfset `d79b5cc` ff.) |
-| 2 | Namen ohne Anrede, die nicht in der Namensliste stehen, können durchrutschen: zweite Erkennungsstufe mit lokalem Modell | hoch | ADR-004 | offen; nach der Messung am blinden Prüfset 2 (82,0 %) der wichtigste nächste Schritt, braucht Peters OK für neue Abhängigkeiten |
+| 2 | Namen ohne Anrede, die nicht in der Namensliste stehen, können durchrutschen: zweite Erkennungsstufe mit lokalem Modell | hoch | ADR-004, ADR-006 | offen; nach der Messung am blinden Prüfset 2 (82,0 %) der wichtigste nächste Schritt. Vorschlag mit Möglichkeiten in ADR-006, braucht Peters OK für neue Abhängigkeiten |
 | 3 | PDF und Scans einlesen | hoch | Prototyp-Grenze | offen |
 | 4 | Login, Rollen, mehrere Benutzer | hoch (vor Serverbetrieb) | Prototyp-Grenze | offen |
 | 5 | Schlüssel in KMS/HSM bzw. Schlüsselbund statt neben den Daten | mittel | Datenschutzkonzept, Review Claude #6, Claude 2 #13 | teilweise: `DSB_KEY_FILE`, Schlüsselkennung je Dokument (`d79b5cc`), Warnung beim Start, wenn der Schlüssel im Datenordner liegt (`4eb0486`); Schlüsselbund/KMS offen |
