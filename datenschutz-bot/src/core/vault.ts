@@ -60,19 +60,20 @@ export function loadOrCreateKey(dataDir: string, mayCreate: () => boolean = () =
 }
 
 /**
- * AES-256-GCM. "kontext" (z. B. Dokument-ID und Feld) wird als zusätzliche authentifizierte Daten mitgeprüft:
- * Ein verschlüsselter Block lässt sich so nicht in ein anderes Dokument oder Feld kopieren.
- */
-/**
  * Prüfsumme über einen ganzen Datensatz (HMAC-SHA-256 mit einem eigenen, aus dem Schlüssel abgeleiteten Schlüssel).
  * Wer den Datenordner beschreiben kann, aber den Schlüssel nicht hat, kann so weder Status noch Fassung ändern noch
- * verschlüsselte Teile aus einer älteren Fassung einsetzen.
+ * verschlüsselte Teile aus einer älteren Fassung einsetzen. Auch das Entfernen der Prüfsumme hilft nicht: Solche
+ * Dokumente lassen sich nur noch ansehen und verwerfen (JobStore.mutate).
  */
 export function recordMac(key: Buffer, record: string): string {
   const macKey = Buffer.from(crypto.hkdfSync("sha256", key, Buffer.from("datenschutz-bot"), Buffer.from("pruefsumme-dokument"), 32));
   return crypto.createHmac("sha256", macKey).update(record).digest("base64url");
 }
 
+/**
+ * AES-256-GCM. "kontext" (z. B. Dokument-ID und Feld) wird als zusätzliche authentifizierte Daten mitgeprüft:
+ * Ein verschlüsselter Block lässt sich so nicht in ein anderes Dokument oder Feld kopieren.
+ */
 export function encrypt(key: Buffer, plaintext: string, kontext: string): string {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);

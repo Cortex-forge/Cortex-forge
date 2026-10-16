@@ -907,6 +907,10 @@ test("Prüfsumme entfernt und alte Blöcke zurückgespielt: Freigabe und jede Ä
   assert.deepEqual(store.listForAi(), []);
   // Die Datei wurde nicht neu signiert.
   assert.equal((JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>).pruefsumme, undefined);
+  // Review Claude 4 #9, Variante B: Status von Hand auf "zur Prüfung", Prüfsumme weg, dann "Zurück an die KI"
+  fs.writeFileSync(file, JSON.stringify({ ...ohne, status: "zur_pruefung" }));
+  assert.throws(() => store.sendBack(neu.id), /ohne Prüfsumme/);
+  assert.throws(() => store.backToReview(neu.id), /ohne Prüfsumme/);
   store.remove(neu.id);
   assert.equal(fs.existsSync(file), false);
 });

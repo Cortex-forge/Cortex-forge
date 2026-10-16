@@ -326,7 +326,8 @@ export function detectCreditCards(text: string): Finding[] {
 const PHONE_STEMS = [
   "telefon", "telephone", "phone", "mobil", "handy", "fax", "cellular", "cellulare", "telefono", "telefoon", "mobiel",
   "portable", "téléphone", "chiamarmi", "chiamatemi", "whatsapp", "signal",
-  "whatsapp", "rufnummer", "durchwahl", "festnetz", "rückruf", "anruf", "hotline", "kundenservice", "kundendienst",
+  // Spanisch, Polnisch, Tschechisch (Review Claude 4 #10)
+  "móvil", "movil", "teléfono", "celular", "komórk", "komork", "telefonu", "mobilní", "telefonní", "rufnummer", "durchwahl", "festnetz", "rückruf", "anruf", "hotline", "kundenservice", "kundendienst",
   "notruf", "zentrale",
 ];
 const PHONE_WORDS = new Set(["tel", "tlf", "fon", "ph", "cell", "mob", "fax", "tél", "cel", "privat"]);
@@ -359,7 +360,7 @@ function classifyWord(word: string): "telefon" | "beleg" | null {
 }
 
 /** "Nummer", "numero" allein meinen meist die Telefonnummer ("meine Nummer ist …"), außer davor steht ein Beleg. */
-const NUMBER_WORDS = new Set(["nummer", "number", "numero", "número"]);
+const NUMBER_WORDS = new Set(["nummer", "number", "numero", "número", "numer", "číslo", "cislo"]);
 /** "Nr.", "No." nennen jede Art Nummer ("St.-Nr.", "Zimmer Nr."): entscheidet das Wort davor. */
 const NUMBER_ABBREVIATIONS = new Set(["nr", "no", "num"]);
 
@@ -1309,6 +1310,9 @@ export function detectPersons(text: string): Finding[] {
     const kin = m.groups?.kin ?? "";
     if (!KIN_WORDS.has(kin) && !KIN_WORDS.has(kin.toLowerCase()) && !KIN_WORDS.has(capitalize(kin))) continue;
     const start = m.index + m[0].length;
+    // Das Muster hat das Flag "i" (für "Mein"/"mein"); damit gilt \p{Lu} auch für Kleinbuchstaben. Der Name muss
+    // trotzdem großgeschrieben sein (Review Claude 4 #16).
+    if (!/^\p{Lu}/u.test(text.slice(start, start + 1))) continue;
     const span = nameAt(text, start, 3, { caps: false });
     if (!span) continue;
     const first = span.tokens[0] ?? "";
@@ -1657,14 +1661,27 @@ export function detectReligion(text: string): Finding[] {
 // ---------------------------------------------------------------------------
 // Tabellen (CSV, Tabulator): Spaltenköpfe wie "Name;Vorname;Telefon" bestimmen den Typ jeder Zelle.
 
+/**
+ * Spaltenkopf vereinheitlichen: Gender-Formen ("Teilnehmer/in", "Gast*in", "Kund:innen"), "Name des Gastes", Punkte am
+ * Ende ("Tel.-Nr.") (Review Claude 4 #10).
+ */
+function headerKey(cell: string): string {
+  return cell
+    .toLowerCase()
+    .replace(/(?:[/:*_]in(?:nen)?|\((?:in|innen)\)|innen)$/u, "")
+    .replace(/^name[ \t]+(?:des|der|vom)[ \t]+/u, "")
+    .replace(/[.:]+$/u, "")
+    .trim();
+}
+
 const CSV_COLUMNS: Array<{ re: RegExp; type: EntityType }> = [
   {
-    re: /^(?:(?:vor|nach|familien|gast|kunden|ruf|geburts|voll)?name|vorname|nachname|first ?name|last ?name|surname|given ?name|full ?name|gast|guest|kunde|kundin|ansprechpartner(?:in)?|teilnehmer(?:in)?|nome|cognome|naam|achternaam|voornaam|person)$/iu,
+    re: /^(?:(?:vor|nach|familien|gast|kunden|ruf|geburts|voll)?name|vorname|nachname|first ?name|last ?name|surname|given ?name|full ?name|gast|gastes|guest|kunde|kunden|kundin|ansprechpartner(?:in)?|teilnehmer(?:in|s)?|kontaktperson|begleitperson|reisende[rn]?|mitreisende[rn]?|nome|cognome|naam|achternaam|voornaam|person)$/iu,
     type: "PERSON",
   },
   { re: /^(?:e-?mail|mail|email-adresse|e-mail-adresse)$/iu, type: "EMAIL" },
   {
-    re: /^(?:telefon|tel\.?|handy|mobil|mobile|phone|telefonnummer|handynummer|mobilnummer|telefono|cellulare|telefoon)$/iu,
+    re: /^(?:telefon|tel\.?|tel\.?-?nr|telefon-?nr|handy|mobil|mobile|phone|telefonnummer|handynummer|mobilnummer|telefono|cellulare|telefoon)$/iu,
     type: "TELEFON",
   },
   {
@@ -1799,7 +1816,10 @@ export function detectTables(text: string): Finding[] {
     if (delimiter) {
       const header = readCsvRecord(text, pos, delimiter, lineEnd).fields.map((f) => text.slice(f.start, f.end).trim());
       // Spaltenköpfe mit Nummer ("Tel. 1", "Name 2") zählen wie ohne Nummer.
-      const types = header.map((c) => CSV_COLUMNS.find((col) => col.re.test(c) || col.re.test(c.replace(/[ \t]*\d{1,2}$/u, "")))?.type);
+      const types = header.map((cell) => {
+        const c = headerKey(cell);
+        return CSV_COLUMNS.find((col) => col.re.test(c) || col.re.test(c.replace(/[ \t]*\d{1,2}$/u, "")))?.type;
+      });
       const plausible =
         header.length >= 2 && !header.some((c, i) => c.length > 30 || (/\d/.test(c) && !types[i])) && types.some(Boolean);
       if (plausible) {

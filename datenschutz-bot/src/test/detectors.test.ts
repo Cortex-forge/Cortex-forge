@@ -779,3 +779,17 @@ test("Bekannte Nachnamen auch gebeugt und als Teil eines Doppelnamens", () => {
   // Gegenproben: Hauptwörter mit Endung nach Artikel bleiben
   assert.equal(ki("Maria Sommer kommt. Das Ende des Sommers naht."), "[PERSON_1] kommt. Das Ende des Sommers naht.");
 });
+
+// Review Claude 4 #10
+test("Tabellen mit üblichen Spaltenköpfen und Telefon auf Spanisch und Polnisch", () => {
+  assert.equal(ki("Zi.-Nr.;Name des Gastes;Pers.;Anreise\n12;Moosbrugger Ilka;2;12.05."), "Zi.-Nr.;Name des Gastes;Pers.;Anreise\n12;[PERSON_1];2;12.05.");
+  assert.equal(
+    ki("Teilnehmer/in;Tel.-Nr.;E-Mail-Adresse\nIlka Moosbrugger;0512 123456;ilka@example.com"),
+    "Teilnehmer/in;Tel.-Nr.;E-Mail-Adresse\n[PERSON_1];[TELEFON_1];[EMAIL_1]",
+  );
+  assert.equal(ki("Kontaktperson\tZimmer\nZorwin Valdessa\t12"), "Kontaktperson\tZimmer\n[PERSON_1]\t12");
+  assert.equal(ki("Mi móvil es 612 345 678"), "Mi móvil es [TELEFON_1]");
+  assert.equal(ki("mój numer: 601 234 567"), "mój numer: [TELEFON_1]");
+  // Gegenprobe: Tabelle ohne Personenspalte
+  assert.equal(ki("Artikel;Menge;Preis\nDuschgel;30;4,50"), "Artikel;Menge;Preis\nDuschgel;30;4,50");
+});
