@@ -1016,25 +1016,75 @@ const HEALTH_ANYWHERE = [
   "gehandicapt", "rollstuhl", "wheelchair", "rolstoel", "sedia a rotelle", "rollator", "gehhilfe", "krücke",
   "crutches", "prothese", "visually impaired", "gehörlos", "schwerhörig", "hörgerät", "hearing aid",
   "querschnittsgelähm", "querschnittslähm", "gelähmt", "lähmung", "amputi", "schwanger", "pregnan", "incinta",
-  "zwanger", "medikament", "medication", "tabletten", "arzneimittel", "insulin", "glutenfrei", "gluten-free",
-  "senza glutine", "laktosefrei", "lactose-free", "senza lattosio",
+  "zwanger", "medikament", "medication", "tabletten", "arzneimittel", "insulin", "intolleran", "notfall-pen",
+  "notfallpen", "epipen", "epi-pen", "adrenalin-pen", "adrenalinpen", "injur", "kardiolo", "cardiolo", "gynäko",
+  "gynaeco", "gyneco", "ginecolo", "neurolo", "urolog", "nephrolog", "rheumatolog", "orthopäd", "lumbago",
+  "hexenschuss", "bandscheib", "ischias", "rheuma", "arthrose", "arthritis", "osteopor", "thrombose", "embolie",
+  "infarkt", "infarto", "hörminderung", "hörverlust", "hörsturz", "tinnitus", "hearing loss", "blindenhund",
+  "assistenzhund", "guide dog", "service dog", "partially sighted", "sight impaired", "mobility scooter", "gehstock",
+  "walking stick", "arbeitsunfähig", "dienstunfähig", "berufsunfähig", "erwerbsunfähig", "unfit for work",
+  "sick leave", "sick note", "arbeitsunfall", "skiunfall", "sportunfall", "verkehrsunfall", "autounfall",
+  "fahrradunfall", "sportverletzung", "skiverletzung", "schnittverletzung", "ricoverat", "riabilitaz", "migraine",
+  "emicrania", "gravidanza", "carrozzina", "dialisi", "ictus", "back pain", "heart condition", "heart attack",
+  "heart surgery", "limited mobility", "reduced mobility", "mobility issues", "difficulty walking", "hospitalis",
+  "hospitaliz", "intervento chirurgico",
 ];
+// Ernährung ("glutenfrei") verrät nur zusammen mit einer Person etwas über die Gesundheit: in einem Satz mit einer
+// Gesundheitsangabe oder einem Bedarf ("wir bräuchten glutenfreies Frühstück"), nicht auf der Speisekarte.
+const DIET_RE =
+  /(?<![\p{L}])(?:gluten|laktose|lactose|lattosio)(?:-|[ \t]{1,3})?(?:frei|freie|freies|freien|freier|free|vrij)(?![\p{L}])|(?<![\p{L}])(?:glutenfrei|laktosefrei|glutenvrij|lactosevrij)\p{Ll}{0,3}(?![\p{L}])|(?<![\p{L}])senza[ \t]{1,3}(?:glutine|lattosio)(?![\p{L}])/giu;
+const NEED_RE =
+  /br[aä]uch|benötig|muss|müssen|darf nur|dürfen nur|isst nur|essen nur|verträgt|vertragen|\bneed|\bmust\b|can only|only eat|bisogno|deve |devono|può mangiare|moet|mag alleen/iu;
+
+/** Grenzen des Satzes um eine Stelle (Satzzeichen oder Zeilenumbruch). */
+function sentenceAround(text: string, start: number, end: number): [number, number] {
+  let s = start;
+  while (s > 0 && start - s < 300 && !/[.!?\n]/u.test(text[s - 1] ?? "")) s--;
+  let e = end;
+  while (e < text.length && e - end < 300 && !/[.!?\n]/u.test(text[e] ?? "")) e++;
+  return [s, e];
+}
+
+// Körperteil und Beschwerde in einem Wort oder mit Leerzeichen ("Knieverletzung", "Rückenschmerzen", "hüft op").
+const BODY_PARTS =
+  "knie|hüft|hüfte|rücken|schulter|herz|bandscheiben|kopf|hand|fuß|fuss|bein|arm|hals|nacken|ellbogen|sprunggelenk|knöchel|finger|zehen|augen|auge|ohren|ohr|lunge|lungen|nieren|niere|leber|magen|darm|blasen|wirbel|wirbelsäulen|gelenk|sehnen|muskel|zahn|kiefer|haut|brust|prostata|gallen|becken|hirn|gehirn|schilddrüsen|meniskus|kreuzband|achilles";
+const BODY_CONDITION_RE = new RegExp(
+  `^(?:${BODY_PARTS})(?:en|n|e|s)?-?(?:verletzung|verletzungen|bruch|brüche|schmerz|schmerzen|op|operation|entzündung|leiden|probleme|problem|beschwerden|erkrankung|schaden|prellung|zerrung|riss|verstauchung|vorfall|schwäche|insuffizienz|transplantation|tumor|krebs|infekt|infektion|implantat|prothese)$`,
+  "u",
+);
+const BODY_OP_RE = new RegExp(String.raw`(?<![\p{L}])(?:${BODY_PARTS})[ \t]{1,3}(?:op|operation)(?![\p{L}])`, "giu");
+// Umschreibungen ("unsicher auf den Beinen", "nicht gut stiegen steigen kann", "er hot's mitn rücken").
+const HEALTH_PARAPHRASE_RES = [
+  /(?<![\p{L}])(?:unsicher|wackelig|schwach)[ \t]{1,3}auf[ \t]{1,3}den[ \t]{1,3}Beinen(?![\p{L}])/giu,
+  /(?<![\p{L}])(?:nicht|kaum|schlecht)[ \t]{1,3}(?:mehr[ \t]{1,3})?(?:gut[ \t]{1,3})?(?:(?:stiegen|treppen|stufen|weit)[ \t]{1,3})?(?:steigen|gehen|laufen|stehen)[ \t]{1,3}(?:kann|können|konnte|könnte)(?![\p{L}])/giu,
+  /(?<![\p{L}])(?:schlecht|nicht[ \t]{1,3}gut|kaum)[ \t]{1,3}zu[ \t]{1,3}Fu(?:ß|ss)(?![\p{L}])/giu,
+  /(?<![\p{L}])(?:can(?:no|')t|cannot)[ \t]{1,3}(?:walk[ \t]{1,3}far|climb[ \t]{1,3}stairs|use[ \t]{1,3}stairs)(?![\p{L}])/giu,
+  /(?<![\p{L}])(?:intervento|operazione|operata|operato)[ \t]{1,3}(?:al|alla|allo|all'|ai|agli|alle)[ \t]?(?:cuore|ginocchio|anca|schiena|spalla|piede|mano|braccio|gamba|occhio|occhi|polmone|rene|fegato|testa)(?![\p{L}])/giu,
+];
+const MIT_BODY_RE = new RegExp(
+  String.raw`(?<![\p{L}])(?:hat|hot|hab|habe|hats|hots|hat's|hot's|hab's|hat’s|hot’s)(?:[ \t]{1,3}es)?[ \t]{1,3}(?<v>(?:mitn|mitm|mit'm|mit[ \t]{1,3}dem|mit[ \t]{1,3}der|mit[ \t]{1,3}den|mit)[ \t]{1,3}(?:rücken|knie|hüfte|hüft|herz|bandscheibe|kreuz|magen|galle|nieren|lunge|schulter|füßen|fuß|augen|ohren|beinen|bein))(?![\p{L}])`,
+  "giud",
+);
 // Wortteile nur am Wortanfang: sonst "Kooperation", "Archiv", "Verkehrsbehinderung", "dementsprechend".
 const HEALTH_WORD_START = [
   "krank", "erkrank", "fieber", "infekt", "verletz", "chemo", "patient", "patiënt", "operiert", "operation",
-  "operazione", "surgery", "reha", "behindert", "behinderung", "invalide", "deaf", "stoma", "cancer",
+  "surgery", "reha", "behindert", "behinderung", "invalide", "deaf", "stoma", "cancer", "malat", "fracture",
+  "sprain", "seizure",
 ];
 // Ganze Wörter: Abkürzungen, die sonst in anderen Wörtern stecken ("Archiv").
 const HEALTH_WHOLE = ["hiv", "copd", "adhs", "adhd", "ms-patient"];
 const RELIGION_ANYWHERE = [
-  "halal", "koscher", "kosher", "gebetsraum", "gebetszeit", "gebetsteppich", "prayer room", "ramadan",
+  "halal", "koscher", "kosher", "gebetsraum", "gebetszeit", "gebetsteppich", "gebetsrichtung", "prayer", "qibla",
+  "kibla", "mecca", "mekka", "ramadan", "yom kippur", "rosh hashanah", "rosch haschana", "religiöser feiertag",
   "fastenbrechen", "iftar", "sabbat", "schabbat", "shabbat", "muslim", "moslem", "islam", "moschee", "mosque",
   "moschea", "moskee", "jüdisch", "jüdin", "jewish", "synagoge", "synagogue", "sinagoga", "christlich", "katholisch",
   "catholic", "cattolic", "evangelisch", "protestant", "buddhist", "zeugen jehovas", "jehovas", "konfession",
   "religiös", "religious", "gottesdienst", "pessach", "chanukka", "hanukkah",
 ];
-const RELIGION_WORD_START = ["orthodox", "hindu"];
-const RELIGION_WHOLE = ["sikh", "sikhs"];
+const RELIGION_WORD_START = ["orthodox", "hindu", "jainis"];
+const RELIGION_WHOLE = ["sikh", "sikhs", "jain", "jains", "jaina", "eid", "losar", "vesak", "diwali", "holi", "purim", "sukkot", "navratri", "bayram"];
+// Gebete ("Freitagsgebet", "Abendgebet"), aber nicht "gebeten".
+const PRAYER_RE = /(?:^|\p{Ll})gebete?$/u;
 
 interface KeywordSet {
   anywhere: RegExp | null;
@@ -1067,8 +1117,12 @@ const RELIGION = keywordSet(RELIGION_ANYWHERE, RELIGION_WORD_START, RELIGION_WHO
 // Ein Wort, auch mit Bindestrich ("Zöliakie-Patient", "Krebs-OP").
 const WORD_RE = /[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu;
 // Adjektive ("eine schwere …") nur nach einem Artikel, sonst würde "essen halal" mitgenommen.
-const ARTICLE_BEFORE_RE = /(?<![\p{L}])(?:eine|einen|ein|einer|keine|a|an|une|un|una)[ \t]{1,3}(?:\p{Ll}{2,20}(?:e|er|en|em|es)[ \t]{1,3})?$/iu;
-const OBJECT_AFTER_RE = /^[ \t]{1,3}(?:gegen|auf|to)[ \t]{1,3}[\p{L}\p{N}-]{1,30}/iu;
+const ARTICLE_BEFORE_RE =
+  /(?<![\p{L}])(?:(?:eine|einen|ein|einer|keine|une|un|una)[ \t]{1,3}(?:\p{Ll}{2,20}(?:e|er|en|em|es)[ \t]{1,3})?|(?:a|an)[ \t]{1,3}(?:\p{Ll}{3,20}[ \t]{1,3})?)$/iu;
+// "allergisch gegen Nüsse", "allergic to cats", "allergisch voor katten", "intollerante al lattosio"
+const OBJECT_AFTER_RE = /^[ \t]{1,3}(?:gegen|auf|to|voor|al|alla|allo|ai|agli|alle|a)[ \t]{1,3}[\p{L}\p{N}-]{1,30}/iu;
+// "buddhistischer Feiertag", "Jain festival"
+const RELIGION_AFTER_RE = /^[ \t]{1,3}(?:Feiertag|Feiertage|Fest|Feste|Fastenzeit|Gebet|Gebete|Neujahr|holiday|holidays|festival|festa|festività)(?![\p{L}])/iu;
 const OP_BEFORE_RE = /(?:nach|vor|wegen)[ \t]{1,3}(?:der|einer|seiner|ihrer|meiner)[ \t]{1,3}$/iu;
 
 /**
@@ -1080,32 +1134,51 @@ function detectKeywords(
   set: KeywordSet,
   type: EntityType,
   source: string,
-  extraWord?: (word: string, start: number) => boolean,
+  options: { extraWord?: (word: string, start: number) => boolean; extraSpans?: Array<[number, number]>; after?: RegExp } = {},
 ): Finding[] {
-  const spans: Array<[number, number]> = [];
+  const spans: Array<[number, number]> = [...(options.extraSpans ?? [])];
   for (const m of matchAll(text, WORD_RE)) {
     const w = m[0].toLowerCase();
-    if (set.anywhere?.test(w) || set.wordStart?.test(w) || set.whole?.test(w) || extraWord?.(m[0], m.index)) {
+    if (set.anywhere?.test(w) || set.wordStart?.test(w) || set.whole?.test(w) || options.extraWord?.(m[0], m.index)) {
       spans.push([m.index, m.index + m[0].length]);
     }
   }
   if (set.phrases) for (const m of matchAll(text, set.phrases)) spans.push([m.index, m.index + m[0].length]);
+  const after = options.after ?? OBJECT_AFTER_RE;
   return spans.map(([s, e]) => {
     const article = ARTICLE_BEFORE_RE.exec(text.slice(Math.max(0, s - 40), s));
-    const object = OBJECT_AFTER_RE.exec(text.slice(e, e + 40));
+    const object = after.exec(text.slice(e, e + 40));
     return finding(text, article ? s - article[0].length : s, object ? e + object[0].length : e, type, source);
   });
 }
 
 export function detectHealth(text: string): Finding[] {
-  // "Knie-OP", "Krebs-OP", "nach einer OP"
-  const op = (word: string, start: number) =>
-    /-OP$/.test(word) || (word === "OP" && OP_BEFORE_RE.test(text.slice(Math.max(0, start - 30), start)));
-  return detectKeywords(text, HEALTH, "GESUNDHEIT", "gesundheit", op);
+  // "Knie-OP", "Krebs-OP", "nach einer OP", "Knieverletzung", "Rückenschmerzen"
+  const extraWord = (word: string, start: number) =>
+    /-OP$/.test(word) ||
+    (word === "OP" && OP_BEFORE_RE.test(text.slice(Math.max(0, start - 30), start))) ||
+    BODY_CONDITION_RE.test(word.toLowerCase());
+  const extraSpans: Array<[number, number]> = [];
+  for (const re of [BODY_OP_RE, ...HEALTH_PARAPHRASE_RES]) for (const m of matchAll(text, re)) extraSpans.push([m.index, m.index + m[0].length]);
+  for (const m of matchAll(text, MIT_BODY_RE)) {
+    const span = groupSpan(m, "v");
+    if (span) extraSpans.push(span);
+  }
+  const found = detectKeywords(text, HEALTH, "GESUNDHEIT", "gesundheit", { extraWord, extraSpans });
+  for (const m of matchAll(text, DIET_RE)) {
+    const [s, e] = sentenceAround(text, m.index, m.index + m[0].length);
+    if (found.some((f) => f.start < e && s < f.end) || NEED_RE.test(text.slice(s, e))) {
+      found.push(finding(text, m.index, m.index + m[0].length, "GESUNDHEIT", "gesundheit:ernaehrung"));
+    }
+  }
+  return found;
 }
 
 export function detectReligion(text: string): Finding[] {
-  return detectKeywords(text, RELIGION, "RELIGION", "religion");
+  return detectKeywords(text, RELIGION, "RELIGION", "religion", {
+    extraWord: (word) => PRAYER_RE.test(word.toLowerCase()) || /^gebets/u.test(word.toLowerCase()),
+    after: RELIGION_AFTER_RE,
+  });
 }
 
 // ---------------------------------------------------------------------------
