@@ -18,7 +18,7 @@ Oberfläche und MCP-Server sind zwei getrennte Prozesse. Sie teilen sich den Dat
 
 ## Datenfluss
 
-1. **Ablegen:** Der Mitarbeiter fügt Text ein. Der Kern erkennt sensible Stellen und erzeugt die KI-Sicht mit Platzhaltern. Bei Buchhaltung laufen die Bezeichnungen aus dem Kontenplan durch dieselbe Erkennung (dieselbe Person bekommt dort denselben Platzhalter). Original, Zuordnung, Fundstellen **und die KI-Sicht** werden verschlüsselt gespeichert: Auch die KI-Sicht kann übersehene Angaben enthalten.
+1. **Ablegen:** Der Mitarbeiter fügt Text ein oder lädt eine Datei (Zeichensatz wird erkannt). Zuerst wird der Text lesbar und einheitlich gemacht (`src/core/normalize.ts`, `src/core/mail.ts`): MIME-Mails entschlüsselt, HTML zu Text, Sonder-Leerzeichen, zerlegte Umlaute und unsichtbare Zeichen vereinheitlicht. Genau dieser Text ist das Original, das gespeichert, erkannt und geprüft wird. Dann erkennt der Kern sensible Stellen und erzeugt die KI-Sicht mit Platzhaltern. Bei Buchhaltung laufen die Bezeichnungen aus dem Kontenplan durch dieselbe Erkennung (dieselbe Person bekommt dort denselben Platzhalter). Original, Zuordnung, Fundstellen **und die KI-Sicht** werden verschlüsselt gespeichert: Auch die KI-Sicht kann übersehene Angaben enthalten.
 2. **Prüfen:** Die Oberfläche zeigt Original und KI-Sicht nebeneinander, bei Buchhaltung auch den Kontenplan. Der Mitarbeiter schwärzt Fehlendes (die markierte Stelle geht mit) oder nimmt Fehlalarme heraus, dann gibt er frei. Die Freigabe nennt die angezeigte Fassung (`rev`); hat sich das Dokument inzwischen geändert, etwa in einem zweiten Fenster, lehnt der Bot ab.
 3. **KI arbeitet:** Über den MCP-Server sieht die KI nur freigegebene Dokumente, und zwar nur die geprüfte KI-Sicht samt geprüftem Kontenplan. `dokument_lesen` nennt die **Fassung**; jedes Speicherwerkzeug muss sie angeben. Nach „Zurück zur Prüfung“ und neuer Freigabe steigt die Fassung, Ergebnisse zur alten Fassung werden abgelehnt, weil Platzhalter dann andere Personen bezeichnen können.
 4. **Zurückübersetzen:** Der Bot setzt die Originale ein, rechnet Steuern und Summen nach und erzeugt Prüfhinweise. Das fertige Ergebnis liegt verschlüsselt. Die KI bekommt als Antwort nur Hinweise und Beträge.
@@ -59,9 +59,17 @@ data/
 └── rechnungsnummern.json       Zähler je Jahr
 ```
 
+## Zugang zur Oberfläche
+
+Die Oberfläche läuft nur auf Loopback. Weil 127.0.0.1 jedes Programm und jeder Benutzer auf dem Rechner erreicht, braucht jede Anfrage an die Daten ein Zugangs-Cookie (HttpOnly, SameSite=Strict). Gesetzt wird es nur über den Start-Link, den der Bot beim Start im Konsolenfenster ausgibt; der Schlüssel darin ist zufällig und gilt bis zum nächsten Start. Änderungen verlangen zusätzlich den passenden Origin-Header, der Host-Header muss eine lokale Adresse sein (DNS-Rebinding).
+
+## Platzhalter-Nummern
+
+Jedes Dokument merkt sich verschlüsselt, welche Angabe welche Nummer bekommen hat. Nach Nachschwärzen, „Nicht sensibel“ oder „Zurück zur Prüfung“ behält jede Angabe ihre Nummer, und eine einmal vergebene Nummer bezeichnet nie eine andere Angabe. Zusammen mit der Fassung beim Speichern kann ein Platzhalter so nie still eine andere Person meinen.
+
 ## Sperren
 
-Oberfläche und MCP-Server können gleichzeitig auf dasselbe Dokument zugreifen. Laden, Prüfen und Speichern geschehen deshalb immer unter einer Sperre je Dokument (`sperren/dokument-<id>.lock`), Rechnungsnummern unter einer eigenen Sperre.
+Oberfläche und MCP-Server können gleichzeitig auf dasselbe Dokument zugreifen. Laden, Prüfen und Speichern geschehen deshalb immer unter einer Sperre je Dokument (`sperren/dokument-<id>.lock`), Rechnungsnummern unter einer eigenen Sperre (Umsetzung: `src/store/dateien.ts`). Beim Speichern prüft der Bot zusätzlich, dass die Datei noch genau den geladenen Stand hat.
 
 - Die Sperrdatei entsteht in einem Schritt mit vollständigem Inhalt (Prozessnummer, Systemstart, Startzeit des Prozesses, Zufallskennung): erst in eine eigene Datei geschrieben, dann per Hardlink veröffentlicht. Dateisysteme ohne Hardlinks (FAT, manche Netzlaufwerke) legen exklusiv an und schreiben danach; eine kurz leere Sperrdatei gilt dann als belegt.
 - Freigeben darf nur der Besitzer (Vergleich der Kennung).

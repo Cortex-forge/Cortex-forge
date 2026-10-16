@@ -58,7 +58,9 @@ codex exec --sandbox read-only "$(cat docs/04-reviews/pruefauftrag.md)"
 
 ## So läuft ein Gemini-Review
 
-Mit der Gemini-CLI im Projektordner den Inhalt von `pruefauftrag.md` als Auftrag übergeben, nur lesend.
+Über Peters Google-Pro-Abo in **Antigravity** mit **Gemini 4 Argon (High)** auf dem eigenen Rechner. Schritt für Schritt: [`gemini-anleitung.md`](gemini-anleitung.md).
+
+In einer Cloud-Sitzung von Claude Code geht die Anmeldung mit dem Google-Konto nicht sauber: Die Gemini-CLI kennt keine Anmeldung per Gerätecode, sie verlangt einen Code von der Google-Seite zurück in die Kommandozeile, und der liefe über den Chat. Alternative wäre ein API-Schlüssel aus Google AI Studio als Netzwerk-Secret der Cloud-Umgebung.
 
 ## Ablage
 
