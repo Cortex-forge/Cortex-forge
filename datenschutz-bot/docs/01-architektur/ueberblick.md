@@ -52,7 +52,7 @@ data/
 │                               Inhalte in drei verschlüsselten Teilen: "kopf" (Titel), "ki" (KI-Sicht,
 │                               Kontenplan der KI, Ergebnis der KI, Prüfhinweise), "geheim" (Original,
 │                               Zuordnung, Markierungen, fertiges Ergebnis). AES-256-GCM, jeder Teil an
-│                               Dokument und Feld gebunden.
+│                               Dokument und Feld gebunden. "pruefsumme": HMAC über den ganzen Datensatz.
 ├── rechnungen/JJJJ-NNNN.json   archivierte Rechnungen, verschlüsselt
 ├── sperren/                    Sperrdateien (kurzlebig)
 ├── protokoll.jsonl             Ereignisse ohne Inhalte

@@ -34,13 +34,14 @@ Ob der KI-Anbieter überhaupt personenbezogene Daten erhält, ist nach EuGH C-41
 | Menschliche Prüfung vor Freigabe an die KI; die Freigabe gilt genau für die angezeigte Fassung, samt Kontenplan | umgesetzt | |
 | Ergebnisse der KI nur zur aktuell freigegebenen Fassung (keine falsche Zuordnung nach Änderungen) | umgesetzt | |
 | Menschliche Prüfung vor Versand oder Buchung | umgesetzt | |
-| Verschlüsselung aller gespeicherten Inhalte (AES-256-GCM, an Dokument und Feld gebunden), auch der Platzhalter-Fassung | umgesetzt | Schlüssel in KMS/HSM bzw. Schlüsselbund des Betriebssystems |
+| Verschlüsselung aller gespeicherten Inhalte (AES-256-GCM, an Dokument und Feld gebunden), auch der Platzhalter-Fassung | umgesetzt | Schlüssel in KMS/HSM bzw. Schlüsselbund des Betriebssystems; Schlüssel je Dokument, damit Löschen auch in Kopien wirkt |
+| Prüfsumme (HMAC) über jeden Datensatz: Status, Fassung und verschlüsselte Teile lassen sich ohne Schlüssel nicht ändern | umgesetzt | Schutz gegen das Zurückspielen ganzer älterer Dateien |
 | Schlüssel getrennt von den Daten (`DSB_KEY`/`DSB_KEY_FILE`), Schlüsselkennung je Dokument | umgesetzt (optional) | Pflicht im Echtbetrieb |
 | Kein Zugriff lokaler KI-Agenten auf Daten und Schlüssel | dokumentiert, Sperre für Claude Code | Bot unter eigenem Benutzer oder in einem Container |
 | Datenschutz-Probe gegen Lösungsblatt vor jedem Merge | umgesetzt (`npm run probe`, Nachweis) | Probe mit echten, anonymisierten Dokumenten vor Ort |
 | Zugriff nur lokal (localhost) mit Host- und Origin-Prüfung; andere Adressen verweigert | umgesetzt | Login, Rollen, TLS bei Serverbetrieb |
 | Zugang zur Oberfläche nur über den Start-Link (Schlüssel als Kopfzeile, kein Cookie), auch gegenüber anderen Programmen, Benutzern und lokalen Diensten auf dem Rechner | umgesetzt | Benutzerkonten |
-| Eingaben vor der Erkennung lesbar und einheitlich (MIME-Mails, HTML, Sonderzeichen, Zeichensatz); codierte Blöcke mit Text werden geschwärzt | umgesetzt | PDF/OCR |
+| Eingaben vor der Erkennung lesbar und einheitlich (MIME-Mails auch mit mbox-Zeile, HTML, Sonderzeichen, Ligaturen, volle Breite, Zeichensatz); unsichtbare Formatzeichen werden entfernt, damit niemand der KI versteckte Anweisungen schickt; codierte Blöcke mit Text werden geschwärzt | umgesetzt | PDF/OCR |
 | Protokoll ohne Inhalte | umgesetzt | Aufbewahrungsfrist festlegen |
 | Löschen nach Abschluss | umgesetzt (manuell) | automatische Löschfrist |
 | Datensicherung | keine | Konzept nötig (verschlüsselt, mit Löschung) |
