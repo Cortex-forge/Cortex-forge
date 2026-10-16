@@ -165,8 +165,10 @@ test("Rückübersetzung bleibt linear, auch bei sehr vielen Platzhaltern", () =>
 test("Nachname aus Großbuchstaben steht nach der Anrede in üblicher Schreibweise", () => {
   assert.equal(reidentify("Sehr geehrte Frau [PERSON_1]", pseudonymize("Gast: HUBER Anna. Sehr geehrte Frau Huber, danke.").mapping).text, "Sehr geehrte Frau Huber");
   assert.equal(reidentify("Liebe Frau [PERSON_1]", pseudonymize("Mit freundlichen Grüßen\nANNA MÜLLER-BERGER").mapping).text, "Liebe Frau Müller-Berger");
-  // Der volle Name bleibt, wie er im Dokument stand.
-  assert.equal(reidentify("Gast: [PERSON_1]", pseudonymize("Gast: HUBER Anna").mapping).text, "Gast: HUBER Anna");
+  // Nachname zuerst, mit oder ohne Komma: eine Person.
+  assert.equal(pseudonymize("Kontakt: Huber, Anna; Huber Anna; Anna Huber.").text, "Kontakt: [PERSON_1]; [PERSON_1]; [PERSON_1].");
+  // Der volle Name in üblicher Reihenfolge und Schreibweise.
+  assert.equal(reidentify("Gast: [PERSON_1]", pseudonymize("Gast: HUBER Anna").mapping).text, "Gast: Anna Huber");
 });
 
 // Review Claude 3 #16

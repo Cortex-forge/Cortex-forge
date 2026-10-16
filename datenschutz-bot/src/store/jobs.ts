@@ -1084,7 +1084,8 @@ export class JobStore {
       // Hat die KI Kontaktdaten "erfunden", die im Original stehen, hat die Erkennung sie übersehen: deutlich melden
       // (nur in der Oberfläche; die KI erfährt nichts über das Original).
       const original = this.internText(job, secret).text;
-      secret.lecks = erfunden.filter((e) => seenInOriginal(original, e)).map((e) => `${e.label}: ${e.value}`);
+      const imOriginal = originalMatcher(original);
+      secret.lecks = erfunden.filter((e) => imOriginal(e)).map((e) => `${e.label}: ${e.value}`);
       ki.ergebnisKi = ergebnis;
       ki.pruefung = pruefung;
       job.geheim = this.seal(job, "geheim", secret);
@@ -1103,12 +1104,19 @@ export class JobStore {
   }
 }
 
-/** Steht eine von der KI geschriebene Kontaktangabe im Original (Ziffern bzw. Adresse verglichen)? */
-function seenInOriginal(original: string, inv: InventedData): boolean {
-  if (inv.type === "EMAIL") return original.toLowerCase().includes(inv.value.toLowerCase());
+/**
+ * Steht eine von der KI geschriebene Kontaktangabe im Original (Ziffern bzw. Adresse verglichen)? Das Original wird
+ * nur einmal aufbereitet, auch bei sehr vielen Angaben (Review Claude 3 #14).
+ */
+function originalMatcher(original: string): (inv: InventedData) => boolean {
   const norm = (v: string) => v.replace(/[^\p{L}\p{N}]/gu, "").toUpperCase();
-  const target = norm(inv.value);
-  return target.length >= 6 && norm(original).includes(target);
+  const lower = original.toLowerCase();
+  const normalized = norm(original);
+  return (inv) => {
+    if (inv.type === "EMAIL") return lower.includes(inv.value.toLowerCase());
+    const target = norm(inv.value);
+    return target.length >= 6 && normalized.includes(target);
+  };
 }
 
 /**

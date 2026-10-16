@@ -1036,7 +1036,10 @@ export function detectPersons(text: string): Finding[] {
       if (pre) {
         start = pre.start;
         extra.nachname = pre.token;
-        if (pre.comma) extra.canonical = `${text.slice(m.index, span.end)} ${pre.token}`;
+        // "Huber, Anna" und "Huber Anna" (Nachname zuerst) sind dieselbe Person wie "Anna Huber" (Review Claude 3 #20).
+        // Großgeschriebene Nachnamen ("HUBER Anna") in üblicher Schreibweise: "Anna Huber".
+        const surname = isCaps(pre.token) ? pre.token.toLowerCase().replace(/(^|-)(\p{Ll})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase()) : pre.token;
+        extra.canonical = `${text.slice(m.index, span.end)} ${surname}`;
       }
     }
     add(start, span.end, "person:vorname", extra);
