@@ -168,3 +168,10 @@ test("Nachname aus Großbuchstaben steht nach der Anrede in üblicher Schreibwei
   // Der volle Name bleibt, wie er im Dokument stand.
   assert.equal(reidentify("Gast: [PERSON_1]", pseudonymize("Gast: HUBER Anna").mapping).text, "Gast: HUBER Anna");
 });
+
+// Review Claude 3 #16
+test("Ehepaar mit gleichem Nachnamen: Die Angabe zu „Frau Gruber“ landet nicht beim Mann", () => {
+  const r = pseudonymize("Thomas Gruber bucht ein Doppelzimmer für sich und seine Frau. Frau Gruber hat eine Nussallergie.");
+  assert.equal(r.text, "[PERSON_1] bucht ein Doppelzimmer für sich und seine Frau. Frau [PERSON_2] hat [GESUNDHEIT_1].");
+  assert.equal(reidentify("Für Frau [PERSON_2] bereiten wir alles ohne Nüsse zu. Gruß an [PERSON_1].", r.mapping).text, "Für Frau Gruber bereiten wir alles ohne Nüsse zu. Gruß an Thomas Gruber.");
+});

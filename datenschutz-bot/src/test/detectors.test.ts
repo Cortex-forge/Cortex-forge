@@ -142,9 +142,12 @@ test("Gleiche Person bekommt überall denselben Platzhalter; ein Vorname allein 
   assert.equal(ki("Bitte an Herrn Gruber. Gruber ruft zurück."), "Bitte an Herrn [PERSON_1]. [PERSON_1] ruft zurück.");
   // Review Claude 2 #9: Ein Vorname allein kann eine andere Person sein. Er bekommt einen eigenen Platzhalter, und
   // zurückübersetzt wird genau dieser Vorname, nie der volle Name einer anderen Person.
+  // Review Claude 3 #16: Auch "Frau Huber" bekommt einen eigenen Platzhalter, wenn "Anna Huber" nie mit "Frau" stand
+  // (es kann der Ehepartner sein). Mit derselben Anrede ist es dieselbe Person.
   const r = pseudonymize("Anna Huber schreibt. Später: Frau Huber und Anna.");
-  assert.equal(r.text, "[PERSON_1] schreibt. Später: Frau [PERSON_1] und [PERSON_2].");
-  assert.deepEqual(r.mapping.map((m) => m.original), ["Anna Huber", "Anna"]);
+  assert.equal(r.text, "[PERSON_1] schreibt. Später: Frau [PERSON_2] und [PERSON_3].");
+  assert.deepEqual(r.mapping.map((m) => m.original), ["Anna Huber", "Huber", "Anna"]);
+  assert.equal(ki("Frau Anna Huber schreibt. Später: Frau Huber."), "Frau [PERSON_1] schreibt. Später: Frau [PERSON_1].");
   const t = pseudonymize("Unser Sohn Thomas (8) kommt mit. Ihr Ansprechpartner im Hotel ist Thomas Müller.");
   assert.equal(t.text, "Unser Sohn [PERSON_1] (8) kommt mit. Ihr Ansprechpartner im Hotel ist [PERSON_2].");
   assert.equal(reidentify("Für [PERSON_1] stellen wir ein Kinderbett bereit.", t.mapping).text, "Für Thomas stellen wir ein Kinderbett bereit.");

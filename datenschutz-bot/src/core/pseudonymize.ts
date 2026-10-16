@@ -54,6 +54,19 @@ function containsWords(outer: string, inner: string): boolean {
   return inner.split(/[\s,]+/).every((w) => words.has(w));
 }
 
+// Anrede direkt vor einer Stelle: weiblich, männlich oder unbekannt.
+const FEMALE_BEFORE =
+  /(?<![\p{L}])(?:Frau|frau|Fr\.|Mrs\.?|Ms\.?|Miss|Signora|signora|Sig\.ra|sig\.ra|Signorina|signorina|Mevrouw|mevrouw|Mevr\.|mevr\.|Madame|madame|Mme\.?)[ \t]+(?:[\p{L}.-]{1,12}\.[ \t]+){0,3}$/u;
+const MALE_BEFORE =
+  /(?<![\p{L}])(?:Herrn?|herrn?|Hr\.|Mr\.?|Signore?|signore?|Sig\.|sig\.|Meneer|meneer|Dhr\.|dhr\.|[Dd]e[ \t]heer|Monsieur|monsieur)[ \t]+(?:[\p{L}.-]{1,12}\.[ \t]+){0,3}$/u;
+
+function salutationBefore(text: string, start: number): "w" | "m" | undefined {
+  const before = text.slice(Math.max(0, start - 40), start);
+  if (FEMALE_BEFORE.test(before)) return "w";
+  if (MALE_BEFORE.test(before)) return "m";
+  return undefined;
+}
+
 /** Der Nachname eines vollen Namens: gespeichert bei der Erkennung, sonst der letzte Teil. */
 function surnameKey(owner: Owner): string {
   return (owner.nachname ?? owner.full.split(/[\s,]+/).filter(Boolean).pop() ?? owner.full).toLowerCase();
@@ -107,10 +120,26 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
     return surnameKey(owner).split(/[\s-]+/).includes(key) || surnameKey(owner) === key ? owner : undefined;
   };
 
+  // Mit welcher Anrede stand ein voller Name im Text? ("Frau Anna Huber" → w)
+  const salutationsOf = new Map<string, Set<"w" | "m">>();
+  for (const f of findings) {
+    if (f.type !== "PERSON") continue;
+    const full = (f.canonical ?? f.value).trim().replace(/\s+/g, " ").toLowerCase();
+    const sal = salutationBefore(text, f.start);
+    if (!sal) continue;
+    const set = salutationsOf.get(full) ?? new Set();
+    set.add(sal);
+    salutationsOf.set(full, set);
+  }
+
   const withCanonical = findings.map((f) => {
     if (f.type !== "PERSON" || f.canonical) return f;
     const owner = canonicalFor(f.value.trim());
     if (!owner) return f;
+    // "Thomas Gruber … Frau Gruber": Mit Anrede gehört der Nachname nur dann zum vollen Namen, wenn dieser selbst mit
+    // derselben Anrede vorkam. Sonst kann es der Ehepartner sein: eigener Platzhalter (Review Claude 3 #16).
+    const sal = salutationBefore(text, f.start);
+    if (sal && !salutationsOf.get(owner.full.toLowerCase())?.has(sal)) return f;
     return { ...f, canonical: owner.full, ...(owner.nachname && !f.nachname ? { nachname: owner.nachname } : {}) };
   });
 
