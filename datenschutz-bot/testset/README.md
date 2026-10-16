@@ -4,7 +4,7 @@
 
 Die Datenschutz-Probe sucht jede Angabe auch in Teilen (Nachname ohne Vorname, Ziffernfolgen einer IBAN). Steht ein Namensteil im selben Text als gewöhnliches Wort ("an euren Koch" neben "Thomas Koch"), nennt ihn das Feld `teilwort_erlaubt`.
 
-Absichtlich enthalten sind auch schwierige Fälle: kleingeschriebene Namen, Namen ohne Anrede, Namenszusätze wie „van der“, ausländische Telefonformate, Adressen ohne Straßen-Endung, Gesundheitsangaben in Umschreibungen. Dazu kommen Fälle ganz ohne sensible Angaben, um Fehlalarme zu messen.
+Gemessen wird über den echten Ablageweg (`prepareDocument`): Mails werden entschlüsselt, HTML in Text verwandelt, Zeichen vereinheitlicht; die Werte im Lösungsblatt stehen so, wie sie danach im Text stehen (T48–T50). Absichtlich enthalten sind auch schwierige Fälle: kleingeschriebene Namen, Namen ohne Anrede, Namenszusätze wie „van der“, ausländische Telefonformate, Adressen ohne Straßen-Endung, Gesundheitsangaben in Umschreibungen. Dazu kommen Fälle ganz ohne sensible Angaben, um Fehlalarme zu messen.
 
 Messen: `npm run build && npm run messung` (Bericht in `messungen/`, nicht im Repo); `npm run messung -- --ablegen nach-korrektur` legt ihn in `docs/03-qualitaet/` ab.
 

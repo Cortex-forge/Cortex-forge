@@ -11,6 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { CONFIG_DIR, PROJECT_ROOT } from "../config.js";
 import { escapeRegExp } from "../core/detectors.js";
+import { prepareDocument } from "../core/normalize.js";
 import { pseudonymize } from "../core/pseudonymize.js";
 import { ENTITY_LABELS, isEntityType, type EntityType } from "../core/types.js";
 import { loadCompanies } from "../store/settings.js";
@@ -57,8 +58,10 @@ const fehlalarme: string[] = [];
 const falscherTyp: string[] = [];
 
 for (const fall of faelle) {
-  const { findings } = pseudonymize(fall.text, { companies });
-  const covered = new Uint8Array(fall.text.length);
+  // Wie beim Ablegen: Mails entschlüsseln, HTML in Text, Zeichen vereinheitlichen (Review Claude 3 #21).
+  const text = prepareDocument(fall.text).text;
+  const { findings } = pseudonymize(text, { companies });
+  const covered = new Uint8Array(text.length);
   for (const f of findings) covered.fill(1, f.start, f.end);
 
   // Alle Vorkommen der erwarteten Angaben, nur als ganze Wörter (nicht "Anna" in "Annahme").
@@ -67,7 +70,7 @@ for (const fall of faelle) {
     if (!isEntityType(s.typ)) throw new Error(`${fall.id}: unbekannter Typ ${s.typ}`);
     const re = new RegExp(String.raw`(?<![\p{L}\p{N}])${escapeRegExp(s.wert)}(?![\p{L}\p{N}])`, "gu");
     let found = false;
-    for (const m of fall.text.matchAll(re)) {
+    for (const m of text.matchAll(re)) {
       found = true;
       expected.push({ start: m.index, end: m.index + m[0].length, typ: s.typ, wert: s.wert });
     }
@@ -80,7 +83,7 @@ for (const fall of faelle) {
     z.erwartet++;
     let ok = true;
     for (let i = e.start; i < e.end; i++) {
-      if (!covered[i] && /[\p{L}\p{N}@]/u.test(fall.text[i] ?? "")) {
+      if (!covered[i] && /[\p{L}\p{N}@]/u.test(text[i] ?? "")) {
         ok = false;
         break;
       }

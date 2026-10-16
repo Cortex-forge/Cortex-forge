@@ -1193,6 +1193,81 @@
           "typ": "ADRESSE"
         }
       ]
+    },
+    {
+      "id": "T48",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "E-Mail im MIME-Format: HTML in Base64, Betreff als encoded word (Ablageweg .eml)",
+      "text": "From: Rosalind Achleitner <r.achleitner@example.com>\nSubject: =?UTF-8?Q?Anfrage_f=C3=BCr_M=C3=A4rz?=\nMIME-Version: 1.0\nContent-Type: text/html; charset=utf-8\nContent-Transfer-Encoding: base64\n\nPGh0bWw+PGJvZHk+PHAgc3R5bGU9ImZvbnQtZmFtaWx5OkFyaWFsIj5HdXRlbiBUYWcsPC9wPjxw\nPndpciBtw7ZjaHRlbiB2b20gMy4gYmlzIDcuIE3DpHJ6IDIwMjcgZWluIERvcHBlbHppbW1lciBi\ndWNoZW4uIE1laW4gTWFubiBoYXQgZWluZSBMYWt0b3NlaW50b2xlcmFuei48L3A+PHA+TGllYmUg\nR3LDvMOfZTxicj5Sb3NhbGluZCBBY2hsZWl0bmVyPGJyPk1vYmlsIDA2NzYgNTUxMjM5ODwvcD48\nL2JvZHk+PC9odG1sPg==\n",
+      "sensibel": [
+        {
+          "wert": "Rosalind Achleitner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "r.achleitner@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Laktoseintoleranz",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "0676 5512398",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T49",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "E-Mail mit Quoted-Printable, Umlauten im Absender (ISO-8859-1) und weichem Zeilenumbruch mitten im Ort",
+      "text": "From: =?ISO-8859-1?Q?J=FCrgen_W=F6rgetter?= <jw@example.org>\nSubject: Rechnung\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: quoted-printable\n\nSehr geehrte Damen und Herren,\n\nbitte die Rechnung an J=C3=BCrgen W=C3=B6rgetter, Hauptstra=C3=9Fe 12, 6020 I=\nnnsbruck senden.\nIBAN AT61 1904 3002 3457 3201\n\nDanke\n",
+      "sensibel": [
+        {
+          "wert": "Jürgen Wörgetter",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "jw@example.org",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Hauptstraße 12",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "AT61 1904 3002 3457 3201",
+          "typ": "IBAN"
+        }
+      ]
+    },
+    {
+      "id": "T50",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Aus einem PDF kopiert: Ligaturen (ﬃ, ﬀ) und geschützter Bindestrich in der Telefonnummer",
+      "text": "Rechnung an Steﬃ Gruber\nTelefon: 0664‑1234567\nWir haben die Oﬀerte für Frau Gruber erhalten und bitten um Zahlung bis 30. 11. 2026.",
+      "sensibel": [
+        {
+          "wert": "Steffi Gruber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Gruber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0664-1234567",
+          "typ": "TELEFON"
+        }
+      ]
     }
   ]
 }

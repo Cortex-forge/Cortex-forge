@@ -24,6 +24,8 @@
 - Neues, blind erstelltes Prüfset 2 (50 Fälle, 640 Angaben): **82,0 % Trefferquote, 90,7 % Genauigkeit** (vorher Prüfset 1 blind: 72,8 % / 91,7 %); Ziele nicht erreicht. Prüfset 1 nach der Arbeit daran: 99,1 % / 95,6 % (kein unabhängiger Wert mehr)
 - Messberichte für blinde Prüfsets nur mit Zahlen (`--nur-zahlen`)
 - 112 Tests; Nachweis scheitert, wenn ein Test übersprungen wird; Wortlisten ohne doppelte Einträge
+- Messung über den echten Ablageweg; Entwicklungsset mit Base64-HTML-Mail, Quoted-Printable-Mail und PDF-Kopie (T48–T50)
+- Oberfläche nennt beim Prüfen, wie viel die Erkennung noch übersieht
 
 ## [0.5.0] – 2026-10-16 – Befunde aus der dritten Codex-Prüfung
 
