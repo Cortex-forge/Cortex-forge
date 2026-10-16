@@ -655,3 +655,15 @@ test("Bezeichnung ohne Leerzeichen direkt vor der Nummer (Kopien aus PDF)", () =
   // Gegenproben: ein Datum nach „Tel.“, „tel“ mitten im Wort
   assert.equal(ki("Tel.01.09.2026 und Hotel0664"), "Tel.01.09.2026 und Hotel0664");
 });
+
+test("Zeilenumbruch mitten in einer Angabe (Kopien aus PDF, schmale Spalten)", () => {
+  assert.equal(ki("Gast: Anna\nHuber, Zimmer 12"), "Gast: [PERSON_1], Zimmer 12");
+  assert.equal(ki("Sehr geehrte Frau\nHuber,"), "Sehr geehrte Frau\n[PERSON_1],");
+  assert.equal(ki("Tel.: 0664\n1234567"), "Tel.: [TELEFON_1]");
+  assert.equal(ki("Kundennummer\nK-4711"), "Kundennummer\n[KUNDENNR_1]");
+  const r = pseudonymize("Gast: Anna\nHuber");
+  assert.equal(reidentify(r.text, r.mapping).text, "Gast: Anna Huber");
+  // Gegenproben: Eine Zeile mit Bezeichnung ist ein neues Feld; Firma und Adresse bleiben zeilenweise.
+  assert.equal(ki("An: Florian Prantl\nBetreff: Anfrage"), "An: [PERSON_1]\nBetreff: Anfrage");
+  assert.equal(ki("Danke, Hotel Alpenrose\nFormaggi und Wein kommen morgen."), ki("Danke, Hotel Alpenrose\n\nFormaggi und Wein kommen morgen.").replace("\n\n", "\n"));
+});

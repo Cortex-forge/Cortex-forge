@@ -11,6 +11,7 @@
 - Zwei IBANs oder zwei Telefonnummern direkt hintereinander werden beide ersetzt
 - IBAN ohne Leerzeichen zum nächsten Wort („…3201BIC“, „IBANAT61…“, typisch für Kopien aus PDF): erkannt über die Länge je Land und die Prüfziffer
 - Telefon, UID und Steuernummer direkt an der Bezeichnung („Telefon0664 1234567“, „Tel.0512/123456“, „UID-NummerATU12345678“)
+- Zeilenumbruch mitten in einer Angabe („Frau⏎Huber“, „0664⏎1234567“, „Kundennummer⏎K-4711“): Personen, Kontaktdaten und Kennungen werden auch über einen einfachen Zeilenumbruch erkannt
 - Verschiedene Kennzeichen („B-AB 123“, „BA-B 123“) und Codes („AB12“, „ab12“) bekommen eigene Platzhalter
 - Ein Nachname mehrerer Personen bleibt mehrdeutig, auch wenn danach ein längerer Name kommt
 - HTML: Der sichtbare Kopfbereich (`<header>`) bleibt erhalten

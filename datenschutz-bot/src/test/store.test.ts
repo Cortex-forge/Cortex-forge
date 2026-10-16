@@ -706,8 +706,9 @@ test("Speichern prüft, dass die Datei noch den geladenen Stand hat", () => {
 test("Übernommene übersehene Angaben werden als Leck gemeldet; Abschluss ohne Titel; neuer Typ beim Nachschwärzen; keine Gutschriften", () => {
   const store = tempStore();
   // #15: Die Erkennung übersieht eine Nummer (kein Signalwort), die KI übernimmt sie ins Ergebnis.
-  // (über Zeilen verteilt, wie nach einem schlechten Kopieren aus einem PDF)
-  const job = store.create({ art: "hotel", text: "Rückruf bitte:\n0512\n123456\nDanke." });
+  // (in eigenen Absätzen, wie nach einem schlechten Kopieren aus einem PDF; über einfache Zeilenumbrüche hinweg wird
+  // sie seit 0.6.1 erkannt)
+  const job = store.create({ art: "hotel", text: "Rückruf bitte:\n\n0512\n\n123456\n\nDanke." });
   assert.ok((store.detail(job.id).job.textKi ?? "").includes("123456"), "Voraussetzung: hier nicht erkannt");
   release(store, job.id);
   const { pruefung } = save(store, job.id, { art: "text", text: "Wir rufen Sie unter 0512 123456 zurück." });

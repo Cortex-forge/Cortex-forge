@@ -2019,9 +2019,33 @@ function splitAtSegments(text: string, findings: Finding[]): Finding[] {
   return out;
 }
 
+/**
+ * Zeilenumbrüche mitten in einer Angabe ("Frau⏎Huber", "0664⏎1234567", "Kundennummer⏎K-4711"), typisch für Kopien aus
+ * PDF und schmale Spalten: Die Erkennung läuft zusätzlich über eine Fassung, in der ein einzelner Zeilenumbruch als
+ * Leerzeichen zählt. Sie ist gleich lang, alle Stellen bleiben gleich; die Funde beider Fassungen werden
+ * zusammengeführt. Nur für Personen, Kontaktdaten und Kennungen: Firmen und Adressen stehen meist für sich in einer
+ * Zeile (über Zeilen hinweg gab es Fehlalarme), Tabellen und codierte Blöcke brauchen die Zeilen.
+ */
+function detectAcrossLines(text: string, options: DetectOptions): Finding[] {
+  // Beginnt die nächste Zeile mit einer Bezeichnung ("Betreff:", "Tel.:"), ist es ein neues Feld: nicht verbinden.
+  const view = text.replace(/(?<![\n\uE000])\n(?!\n|[ \t]{0,8}\p{L}[\p{L}\p{N} .\/-]{0,30}:)/gu, " ");
+  if (view === text) return [];
+  return [
+    ...detectManual(view, options.manual),
+    ...detectEmails(view),
+    ...detectCreditCards(view),
+    ...detectVatIds(view),
+    ...detectTaxNumbers(view),
+    ...detectByContext(view),
+    ...detectPhones(view),
+    ...detectPersons(view),
+  ];
+}
+
 export function detectAll(text: string, options: DetectOptions = {}): Finding[] {
   const excluded = new Set((options.excluded ?? []).map((v) => v.trim().toLowerCase()));
   const raw = [
+    ...detectAcrossLines(text, options),
     ...detectManual(text, options.manual),
     ...detectEmails(text),
     ...detectIbans(text),
