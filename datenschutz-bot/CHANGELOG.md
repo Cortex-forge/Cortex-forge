@@ -1,5 +1,31 @@
 # Änderungen
 
+## [0.4.0] – 2026-10-16 – Befunde aus der zweiten Claude-Prüfung
+
+### Datenschutz
+- E-Mails im MIME-Format (.eml) werden vor der Erkennung entschlüsselt (Base64, Quoted-Printable, Zeichensätze, encoded words, HTML), Anhänge weggelassen; codierte Blöcke mit lesbarem Inhalt werden immer geschwärzt
+- Eingaben vereinheitlicht (NFC, Sonder-Leerzeichen, unsichtbare Zeichen); Dateien mit Zeichensatz-Erkennung; Ersatzzeichen werden abgelehnt
+- Oberfläche nur über den Start-Link (Zugangs-Cookie), auch gegenüber anderen Programmen auf dem Rechner; Origin bei Änderungen Pflicht
+- Stabile Platzhalter-Nummern; ein Vorname allein bekommt einen eigenen Platzhalter
+- Übernommene übersehene Angaben werden in der Oberfläche als Leck gemeldet; Schlüssel-Kennungen gehen nicht an die KI
+- Nach dem Abschluss bleibt auch kein Titel mehr stehen
+
+### Erkennung
+- „Meine Nummer“, Festnetz in üblicher Form, IBAN klein/mit Bindestrich/umbrochen, „Geburtstag:“, „*12.03.1985“, „Versicherungsnr“, „Reservierung: HUBER“, kurze Nachnamen, Ortsteil mit Hausnummer vor der PLZ
+- Nach Namenszusätzen keine Vereine, Abteilungen oder Domains
+- Platzhalter-Muster mit linearer Laufzeit; Abkürzungen wie „ISO 9001“ sind keine Platzhalter-Reste
+
+### Abläufe
+- Ersetzt die KI ein Ergebnis, bleibt die gelesene Fassung stehen und Freigeben ist gesperrt, bis die neue geladen ist
+- Speichern mit Gegenprobe des geladenen Stands; Gutschriften ohne Bezug abgelehnt; neuer Typ beim Nachschwärzen gilt
+- Warnung beim Start, wenn der Schlüssel im Datenordner liegt
+
+### Qualität
+- Unabhängiges Prüfset (40 Fälle, blind erstellt): 72,8 % Trefferquote, 91,7 % Genauigkeit, Ziele nicht erreicht
+- Nachweis misst beide Testsets mit Zielen und scheitert bei verfehlten Zielen
+- Datenschutz-Probe sucht auch Teil-Lecks und prüft alle Werkzeuge
+- 85 Tests; keine unsichtbaren Zeichen im Quelltext (eigener Test); Dateien und Sperren in `src/store/dateien.ts`
+
 ## [0.3.0] – 2026-10-16 – Befunde aus der zweiten Codex-Prüfung
 
 ### Datenschutz

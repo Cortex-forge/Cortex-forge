@@ -42,6 +42,10 @@ Vorgeschlagene Ziele für den Pilot (mit Peter festlegen):
 | Entwicklungsset vor den Korrekturen | 75,5 % | 98,4 % | [`2026-10-16-messung-ausgangslage.md`](2026-10-16-messung-ausgangslage.md) |
 | Entwicklungsset nach den Korrekturen | 100 % (211/211) | 100 % (200/200) | [`2026-10-16-messung-nach-korrektur.md`](2026-10-16-messung-nach-korrektur.md) |
 | **Prüfset (blind, erste Messung)** | **71,9 % (312/434)** | **91,9 % (284/309)** | [`2026-10-16-messung-pruefset.md`](2026-10-16-messung-pruefset.md) |
+| Entwicklungsset nach der zweiten Prüfrunde | 100 % (211/211) | 100 % (200/200) | [`2026-10-16-messung-entwicklungsset-runde-2.md`](2026-10-16-messung-entwicklungsset-runde-2.md) |
+| **Prüfset nach der zweiten Prüfrunde** | **72,8 % (316/434)** | **91,7 % (286/312)** | [`2026-10-16-messung-pruefset-runde-2.md`](2026-10-16-messung-pruefset-runde-2.md) |
+
+Die Änderungen der zweiten Runde kamen aus den Szenarien der Reviews, nicht aus dem Prüfset; das Prüfset wurde danach nur gemessen.
 
 Einordnung: Am Entwicklungsset sind die Regeln auf die bekannten Fälle zugeschnitten. Das Prüfset zeigt, wie gut sie auf neue Dokumente übertragen: deutlich schlechter. Gut sind E-Mail, IBAN und Kreditkarte (je 100 %). Personen kommen auf 84 %, Telefon auf 81 %, Adressen auf 65 %, Gesundheit auf 48 %, Ausweisnummern auf 6 %. Die Ziele sind damit nicht erreicht. Das Prüfset wurde nur gemessen; an den Regeln wurde danach nichts geändert. Werden sie anhand dieser Ergebnisse verbessert, wird das Prüfset zum Entwicklungsset und es braucht ein neues, ebenfalls blind erstelltes Prüfset.
 

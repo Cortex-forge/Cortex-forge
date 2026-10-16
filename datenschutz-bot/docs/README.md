@@ -16,10 +16,11 @@ Hier liegt alles außer dem Code: warum wir etwas bauen, wie es aufgebaut ist, w
 
 ## Wo stehen wir?
 
-- **Phase 0 (Prototyp):** gebaut, Tests grün. Erste Messung der Erkennung: 75,5 % Trefferquote, 98,4 % Genauigkeit (`03-qualitaet/2026-10-16-messung-ausgangslage.md`).
-- **Reviews:** Claude 4 von 10 mit 1 Blocker und 5 hohen Befunden ([`04-reviews/2026-10-16-claude.md`](04-reviews/2026-10-16-claude.md)), die Befunde werden behoben. Codex (GPT-6-Astra, „ultra“) 4,2 von 10 mit 2 Blockern ([`04-reviews/2026-10-16-codex.md`](04-reviews/2026-10-16-codex.md)). Gemini ist offen.
+- **Phase 0 (Prototyp):** gebaut, Version 0.4.0, 85 Tests grün (auch im Browser), Datenschutz-Probe ohne Leck.
+- **Erkennung:** Entwicklungsset 100 %, **unabhängiges Prüfset 72,8 % Trefferquote, 91,7 % Genauigkeit**: Auf neuen Dokumenten rutscht noch gut ein Viertel der Angaben durch. Ziele nicht erreicht ([`03-qualitaet/testkonzept.md`](03-qualitaet/testkonzept.md)).
+- **Reviews:** zwei Runden. Runde 1: Claude 4, Codex 4,2. Runde 2: Codex 5,2, Claude 4,6. Alle Blocker und Befunde bearbeitet (ein Punkt teilweise, Schlüssel unter eigenem Benutzer). Gemini prüft über Peters Abo in Antigravity ([`04-reviews/gemini-anleitung.md`](04-reviews/gemini-anleitung.md)). Übersicht: [`04-reviews/README.md`](04-reviews/README.md).
 - **Phase-0-Gate:** offen (siehe [`03-qualitaet/phase-0-gate.md`](03-qualitaet/phase-0-gate.md)).
-- **Nächster Schritt:** Befunde beheben und neu messen, danach Test mit echten Dokumenten vor Ort (siehe [`07-roadmap/roadmap.md`](07-roadmap/roadmap.md)).
+- **Nächster Schritt:** dritte Prüfrunde (Codex, Claude, Gemini) auf dem neuen Stand; Entscheidung, wie die Erkennung besser wird (offene Punkte #19).
 
 ## Regeln für diesen Ordner
 
