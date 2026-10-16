@@ -25,7 +25,7 @@ import { placeholderRegex } from "../core/placeholders.js";
 import { placeholderLegend, pseudonymize } from "../core/pseudonymize.js";
 import { reidentify, type InventedData } from "../core/reidentify.js";
 import type { EntityType, ManualMark, MappingEntry, PlaceholderInfo } from "../core/types.js";
-import { decrypt, encrypt, KeyError, keyId, loadOrCreateKey } from "../core/vault.js";
+import { decrypt, encrypt, KeyError, keyId, loadOrCreateKey, recordMac } from "../core/vault.js";
 import { createFileExclusive, readOptional, removeLeftovers, withFileLock, writeFileAtomic } from "./dateien.js";
 import { loadAccounts, loadCompanies, loadOwnCompany } from "./settings.js";
 
@@ -99,6 +99,8 @@ interface StoredJob {
   ki?: string;
   /** verschlüsselt: Original, Zuordnung, Markierungen, fertiges Ergebnis */
   geheim?: string;
+  /** Prüfsumme über alle anderen Felder (siehe recordMac). Fehlt sie, darf die KI das Dokument nicht lesen. */
+  pruefsumme?: string;
 }
 
 interface Kopf {
@@ -303,7 +305,40 @@ export class JobStore {
     return path.join(this.jobsDir, `${id}.json`);
   }
 
-  private readStored(id: string): StoredJob {
+  /** Der Datensatz ohne Prüfsumme, in fester Reihenfolge der Felder. */
+  private macOf(job: StoredJob): string {
+    const { pruefsumme: _ignored, ...rest } = job;
+    const ordered = Object.fromEntries(Object.entries(rest).sort(([a], [b]) => a.localeCompare(b)));
+    return recordMac(this.secretKey(), JSON.stringify(ordered));
+  }
+
+  private serialize(job: StoredJob): string {
+    job.pruefsumme = this.macOf(job);
+    return JSON.stringify(job, null, 2);
+  }
+
+  /**
+   * Prüfsumme kontrollieren. Eine falsche Prüfsumme heißt: Die Datei wurde außerhalb des Bots verändert. Ohne
+   * Prüfsumme (Dokumente aus Version 0.4) zeigt die Oberfläche das Dokument, die KI bekommt es aber nicht.
+   */
+  private verify(job: StoredJob, forAi: boolean): void {
+    if (job.pruefsumme === undefined) {
+      if (forAi) throw new JobError("Dieses Dokument stammt aus einer älteren Version. Bitte in der Oberfläche zurück zur Prüfung holen und neu freigeben.");
+      return;
+    }
+    const expected = Buffer.from(this.macOf(job));
+    const given = Buffer.from(job.pruefsumme);
+    if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) {
+      if (job.schluessel !== this.keyKennung) {
+        throw new KeyError(
+          `Dieses Dokument wurde mit einem anderen Schlüssel verschlüsselt (Kennung ${job.schluessel}, aktuell ${this.keyKennung}). Bitte DSB_KEY bzw. DSB_KEY_FILE prüfen.`,
+        );
+      }
+      throw new JobError(`Die Datei des Dokuments ${job.id} wurde außerhalb des Bots verändert und wird nicht verwendet.`);
+    }
+  }
+
+  private readStored(id: string, forAi = false): StoredJob {
     const file = this.file(id);
     let raw: string;
     try {
@@ -320,6 +355,7 @@ export class JobStore {
     if (job.format !== 2 || job.id !== id) {
       throw new JobError(`Das Dokument ${id} liegt in einem alten oder unbekannten Format vor. Bitte neu ablegen.`);
     }
+    this.verify(job, forAi);
     return job;
   }
 
@@ -328,12 +364,19 @@ export class JobStore {
    * Sperre ist das immer so; die Probe fängt den Fall ab, dass eine Sperre doch einmal verloren ging.
    */
   private persist(job: StoredJob): void {
-    if (this.readStored(job.id).rev !== job.rev) {
+    // Gegenprobe auf den Stand (nicht auf die Prüfsumme): Hat jemand anderes inzwischen gespeichert?
+    let current: number | undefined;
+    try {
+      current = (JSON.parse(fs.readFileSync(this.file(job.id), "utf8")) as { rev?: number }).rev;
+    } catch {
+      current = undefined;
+    }
+    if (current !== job.rev) {
       throw new JobError("Das Dokument wurde gleichzeitig geändert. Bitte die Seite neu laden und noch einmal versuchen.");
     }
     job.rev += 1;
     job.aktualisiert = now();
-    writeFileAtomic(this.file(job.id), JSON.stringify(job, null, 2));
+    writeFileAtomic(this.file(job.id), this.serialize(job));
   }
 
   /**
@@ -346,9 +389,9 @@ export class JobStore {
     });
   }
 
-  private mutate<T>(id: string, fn: (job: StoredJob) => T): T {
+  private mutate<T>(id: string, fn: (job: StoredJob) => T, forAi = false): T {
     this.file(id);
-    return this.withLock(`dokument-${id}`, () => fn(this.readStored(id)));
+    return this.withLock(`dokument-${id}`, () => fn(this.readStored(id, forAi)));
   }
 
   private requireStatus(job: StoredJob, allowed: JobStatus[], action: string): void {
@@ -528,7 +571,7 @@ export class JobStore {
       };
       this.pseudonymizeInto(job, secret);
       // Nie ein bestehendes Dokument überschreiben: exklusiv anlegen, bei Kollision neue ID.
-      if (!createFileExclusive(this.file(id), JSON.stringify(job, null, 2))) continue;
+      if (!createFileExclusive(this.file(id), this.serialize(job))) continue;
       const herkunft =
         prepared.quelle === "mail"
           ? ` (E-Mail entschlüsselt${prepared.weggelassen ? `, ${prepared.weggelassen} Anhang/Teil weggelassen` : ""})`
@@ -911,7 +954,7 @@ export class JobStore {
     for (const f of fs.readdirSync(this.jobsDir)) {
       if (!f.endsWith(".json")) continue;
       try {
-        const job = this.readStored(f.slice(0, -5));
+        const job = this.readStored(f.slice(0, -5), true);
         if (job.status !== "bereit") continue;
         out.push({ id: job.id, art: job.art, betreff: this.open<Kopf>(job, "kopf").betreffKi, erstellt: job.erstellt });
       } catch {
@@ -922,7 +965,7 @@ export class JobStore {
   }
 
   readForAi(id: string): KiDokument {
-    const job = this.readStored(id);
+    const job = this.readStored(id, true);
     if (job.status === "neu") throw new JobError("Dieses Dokument ist noch nicht für die KI freigegeben.");
     this.requireStatus(job, ["bereit", "zur_pruefung"], "Lesen");
     const ki = this.open<KiTeil>(job, "ki");
@@ -1056,7 +1099,7 @@ export class JobStore {
         "ki",
       );
       return summen ? { pruefung, summen } : { pruefung };
-    });
+    }, true);
   }
 }
 

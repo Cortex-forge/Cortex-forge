@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { CONFIG_DIR, EXAMPLES_DIR, PROJECT_ROOT } from "../config.js";
-import { KeyError } from "../core/vault.js";
+import { KeyError, loadOrCreateKey, recordMac } from "../core/vault.js";
 import { filesUnder } from "../scripts/probe-lib.js";
 import type { RechnungsPosition } from "../core/invoice.js";
 import { JobError, JobStore, type ErgebnisKi } from "../store/jobs.js";
@@ -349,7 +349,7 @@ test("Schlüssel: falscher Schlüssel wird erkannt, kein stiller zweiter Schlüs
   const fileB = JSON.parse(fs.readFileSync(docFile(store, b.id), "utf8")) as Record<string, unknown>;
   fileB.geheim = fileA.geheim;
   fs.writeFileSync(docFile(store, b.id), JSON.stringify(fileB));
-  assert.throws(() => new JobStore(dir, CONFIG_DIR).detail(b.id), /beschädigt oder wurden verändert/);
+  assert.throws(() => new JobStore(dir, CONFIG_DIR).detail(b.id), /verändert/);
 });
 
 // Review Claude #27
@@ -659,8 +659,12 @@ test("Speichern prüft, dass die Datei noch den geladenen Stand hat", () => {
     const out = (original as (...a: unknown[]) => unknown)(pfad, ...rest);
     if (!geladen && String(pfad) === file) {
       geladen = true;
-      const fremd = JSON.parse(String(out)) as { rev: number };
+      // Ein anderer Bot-Vorgang speichert gültig (mit Prüfsumme) eine neuere Fassung.
+      const fremd = JSON.parse(String(out)) as Record<string, unknown> & { rev: number };
       fremd.rev += 1;
+      delete fremd.pruefsumme;
+      const ordered = Object.fromEntries(Object.entries(fremd).sort(([x], [y]) => x.localeCompare(y)));
+      fremd.pruefsumme = recordMac(loadOrCreateKey(store.dataDir), JSON.stringify(ordered));
       fs.writeFileSync(file, JSON.stringify(fremd));
     }
     return out;
@@ -827,4 +831,31 @@ test("Rechnung: geprüft wird der Zahlbetrag mit Steuer, auch je Steuersatz", ()
     { beschreibung: "Kinderbett", menge: 1, einzelpreis: 0, ust_satz: 10 },
   ]));
   assert.deepEqual(summen, { netto: 1, ust: 0.2, brutto: 1.2 });
+});
+
+// Review Claude 3 #18
+test("Prüfsumme: Status, Fassung und verschlüsselte Teile lassen sich ohne Schlüssel nicht von Hand ändern", () => {
+  const store = tempStore();
+  const neu = store.create({ art: "allgemein", text: "Anfrage von Quirina Valdessa für zwei Nächte." });
+  const file = docFile(store, neu.id);
+  // Von Hand freigeschaltet: Die KI bekommt das Dokument nicht.
+  const raw = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+  fs.writeFileSync(file, JSON.stringify({ ...raw, status: "bereit", kiFassung: 1 }));
+  assert.throws(() => store.readForAi(neu.id), /außerhalb des Bots verändert/);
+  assert.deepEqual(store.listForAi(), []);
+  assert.equal(store.list().defekt, 1);
+  // Ältere, weniger geschwärzte KI-Fassung zurückgespielt: ebenso abgelehnt.
+  fs.writeFileSync(file, JSON.stringify(raw));
+  const vorher = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+  const marked = store.mark(neu.id, { value: "Valdessa", type: "PERSON" });
+  release(store, neu.id);
+  assert.equal(marked.treffer, 1);
+  const jetzt = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
+  fs.writeFileSync(file, JSON.stringify({ ...jetzt, ki: vorher.ki, kopf: vorher.kopf }));
+  assert.throws(() => store.readForAi(neu.id), /außerhalb des Bots verändert/);
+  // Ohne Prüfsumme (älteres Format): in der Oberfläche lesbar, für die KI nicht.
+  const { pruefsumme: _p, ...ohne } = jetzt;
+  fs.writeFileSync(file, JSON.stringify(ohne));
+  assert.equal(store.detail(neu.id).job.status, "bereit");
+  assert.throws(() => store.readForAi(neu.id), /älteren Version/);
 });
