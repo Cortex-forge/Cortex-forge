@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { CONFIG_DIR, EXAMPLES_DIR } from "../config.js";
-import { pseudonymize } from "../core/pseudonymize.js";
+import { placeholderLegend, pseudonymize } from "../core/pseudonymize.js";
 import { reidentify } from "../core/reidentify.js";
 import { decrypt, encrypt } from "../core/vault.js";
 import { loadCompanies } from "../store/settings.js";
@@ -117,4 +117,34 @@ test("Verschlüsselung: Rundweg, Manipulationsschutz und Bindung an Dokument und
   // In ein anderes Dokument oder Feld kopiert: lässt sich nicht entschlüsseln.
   assert.throws(() => decrypt(key, sealed, "D-2:geheim"));
   assert.throws(() => decrypt(key, sealed, "D-1:ki"));
+});
+
+// ---------------------------------------------------------------------------
+// Dritte Prüfrunde (Codex 3)
+
+// Review Codex 3 #1 (Blocker)
+test("Kategorien aus dem Firmenverzeichnis: nichts Schützenswertes und kein Original aus dem Dokument geht mit", () => {
+  const companies = [
+    { name: "Testbetrieb GmbH", kategorie: "Service bei Anna Huber" },
+    { name: "Zorwin Bau GmbH", kategorie: "Ansprechpartner Gstrein" },
+    { name: "Elektro Xylander OG", kategorie: "Elektroinstallateur" },
+  ];
+  const r = pseudonymize("Testbetrieb GmbH wird vertreten durch Anna Huber. Elektro Xylander OG kommt.", { companies });
+  assert.equal(r.text, "[FIRMA_1] wird vertreten durch [PERSON_1]. [FIRMA_2: Elektroinstallateur] kommt.");
+  assert.deepEqual(placeholderLegend(r.mapping).map((p) => p.description), [undefined, undefined, "Elektroinstallateur"]);
+  // Einen Namen erkennt nur der Mitarbeiter: Nach dem Nachschwärzen fällt auch die Kategorie mit diesem Namen weg.
+  const text = "Zorwin Bau GmbH liefert. Gstrein unterschreibt.";
+  assert.equal(pseudonymize(text, { companies }).text, "[FIRMA_1: Ansprechpartner Gstrein] liefert. Gstrein unterschreibt.", "Voraussetzung");
+  const marked = pseudonymize(text, { companies, manual: [{ value: "Gstrein", type: "PERSON" }] });
+  assert.equal(marked.text, "[FIRMA_1] liefert. [PERSON_1] unterschreibt.");
+  assert.ok(!JSON.stringify(placeholderLegend(marked.mapping)).includes("Gstrein"));
+});
+
+// Review Codex 3 #6
+test("Gleicher Nachname bei zwei Personen: kein Raten, wer gemeint ist", () => {
+  const r = pseudonymize("Anna Huber kommt. Hanna Huber kommt. Huber zahlt.");
+  assert.equal(r.text, "[PERSON_1] kommt. [PERSON_2] kommt. [PERSON_3] zahlt.");
+  assert.equal(reidentify("[PERSON_3] zahlt.", r.mapping).text, "Huber zahlt.");
+  // Bei nur einer Person mit diesem Nachnamen bleibt die Zuordnung.
+  assert.equal(pseudonymize("Anna Huber kommt. Huber zahlt.").text, "[PERSON_1] kommt. [PERSON_1] zahlt.");
 });

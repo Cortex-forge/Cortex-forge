@@ -191,3 +191,32 @@ test("MCP: falscher Schlüssel wird der KI nur allgemein gemeldet", async () => 
     await client.close();
   }
 });
+
+// Review Codex 3 #1 (Blocker): Kategorien aus dem Firmenverzeichnis bringen keine Originale zur KI
+test("MCP: Firmenkategorien mit Namen gehen weder im Text noch in der Legende an die KI", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-mcp-"));
+  const configDir = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-mcp-config-"));
+  fs.writeFileSync(
+    path.join(configDir, "firmen.json"),
+    JSON.stringify({
+      firmen: [
+        { name: "Testbetrieb GmbH", kategorie: "Service bei Anna Huber" },
+        { name: "Zorwin Bau GmbH", kategorie: "Ansprechpartner Gstrein" },
+      ],
+    }),
+  );
+  const store = new JobStore(dataDir, configDir);
+  const erkannt = store.create({ art: "allgemein", text: "Testbetrieb GmbH wird vertreten durch Anna Huber." });
+  store.releaseForAi(erkannt.id, erkannt.rev);
+  const nachgeschwaerzt = store.create({ art: "allgemein", text: "Zorwin Bau GmbH liefert. Gstrein unterschreibt." });
+  const marked = store.mark(nachgeschwaerzt.id, { value: "Gstrein", type: "PERSON" });
+  store.releaseForAi(nachgeschwaerzt.id, marked.job.rev);
+  const { client, call, responses } = await connect(dataDir, configDir);
+  try {
+    assert.match((await call("dokument_lesen", { id: erkannt.id })).out, /\[FIRMA_1\] wird vertreten durch \[PERSON_1\]/);
+    assert.match((await call("dokument_lesen", { id: nachgeschwaerzt.id })).out, /\[FIRMA_1\] liefert\. \[PERSON_1\] unterschreibt/);
+  } finally {
+    await client.close();
+  }
+  for (const r of responses) assert.ok(!/Huber|Gstrein|Service bei|Ansprechpartner/.test(r), `Original in Antwort: ${r}`);
+});

@@ -703,3 +703,106 @@ test("Übernommene übersehene Angaben werden als Leck gemeldet; Abschluss ohne 
   save(store, id, rechnung([{ beschreibung: "Zimmer", menge: 1, einzelpreis: 200, ust_satz: 10 }, { beschreibung: "Rabatt", menge: 1, einzelpreis: -20, ust_satz: 10 }]));
   assert.throws(() => save(store, id, rechnung([{ beschreibung: "Gutschrift", menge: 1, einzelpreis: -500, ust_satz: 20 }])), /Gutschriften/);
 });
+
+// ---------------------------------------------------------------------------
+// Dritte Prüfrunde (Codex 3)
+
+// Review Codex 3 #3: echter verkürzter Schreibvorgang über ein Dateigrößenlimit des Betriebssystems, kein Nachbau
+test("Unvollständiges Schreiben gilt als Fehler: das bisherige Dokument bleibt erhalten", { skip: process.platform === "win32" }, async () => {
+  const store = tempStore();
+  const id = ready(store, "Anfrage von Anna Huber.");
+  const vorher = fs.readFileSync(docFile(store, id), "utf8");
+  const jobs = JSON.stringify(path.join(PROJECT_ROOT, "dist", "store", "jobs.js"));
+  const script = `const { JobStore } = await import(${jobs}); const s = new JobStore(${JSON.stringify(store.dataDir)}, ${JSON.stringify(CONFIG_DIR)}); try { s.saveResult(${JSON.stringify(id)}, { art: "text", text: "Antwort ".repeat(1500) }, 1); process.exit(0); } catch { process.exit(4); }`;
+  // Höchstens 4 Blöcke je Datei: Das bestehende Dokument passt, das Dokument mit dem langen Ergebnis nicht.
+  const code = await new Promise<number>((resolve) => {
+    const c = spawn("/bin/sh", ["-c", 'ulimit -f 4 && exec "$0" --input-type=module -e "$1"', process.execPath, script], { stdio: "ignore" });
+    c.on("exit", (exitCode) => resolve(exitCode ?? -1));
+  });
+  assert.equal(code, 4, "der Fehler wird gemeldet, nicht als Erfolg behandelt");
+  assert.equal(fs.readFileSync(docFile(store, id), "utf8"), vorher);
+  assert.equal(store.detail(id).job.status, "bereit");
+  assert.deepEqual(fs.readdirSync(path.join(store.dataDir, "dokumente")).filter((f) => f.endsWith(".tmp")), []);
+  // Ohne Limit klappt dasselbe Speichern.
+  save(store, id, { art: "text", text: "Antwort ".repeat(1500) });
+  assert.equal(store.detail(id).job.status, "zur_pruefung");
+});
+
+// Review Codex 3 #10
+test("Schreibfehler und Abstürze hinterlassen keine Zwischendateien mit Originalen", () => {
+  const store = tempStore();
+  const dir = path.join(store.dataDir, "dokumente");
+  const id = ready(store, "Anfrage von Anna Huber.");
+  // fsync scheitert nur für die Zwischendatei des Dokuments (nicht für die Sperre).
+  const { openSync, fsyncSync } = fs;
+  const zwischen = new Set<number>();
+  fs.openSync = ((pfad: fs.PathLike, ...rest: unknown[]) => {
+    const fd = (openSync as (...a: unknown[]) => number)(pfad, ...rest);
+    if (String(pfad).startsWith(`${docFile(store, id)}.`)) zwischen.add(fd);
+    return fd;
+  }) as typeof fs.openSync;
+  fs.fsyncSync = ((fd: number) => {
+    if (zwischen.has(fd)) throw Object.assign(new Error("simulierter Schreibfehler"), { code: "EIO" });
+    fsyncSync(fd);
+  }) as typeof fs.fsyncSync;
+  try {
+    assert.throws(() => save(store, id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" }), /simulierter Schreibfehler/);
+  } finally {
+    fs.openSync = openSync;
+    fs.fsyncSync = fsyncSync;
+  }
+  assert.equal(zwischen.size, 1, "Voraussetzung: die Zwischendatei wurde angelegt");
+  assert.deepEqual(fs.readdirSync(dir).filter((f) => f.endsWith(".tmp")), []);
+  assert.equal(store.detail(id).job.status, "bereit");
+
+  // Rest eines abgestürzten Speicherns: Löschen und Abschließen räumen ihn mit weg.
+  const rest = (doc: string) => fs.copyFileSync(docFile(store, doc), `${docFile(store, doc)}.4242.0badc0de.tmp`);
+  rest(id);
+  store.remove(id);
+  assert.deepEqual(fs.readdirSync(dir), []);
+  const zweites = ready(store, "Anfrage von Lisa Gruber.");
+  save(store, zweites, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" });
+  store.approve(zweites, rev(store, zweites));
+  rest(zweites);
+  store.close(zweites);
+  assert.deepEqual(fs.readdirSync(dir), [`${zweites}.json`]);
+  assert.ok(!allFiles(store.dataDir).includes("Gruber"));
+});
+
+// Review Codex 3 #7
+test("Rechnungsfreigabe: auf die Rechnung kommen nur die Firmendaten aus dem geprüften Entwurf", () => {
+  const configDir = configCopy();
+  const store = new JobStore(tempDir(), configDir);
+  const id = ready(store);
+  save(store, id, invoice);
+  const firmaFile = path.join(configDir, "firma.json");
+  const firma = JSON.parse(fs.readFileSync(firmaFile, "utf8")) as Record<string, string>;
+  fs.writeFileSync(firmaFile, JSON.stringify({ ...firma, iban: "AT02 2011 1000 0000 0018" }));
+  assert.throws(() => store.approve(id, rev(store, id)), /Firmendaten .* seit dem Entwurf geändert/);
+  assert.equal(store.detail(id).job.status, "zur_pruefung");
+  assert.equal(store.detail(id).job.rechnungsnummer, undefined);
+  // Neuer Entwurf mit den neuen Daten: Der wird geprüft und freigegeben.
+  store.sendBack(id);
+  save(store, id, invoice);
+  const entwurf = store.detail(id).ergebnis;
+  assert.ok(entwurf?.art === "rechnung" && entwurf.html.includes("AT02 2011 1000 0000 0018"));
+  store.approve(id, rev(store, id));
+  const fertig = store.export(id).inhalt;
+  assert.ok(fertig.includes("AT02 2011 1000 0000 0018") && !fertig.includes(firma.iban ?? "?"));
+});
+
+// Review Codex 3 #11
+test("Beschädigter Rechnungszähler: Abbruch vor jeder Änderung statt ungültiger Nummer", () => {
+  const store = tempStore();
+  const counterFile = path.join(store.dataDir, "rechnungsnummern.json");
+  const id = ready(store);
+  save(store, id, invoice);
+  const year = String(new Date().getFullYear());
+  for (const kaputt of [`{"${year}":"kaputt"}`, `{"${year}":-1}`, `{"${year}":1.5}`, `{"${year}":1e400}`, `{"20x6":1}`, "[]", "null", "7"]) {
+    fs.writeFileSync(counterFile, kaputt);
+    assert.throws(() => store.approve(id, rev(store, id)), /Rechnungsnummern ist beschädigt/, kaputt);
+    assert.equal(store.detail(id).job.status, "zur_pruefung", kaputt);
+  }
+  fs.writeFileSync(counterFile, JSON.stringify({ [year]: 7 }));
+  assert.equal(store.approve(id, rev(store, id)).rechnungsnummer, `${year}-0008`);
+});

@@ -15,6 +15,7 @@ import {
   computeInvoice,
   invoiceChecks,
   renderInvoiceHtml,
+  type EigeneFirma,
   type RechnungInhalt,
   type RechnungsSummen,
 } from "../core/invoice.js";
@@ -25,7 +26,7 @@ import { placeholderLegend, pseudonymize } from "../core/pseudonymize.js";
 import { reidentify, type InventedData } from "../core/reidentify.js";
 import type { EntityType, ManualMark, MappingEntry, PlaceholderInfo } from "../core/types.js";
 import { decrypt, encrypt, KeyError, keyId, loadOrCreateKey } from "../core/vault.js";
-import { createFileExclusive, readOptional, withFileLock, writeFileAtomic } from "./dateien.js";
+import { createFileExclusive, readOptional, removeLeftovers, withFileLock, writeFileAtomic } from "./dateien.js";
 import { loadAccounts, loadCompanies, loadOwnCompany } from "./settings.js";
 
 export const ARTEN = ["hotel", "buchhaltung", "allgemein"] as const;
@@ -57,7 +58,7 @@ export type ErgebnisKi =
 export type ErgebnisFertig =
   | { art: "text"; titel?: string; text: string }
   | { art: "buchungen"; buchungen: BuchungBerechnet[]; summen: BuchungsSummen }
-  | { art: "rechnung"; rechnung: RechnungInhalt; summen: RechnungsSummen; html: string };
+  | { art: "rechnung"; rechnung: RechnungInhalt; summen: RechnungsSummen; html: string; firma?: EigeneFirma };
 
 /** Prüfhinweise zu einem KI-Ergebnis. Enthalten nur, was die KI selbst geschrieben hat, und Beträge. */
 export interface Pruefung {
@@ -683,7 +684,14 @@ export class JobStore {
       if (result?.art === "rechnung") {
         // Die Nummer wird erst jetzt vergeben, damit verworfene Entwürfe keine Lücken erzeugen. Alles, was scheitern
         // kann (Firmendaten lesen), passiert vorher; gezählt wird die Nummer erst, wenn das Dokument gespeichert ist.
+        // Auf die Rechnung kommen genau die Firmendaten, die im geprüften Entwurf standen. Wurden sie seitdem
+        // geändert (z. B. eine neue IBAN), muss erst ein neuer Entwurf geprüft werden.
         const firma = loadOwnCompany(this.configDir);
+        if (!result.firma || JSON.stringify(result.firma) !== JSON.stringify(firma)) {
+          throw new JobError(
+            "Die Firmendaten (config/firma.json) wurden seit dem Entwurf geändert. Bitte das Ergebnis an die KI zurückgeben und den neuen Entwurf prüfen.",
+          );
+        }
         this.assignInvoiceNumber((nummer) => {
           result.html = renderInvoiceHtml({ inhalt: result.rechnung, summen: result.summen, firma, nummer, datum: today() });
           job.rechnungsnummer = nummer;
@@ -754,6 +762,7 @@ export class JobStore {
       job.kopf = this.seal(job, "kopf", { titel: "", titelKi: "", betreffKi: "" } satisfies Kopf);
       job.status = "abgeschlossen";
       this.persist(job);
+      removeLeftovers(this.file(id));
       this.log(
         id,
         job.rechnungsnummer
@@ -774,6 +783,8 @@ export class JobStore {
         );
       }
       fs.rmSync(this.file(id));
+      // Auch Zwischendateien eines abgebrochenen Speicherns: Sie enthalten noch die verschlüsselten Originale.
+      removeLeftovers(this.file(id));
       this.log(id, "Dokument verworfen und gelöscht", "oberflaeche");
     });
   }
@@ -844,12 +855,23 @@ export class JobStore {
       let counters: Record<string, number> = {};
       const raw = readOptional(this.numbersFile);
       if (raw !== undefined) {
+        // Nie neu bei 1 anfangen und nie mit einem unsinnigen Wert weiterzählen: das gäbe doppelte oder ungültige
+        // Nummern. Erwartet wird {"2026": 12, ...} mit ganzen Zahlen ab 0.
+        let parsed: unknown;
         try {
-          counters = JSON.parse(raw) as Record<string, number>;
+          parsed = JSON.parse(raw);
         } catch {
-          // Nie neu bei 1 anfangen: das würde Nummern doppelt vergeben.
+          parsed = undefined;
+        }
+        const valid =
+          typeof parsed === "object" &&
+          parsed !== null &&
+          !Array.isArray(parsed) &&
+          Object.entries(parsed).every(([k, v]) => /^\d{4}$/.test(k) && Number.isSafeInteger(v) && (v as number) >= 0);
+        if (!valid) {
           throw new JobError("Die Datei mit den Rechnungsnummern ist beschädigt. Bitte prüfen, bevor weitere Rechnungen freigegeben werden.");
         }
+        counters = parsed as Record<string, number>;
       }
       const next = Math.max(counters[year] ?? 0, this.highestUsedNumber(year)) + 1;
       save(`${year}-${String(next).padStart(4, "0")}`);
@@ -1004,7 +1026,7 @@ export class JobStore {
         const s = computeInvoice(inhalt.positionen);
         hinweise.push(...invoiceChecks(inhalt, s, firma));
         summen = { netto: s.netto, ust: s.ust, brutto: s.brutto };
-        fertig = { art: "rechnung", rechnung: inhalt, summen: s, html: renderInvoiceHtml({ inhalt, summen: s, firma, datum: today() }) };
+        fertig = { art: "rechnung", rechnung: inhalt, summen: s, firma, html: renderInvoiceHtml({ inhalt, summen: s, firma, datum: today() }) };
       }
 
       const pruefung: Pruefung = {

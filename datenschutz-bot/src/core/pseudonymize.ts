@@ -44,6 +44,12 @@ interface Owner {
   lowercase?: boolean;
 }
 
+/** Enthält der Name "outer" alle Wörter von "inner" ("anna huber" enthält "huber", aber nicht "hanna huber")? */
+function containsWords(outer: string, inner: string): boolean {
+  const words = new Set(outer.split(/[\s,]+/));
+  return inner.split(/[\s,]+/).every((w) => words.has(w));
+}
+
 /** Der Nachname eines vollen Namens: gespeichert bei der Erkennung, sonst der letzte Teil. */
 function surnameKey(owner: Owner): string {
   return (owner.nachname ?? owner.full.split(/[\s,]+/).filter(Boolean).pop() ?? owner.full).toLowerCase();
@@ -76,14 +82,15 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
       const a = prev.full.toLowerCase();
       const b = full.toLowerCase();
       if (a === b) continue;
-      // "Huber" und später "Anna Huber": der längere Name gewinnt. Zwei verschiedene Namen: nicht eindeutig.
-      if (b.includes(a)) {
+      // "Huber" und später "Anna Huber": der längere Name gewinnt. Verglichen wird Wort für Wort, nicht als
+      // Zeichenfolge ("Anna Huber" steckt nicht in "Hanna Huber"). Zwei verschiedene Namen: nicht eindeutig.
+      if (containsWords(b, a)) {
         owners.set(key, {
           full,
           ...(p.nachname || prev.nachname ? { nachname: p.nachname ?? prev.nachname } : {}),
           ...(prev.lowercase ? { lowercase: true } : {}),
         });
-      } else if (!a.includes(b)) prev.ambiguous = true;
+      } else if (!containsWords(a, b)) prev.ambiguous = true;
     }
   }
 
@@ -130,6 +137,16 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
     extra.push(f);
   }
   return [...withCanonical, ...extra].sort((a, b) => a.start - b.start);
+}
+
+/**
+ * Darf eine Beschreibung zur KI? Nein, wenn die Erkennung darin etwas findet (auch eine manuelle Markierung) oder wenn
+ * ein Original aus diesem Dokument darin vorkommt ("Service bei Anna Huber").
+ */
+function safeDescription(description: string, mapping: MappingEntry[], options: PseudonymizeOptions): boolean {
+  if (detectAll(description, { manual: options.manual ?? [], companies: options.companies ?? [] }).length > 0) return false;
+  const lower = description.toLowerCase();
+  return !mapping.some((e) => [e.original, ...e.variants].some((v) => v.trim().length >= 3 && lower.includes(v.trim().toLowerCase())));
 }
 
 function keyFor(f: Finding): string {
@@ -184,6 +201,12 @@ export function pseudonymize(text: string, options: PseudonymizeOptions = {}): P
     if (!entry.variants.includes(f.value)) entry.variants.push(f.value);
     return { ...f, id: entry.id };
   });
+
+  // Kategorien aus dem Firmenverzeichnis gehen als Beschreibung an die KI ("[FIRMA_1: Elektroinstallateur]").
+  // Steht in einer Kategorie selbst etwas Schützenswertes, fällt sie weg.
+  for (const entry of mapping) {
+    if (entry.description && !safeDescription(entry.description, mapping, options)) delete entry.description;
+  }
 
   // Ausgabe in einem Durchgang zusammensetzen (die Funde überschneiden sich nicht).
   const byId = new Map(mapping.map((e) => [e.id, e]));

@@ -3,20 +3,46 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
+import path from "node:path";
 
 function sleep(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-export function writeFileAtomic(file: string, content: string): void {
-  const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
-  const fd = fs.openSync(tmp, "wx", 0o600);
+/** Name einer Zwischendatei neben der Zieldatei. Reste davon räumt removeLeftovers() weg. */
+function tmpName(file: string): string {
+  return `${file}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+}
+
+/**
+ * Legt eine neue Datei an und schreibt den ganzen Inhalt. Ein kürzerer Schreibvorgang (Platte voll, Größenlimit) gilt
+ * als Fehler. Scheitert etwas, wird die Datei wieder entfernt: Kein halber Inhalt und kein verschlüsselter Rest bleibt.
+ */
+function writeNewFile(target: string, content: string): void {
+  const data = Buffer.from(content, "utf8");
+  const fd = fs.openSync(target, "wx", 0o600);
   try {
-    fs.writeSync(fd, content);
-    fs.fsyncSync(fd);
-  } finally {
-    fs.closeSync(fd);
+    try {
+      let written = 0;
+      while (written < data.length) {
+        const n = fs.writeSync(fd, data, written, data.length - written);
+        if (n <= 0) throw new Error(`Die Datei ${target} konnte nicht vollständig geschrieben werden.`);
+        written += n;
+      }
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (err) {
+    fs.rmSync(target, { force: true });
+    throw err;
   }
+}
+
+/** Ersetzt eine Datei in einem Schritt. Bis zum Ersetzen bleibt der bisherige Inhalt vollständig erhalten. */
+export function writeFileAtomic(file: string, content: string): void {
+  const tmp = tmpName(file);
+  writeNewFile(tmp, content);
   // Unter Windows schlägt das Ersetzen kurz fehl, wenn ein anderer Prozess die Datei gerade liest.
   for (let attempt = 0; ; attempt++) {
     try {
@@ -42,14 +68,8 @@ const NO_HARDLINKS = new Set(["EPERM", "ENOTSUP", "EOPNOTSUPP", "ENOSYS", "EXDEV
  * schon gibt. Ohne Hardlinks wird exklusiv angelegt und danach geschrieben (kurz unvollständig sichtbar).
  */
 export function createFileExclusive(file: string, content: string): boolean {
-  const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
-  const fd = fs.openSync(tmp, "wx", 0o600);
-  try {
-    fs.writeSync(fd, content);
-    fs.fsyncSync(fd);
-  } finally {
-    fs.closeSync(fd);
-  }
+  const tmp = tmpName(file);
+  writeNewFile(tmp, content);
   try {
     fs.linkSync(tmp, file);
     return true;
@@ -60,20 +80,25 @@ export function createFileExclusive(file: string, content: string): boolean {
   } finally {
     fs.rmSync(tmp, { force: true });
   }
-  let out: number;
   try {
-    out = fs.openSync(file, "wx", 0o600);
+    writeNewFile(file, content);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "EEXIST") return false;
     throw err;
   }
-  try {
-    fs.writeSync(out, content);
-    fs.fsyncSync(out);
-  } finally {
-    fs.closeSync(out);
-  }
   return true;
+}
+
+/**
+ * Entfernt Zwischendateien, die zu einer Datei gehören (etwa nach einem Absturz zwischen Schreiben und Ersetzen). Sie
+ * sind verschlüsselt, ließen sich mit dem Schlüssel aber noch lesen. Nur unter der Sperre der Datei aufrufen.
+ */
+export function removeLeftovers(file: string): void {
+  const dir = path.dirname(file);
+  const prefix = `${path.basename(file)}.`;
+  for (const f of fs.readdirSync(dir)) {
+    if (f.startsWith(prefix) && /^\d+\.[0-9a-f]{8}\.tmp$/.test(f.slice(prefix.length))) fs.rmSync(path.join(dir, f), { force: true });
+  }
 }
 
 /** Inhalt einer Datei oder undefined, wenn es sie (gerade) nicht gibt. */
