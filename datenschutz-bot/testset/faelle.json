@@ -880,6 +880,308 @@
           "typ": "PERSON"
         }
       ]
+    },
+    {
+      "id": "T37",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Portal-Bestätigung mit Feldern, Telefonnummer nach 'Telefonnummer:' (Review)",
+      "text": "Buchungsbestätigung\nBuchungsnummer: 4711081512\nGastname: Anna Huber\nTelefonnummer: +43 664 1234567\nAnschrift: Bergweg 12, 6020 Innsbruck\nGeburtsdatum: 01.01.1980\nPassnummer: P1234567\nAnreise 12.02.2027, Abreise 15.02.2027, 1 Doppelzimmer",
+      "sensibel": [
+        {
+          "wert": "Anna Huber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+43 664 1234567",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Bergweg 12, 6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "01.01.1980",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "P1234567",
+          "typ": "AUSWEIS"
+        }
+      ]
+    },
+    {
+      "id": "T38",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Telefonnummern nach '…nummer', 'Nr.' und 'unter der Nummer' (Review-Blocker)",
+      "text": "Guten Tag,\nich möchte für meine Eltern ein Zimmer reservieren. Meine Telefonnummer: 0664 1234567, die Handynummer meiner Mutter 0699 7654321. Im Büro erreichen Sie mich unter der Nummer 0512 123456, Tel.-Nr. der Zentrale: 0512 123400.\nDie Rechnungsnummer der Anzahlung ist 2026-0815, Buchungsnummer 88-4412.\nDanke!",
+      "sensibel": [
+        {
+          "wert": "0664 1234567",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "0699 7654321",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "0512 123456",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "0512 123400",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T39",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Nachname zuerst, Großbuchstaben, Zusatz ohne Vorname (Review)",
+      "text": "Reservierung für das Wochenende\nGast: Huber, Anna\nBegleitung: Frau von der Leyen\nRückfragen an: GRUBER Maria\n\nMit freundlichen Grüßen\nTHOMAS KOFLER",
+      "sensibel": [
+        {
+          "wert": "Huber, Anna",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "von der Leyen",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "GRUBER Maria",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "THOMAS KOFLER",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T40",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Gästeliste als CSV (Review)",
+      "text": "Name;Vorname;Telefon;E-Mail\nHuber;Anna;0664 1234567;anna.h@example.com\nGruber;Maria;0676 7654321;m.gruber@example.at\nYılmaz;Emre;+43 660 1112233;emre@example.com",
+      "sensibel": [
+        {
+          "wert": "Huber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Anna",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0664 1234567",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "anna.h@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Gruber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Maria",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0676 7654321",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "m.gruber@example.at",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Yılmaz",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Emre",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+43 660 1112233",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "emre@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "T41",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Aus PDF-Tabelle kopiert: Name direkt vor der Straße, Trennstriche (Review)",
+      "text": "Rechnungsempfänger\nAnna Huber Bergweg 12, 6020 Innsbruck\nAnna Huber | Bergweg 12 | 6020 Innsbruck | 0664 1234567\nBetrag 412,00 € fällig am 30.10.2026",
+      "sensibel": [
+        {
+          "wert": "Anna Huber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Bergweg 12",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "0664 1234567",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T42",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "Amex mit Prüfnummer, Geburtsdatum mit Schrägstrich, Umlaut-Domain, US-Telefon (Review)",
+      "text": "Guarantee: Amex 3782 822463 10005, CVC 123, holder Mike Brennan, DOB: 01/15/1980.\nPlease confirm to mike.brennan@müller-reisen.de or call +1 (555) 123-4567.",
+      "sensibel": [
+        {
+          "wert": "3782 822463 10005",
+          "typ": "KREDITKARTE"
+        },
+        {
+          "wert": "123",
+          "typ": "KREDITKARTE"
+        },
+        {
+          "wert": "Mike Brennan",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "01/15/1980",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "mike.brennan@müller-reisen.de",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "+1 (555) 123-4567",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "T43",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Gesundheit und Religion in Umschreibungen (Review)",
+      "text": "Liebes Team,\nmein Vater hatte eine Krebs-OP und ist sehbehindert, er braucht ein Hörgerät. Wir sind Muslime. Gibt es eine Moschee in der Nähe?\nViele Grüße",
+      "sensibel": [
+        {
+          "wert": "eine Krebs-OP",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "sehbehindert",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "ein Hörgerät",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Muslime",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "eine Moschee",
+          "typ": "RELIGION"
+        }
+      ]
+    },
+    {
+      "id": "T44",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Firma in Großbuchstaben, Ansprechpartner direkt vor dem Firmennamen (Review)",
+      "text": "ALPENBLICK ELEKTROTECHNIK GMBH\nIndustriestraße 5, 6060 Hall in Tirol\nAnsprechpartner Markus Leitner Alpenblick Elektrotechnik GmbH\nWartung Notbeleuchtung 420,00 € netto",
+      "sensibel": [
+        {
+          "wert": "ALPENBLICK ELEKTROTECHNIK GMBH",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Industriestraße 5, 6060 Hall in Tirol",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Markus Leitner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Alpenblick Elektrotechnik GmbH",
+          "typ": "FIRMA"
+        }
+      ]
+    },
+    {
+      "id": "T45",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Nichts Sensibles: Jahreszahlen, Stockwerk, Wege, Wörter mit Gesundheits-Silben (Review)",
+      "text": "Hausinfo\n2027 Februar Anreise\n1203 Doppelzimmer frei\nZimmer 12 im 2. OG, Lift vorhanden. Fußweg 5 Minuten zum Lift. Blick auf den Berg.\nDanke für die gute Kooperation, die Unterlagen liegen im Archiv. Dementsprechend buchen wir um. Auf der A12 gibt es Verkehrsbehinderungen.",
+      "sensibel": []
+    },
+    {
+      "id": "T46",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Namen neben Alltagswörtern: kein 'den Berg', kein 'zu Hause', kein 'euren Koch' (Review)",
+      "text": "Hallo,\nich will mit Thomas den Berg besteigen, Lena bleibt zu Hause. Anfrage von Thomas Koch, bitte gebt das an euren Koch weiter.\nFrau Anna McDonald und Herr John O'Neill kommen später.",
+      "sensibel": [
+        {
+          "wert": "Thomas",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Lena",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Thomas Koch",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Anna McDonald",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "John O'Neill",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "T47",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Zwei Adressen untereinander bleiben zwei (Review)",
+      "text": "Absender:\nIndustriestraße 5, 6060 Hall in Tirol\nEmpfänger:\nDorfstraße 1, 6094 Axams\nLieferschein 55120",
+      "sensibel": [
+        {
+          "wert": "Industriestraße 5, 6060 Hall in Tirol",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Dorfstraße 1, 6094 Axams",
+          "typ": "ADRESSE"
+        }
+      ]
     }
   ]
 }

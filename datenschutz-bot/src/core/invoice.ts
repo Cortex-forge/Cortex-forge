@@ -1,4 +1,12 @@
-import { KNOWN_VAT_RATES, formatEuro, formatNumber, round2 } from "./money.js";
+import {
+  KNOWN_VAT_RATES,
+  euro,
+  formatEuro,
+  formatNumber,
+  nettoAusBruttoCent,
+  produktCent,
+  steuerCent,
+} from "./money.js";
 
 export interface RechnungsPosition {
   beschreibung: string;
@@ -48,31 +56,33 @@ export interface RechnungsSummen {
   modus: "brutto" | "netto";
 }
 
-const sum = (values: number[]) => round2(values.reduce((s, v) => s + v, 0));
-
+/**
+ * Rechnet in ganzen Cent. Die Steuer wird je Steuersatz aus der Summe gerechnet, nicht je Zeile:
+ * so entstehen keine Cent-Differenzen zwischen Positionen und Summen.
+ */
 export function computeInvoice(positionen: RechnungsPosition[]): RechnungsSummen {
   const lines = positionen.map((p) => {
-    const betrag = round2(p.menge * p.einzelpreis);
+    const betrag = produktCent(p.menge, p.einzelpreis);
     if (p.preis_ist_brutto) {
-      const netto = round2(betrag / (1 + p.ust_satz / 100));
-      return { ...p, netto, ust: round2(betrag - netto), brutto: betrag };
+      const netto = nettoAusBruttoCent(betrag, p.ust_satz);
+      return { p, netto, ust: betrag - netto, brutto: betrag };
     }
-    const ust = round2((betrag * p.ust_satz) / 100);
-    return { ...p, netto: betrag, ust, brutto: round2(betrag + ust) };
+    const ust = steuerCent(betrag, p.ust_satz);
+    return { p, netto: betrag, ust, brutto: betrag + ust };
   });
-  const rates = [...new Set(lines.map((l) => l.ust_satz))].sort((a, b) => a - b);
-  // Steuer je Steuersatz aus der Summe rechnen, nicht je Zeile: so entstehen keine Cent-Differenzen.
-  const steuern = rates.map((satz) => {
-    const group = lines.filter((l) => l.ust_satz === satz);
-    if (group.every((l) => l.preis_ist_brutto)) {
+  const sum = (values: bigint[]) => values.reduce((s, v) => s + v, 0n);
+  const rates = [...new Set(lines.map((l) => l.p.ust_satz))].sort((a, b) => a - b);
+  const groups = rates.map((satz) => {
+    const group = lines.filter((l) => l.p.ust_satz === satz);
+    if (group.every((l) => l.p.preis_ist_brutto)) {
       const brutto = sum(group.map((l) => l.brutto));
-      const netto = round2(brutto / (1 + satz / 100));
-      return { satz, netto, ust: round2(brutto - netto), brutto };
+      const netto = nettoAusBruttoCent(brutto, satz);
+      return { satz, netto, ust: brutto - netto, brutto };
     }
-    if (group.every((l) => !l.preis_ist_brutto)) {
+    if (group.every((l) => !l.p.preis_ist_brutto)) {
       const netto = sum(group.map((l) => l.netto));
-      const ust = round2((netto * satz) / 100);
-      return { satz, netto, ust, brutto: round2(netto + ust) };
+      const ust = steuerCent(netto, satz);
+      return { satz, netto, ust, brutto: netto + ust };
     }
     return {
       satz,
@@ -82,12 +92,12 @@ export function computeInvoice(positionen: RechnungsPosition[]): RechnungsSummen
     };
   });
   return {
-    positionen: lines,
-    steuern,
-    netto: sum(steuern.map((s) => s.netto)),
-    ust: sum(steuern.map((s) => s.ust)),
-    brutto: sum(steuern.map((s) => s.brutto)),
-    modus: lines.length > 0 && lines.every((l) => l.preis_ist_brutto) ? "brutto" : "netto",
+    positionen: lines.map((l) => ({ ...l.p, netto: euro(l.netto), ust: euro(l.ust), brutto: euro(l.brutto) })),
+    steuern: groups.map((g) => ({ satz: g.satz, netto: euro(g.netto), ust: euro(g.ust), brutto: euro(g.brutto) })),
+    netto: euro(sum(groups.map((g) => g.netto))),
+    ust: euro(sum(groups.map((g) => g.ust))),
+    brutto: euro(sum(groups.map((g) => g.brutto))),
+    modus: lines.length > 0 && lines.every((l) => l.p.preis_ist_brutto) ? "brutto" : "netto",
   };
 }
 

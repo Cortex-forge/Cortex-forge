@@ -1,22 +1,18 @@
-// Misst die Erkennung am Testset mit Lösungsblatt (testset/faelle.json):
-// Trefferquote = Anteil der sensiblen Angaben, die vollständig ersetzt wurden,
-// Genauigkeit = Anteil der Ersetzungen, die wirklich sensibel waren.
-// Schreibt einen Bericht nach docs/03-qualitaet/ und gibt eine Zusammenfassung aus.
+// Misst die Erkennung an einem Testset mit Lösungsblatt (Standard: testset/faelle.json).
+//   Trefferquote = Anteil der sensiblen Angaben, die vollständig ersetzt wurden (Datenschutz).
+//   Genauigkeit  = Anteil der Ersetzungen, die eine sensible Angabe desselben Typs treffen.
+// Aufruf:
+//   npm run messung                                  Zusammenfassung, Bericht nach messungen/ (nicht im Repo)
+//   npm run messung -- --datei testset/pruefset.json  anderes Testset messen
+//   npm run messung -- --ablegen nach-korrektur       Bericht nach docs/03-qualitaet/ (zum Committen)
 import fs from "node:fs";
 import path from "node:path";
 import { CONFIG_DIR, PROJECT_ROOT } from "../config.js";
+import { escapeRegExp } from "../core/detectors.js";
 import { pseudonymize } from "../core/pseudonymize.js";
 import { ENTITY_LABELS, isEntityType, type EntityType } from "../core/types.js";
 import { loadCompanies } from "../store/settings.js";
-
-interface Fall {
-  id: string;
-  art: string;
-  sprache: string;
-  beschreibung: string;
-  text: string;
-  sensibel: Array<{ wert: string; typ: string }>;
-}
+import { loadTestset } from "./probe-lib.js";
 
 // Ziele aus docs/03-qualitaet/testkonzept.md
 const ZIELE: Partial<Record<EntityType, { treffer: number; genau: number }>> = {
@@ -31,8 +27,13 @@ const ZIELE: Partial<Record<EntityType, { treffer: number; genau: number }>> = {
   RELIGION: { treffer: 0.95, genau: 0.85 },
 };
 
-const file = path.join(PROJECT_ROOT, "testset", "faelle.json");
-const { faelle } = JSON.parse(fs.readFileSync(file, "utf8")) as { faelle: Fall[] };
+const arg = (name: string) => {
+  const i = process.argv.indexOf(name);
+  return i > -1 ? process.argv[i + 1] : undefined;
+};
+const datei = path.resolve(PROJECT_ROOT, arg("--datei") ?? path.join("testset", "faelle.json"));
+const ablegen = arg("--ablegen");
+const faelle = loadTestset(datei);
 const companies = loadCompanies(CONFIG_DIR);
 
 interface Zaehler {
@@ -49,26 +50,24 @@ const zaehler = (t: EntityType) => {
 };
 const verpasst: string[] = [];
 const fehlalarme: string[] = [];
+const falscherTyp: string[] = [];
 
 for (const fall of faelle) {
   const { findings } = pseudonymize(fall.text, { companies });
   const covered = new Uint8Array(fall.text.length);
   for (const f of findings) covered.fill(1, f.start, f.end);
 
-  // Alle Vorkommen der erwarteten Angaben im Text.
+  // Alle Vorkommen der erwarteten Angaben, nur als ganze Wörter (nicht "Anna" in "Annahme").
   const expected: Array<{ start: number; end: number; typ: EntityType; wert: string }> = [];
   for (const s of fall.sensibel) {
     if (!isEntityType(s.typ)) throw new Error(`${fall.id}: unbekannter Typ ${s.typ}`);
-    let from = 0;
+    const re = new RegExp(String.raw`(?<![\p{L}\p{N}])${escapeRegExp(s.wert)}(?![\p{L}\p{N}])`, "gu");
     let found = false;
-    for (;;) {
-      const i = fall.text.indexOf(s.wert, from);
-      if (i === -1) break;
+    for (const m of fall.text.matchAll(re)) {
       found = true;
-      expected.push({ start: i, end: i + s.wert.length, typ: s.typ, wert: s.wert });
-      from = i + s.wert.length;
+      expected.push({ start: m.index, end: m.index + m[0].length, typ: s.typ, wert: s.wert });
     }
-    if (!found) throw new Error(`${fall.id}: "${s.wert}" kommt im Text nicht vor`);
+    if (!found) throw new Error(`${fall.id}: "${s.wert}" kommt im Text nicht als ganzes Wort vor`);
   }
 
   // Trefferquote: Jedes Vorkommen muss vollständig ersetzt sein (Leerzeichen und Satzzeichen zählen nicht).
@@ -83,35 +82,39 @@ for (const fall of faelle) {
       }
     }
     if (ok) z.gefunden++;
-    else verpasst.push(`${fall.id} · ${ENTITY_LABELS[e.typ]} · „${e.wert}“ (${fall.beschreibung})`);
+    else verpasst.push(`${fall.id} · ${ENTITY_LABELS[e.typ]} · „${e.wert}“ (${fall.beschreibung ?? fall.art})`);
   }
 
-  // Genauigkeit: Jede Ersetzung sollte eine erwartete Angabe treffen.
+  // Genauigkeit: Jede Ersetzung soll eine erwartete Angabe desselben Typs treffen.
   for (const f of findings) {
     const z = zaehler(f.type);
     z.ersetzungen++;
-    if (expected.some((e) => f.start < e.end && e.start < f.end)) z.richtig++;
+    const hits = expected.filter((e) => f.start < e.end && e.start < f.end);
+    if (hits.some((e) => e.typ === f.type)) z.richtig++;
+    else if (hits.length) falscherTyp.push(`${fall.id} · ersetzt als ${ENTITY_LABELS[f.type]}, erwartet ${hits.map((e) => ENTITY_LABELS[e.typ]).join("/")} · „${f.value}“`);
     else fehlalarme.push(`${fall.id} · ${ENTITY_LABELS[f.type]} · „${f.value}“ (${f.source})`);
   }
 }
 
-const pct = (a: number, b: number) => (b === 0 ? "–" : `${Math.round((a / b) * 1000) / 10} %`);
+const pct = (a: number, b: number) => (b === 0 ? "–" : `${(Math.round((a / b) * 1000) / 10).toLocaleString("de-AT")} %`);
 const sum = (key: keyof Zaehler) => [...proTyp.values()].reduce((s, z) => s + z[key], 0);
 const rows = [...proTyp.entries()].sort((a, b) => b[1].erwartet - a[1].erwartet);
 const zielText = (t: EntityType, z: Zaehler) => {
   const ziel = ZIELE[t];
   if (!ziel) return "–";
-  const ok = (z.erwartet === 0 || z.gefunden / z.erwartet >= ziel.treffer) && (z.ersetzungen === 0 || z.richtig / z.ersetzungen >= ziel.genau);
+  const ok =
+    (z.erwartet === 0 || z.gefunden / z.erwartet >= ziel.treffer) && (z.ersetzungen === 0 || z.richtig / z.ersetzungen >= ziel.genau);
   return ok ? "erreicht" : "nicht erreicht";
 };
 
 const date = new Date().toISOString().slice(0, 10);
+const relDatei = path.relative(PROJECT_ROOT, datei);
 const report = [
-  `# Messung der Erkennung · ${date}`,
+  `# Messung der Erkennung · ${date}${ablegen ? ` · ${ablegen}` : ""}`,
   "",
-  `Testset: \`testset/faelle.json\` (${faelle.length} erfundene Fälle, davon ${faelle.filter((f) => f.sensibel.length === 0).length} ohne sensible Angaben). Gemessen mit \`npm run messung\`.`,
+  `Testset: \`${relDatei}\` (${faelle.length} erfundene Fälle, davon ${faelle.filter((f) => f.sensibel.length === 0).length} ohne sensible Angaben). Gemessen mit \`npm run messung\`.`,
   "",
-  "**Trefferquote:** Anteil der sensiblen Angaben, die vollständig ersetzt wurden. **Genauigkeit:** Anteil der Ersetzungen, die wirklich sensibel waren.",
+  "**Trefferquote:** Anteil der sensiblen Angaben, die vollständig ersetzt wurden. **Genauigkeit:** Anteil der Ersetzungen, die eine sensible Angabe desselben Typs treffen. Erwartete Werte zählen nur als ganze Wörter.",
   "",
   "| Datenart | Erwartet | Ersetzt | Trefferquote | Ersetzungen | davon richtig | Genauigkeit | Ziel |",
   "|---|---|---|---|---|---|---|---|",
@@ -129,17 +132,21 @@ const report = [
   "",
   ...(fehlalarme.length ? fehlalarme.map((v) => `- ${v}`) : ["Keine Fehlalarme."]),
   "",
+  `## Geschützt, aber mit falschem Typ (${falscherTyp.length})`,
+  "",
+  ...(falscherTyp.length ? falscherTyp.map((v) => `- ${v}`) : ["Keine."]),
+  "",
 ].join("\n");
 
-const outDir = path.join(PROJECT_ROOT, "docs", "03-qualitaet");
+const outDir = ablegen ? path.join(PROJECT_ROOT, "docs", "03-qualitaet") : path.join(PROJECT_ROOT, "messungen");
 fs.mkdirSync(outDir, { recursive: true });
-const label = process.argv[2] ? `-${process.argv[2].replace(/[^a-z0-9-]/gi, "")}` : "";
+const label = ablegen ? `-${ablegen.replace(/[^a-z0-9-]/gi, "")}` : `-${path.basename(datei, ".json")}`;
 const outFile = path.join(outDir, `${date}-messung${label}.md`);
 fs.writeFileSync(outFile, report);
 
 console.log(
   `Trefferquote ${pct(sum("gefunden"), sum("erwartet"))} (${sum("gefunden")}/${sum("erwartet")}), ` +
     `Genauigkeit ${pct(sum("richtig"), sum("ersetzungen"))} (${sum("richtig")}/${sum("ersetzungen")}), ` +
-    `${verpasst.length} übersehen, ${fehlalarme.length} Fehlalarme.`,
+    `${verpasst.length} übersehen, ${fehlalarme.length} Fehlalarme, ${falscherTyp.length} mit falschem Typ.`,
 );
 console.log(`Bericht: ${path.relative(PROJECT_ROOT, outFile)}`);

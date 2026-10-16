@@ -8,7 +8,7 @@ Der Datenschutz-Bot ersetzt personenbezogene Daten durch Platzhalter, bevor eine
 
 ## Die wichtigste Regel
 
-**Originaldaten verlassen den Bot nie.** Keine Antwort des MCP-Servers, kein Log, keine Datei außerhalb des verschlüsselten Bereichs darf Originalwerte enthalten. Jede Änderung, die das berühren könnte, braucht einen Test (siehe `src/test/mcp.test.ts`, „Datenschutz-Probe“).
+**Originaldaten verlassen den Bot nie.** Keine Antwort des MCP-Servers, kein Log, keine Datei außerhalb des verschlüsselten Bereichs darf Originalwerte enthalten. Jede Änderung, die das berühren könnte, braucht einen Test (siehe `src/test/mcp.test.ts`, „Datenschutz-Probe mit Lösungsblatt“). Die Probe vergleicht immer mit einem unabhängigen Lösungsblatt, nie mit den Funden der Erkennung selbst.
 
 ## Befehle
 
@@ -19,6 +19,8 @@ Der Datenschutz-Bot ersetzt personenbezogene Daten durch Platzhalter, bevor eine
 | `npm run typecheck` | Typprüfung ohne Ausgabe |
 | `npm test` | Build und alle Tests |
 | `npm run demo` | ganzer Ablauf, ein Skript spielt die KI, mit Datenschutz-Probe |
+| `npm run probe` | Datenschutz-Probe mit Lösungsblatt (Beispiele und Testset) über den echten MCP-Server |
+| `npm run messung` | Trefferquote und Genauigkeit am Testset; `-- --datei testset/pruefset.json` für das Prüfset |
 | `npm start` | Oberfläche auf http://127.0.0.1:4317 |
 | `npm run nachweis` | Nachweis für den Merge erzeugen (Gesetzbuch G12) |
 
@@ -48,7 +50,9 @@ Der Datenschutz-Bot ersetzt personenbezogene Daten durch Platzhalter, bevor eine
 
 - Keine echten Kundendaten ins Repo, in Tests, in Beispiele oder in Prompts. Beispiele sind erfunden (Domains `example.com`/`.example`).
 - `data/` nie committen. Dort liegen Schlüssel und verschlüsselte Dokumente.
-- Neuer oder geänderter Erkenner: immer ein Test, dass er greift, und ein Test, dass er keinen Fehlalarm auslöst (`src/test/detectors.test.ts`).
+- Neuer oder geänderter Erkenner: immer ein Test, dass er greift, und ein Test, dass er keinen Fehlalarm auslöst (`src/test/detectors.test.ts`). Muster mit begrenzten Wiederholungen und Wortanfang-Prüfung schreiben (lineare Laufzeit, siehe Laufzeittest).
+- `testset/pruefset.json` ist das unabhängige Prüfset: nur messen, nie daran entwickeln. Wer Regeln anhand des Prüfsets ändert, braucht danach ein neues Prüfset.
+- KI-Agenten nie im Datenordner arbeiten lassen; `data/` ist für Claude Code in `.claude/settings.json` gesperrt.
 - Beträge, Steuern und Rechnungsnummern berechnet der Bot, nie die KI.
 - Die Oberfläche baut HTML nur mit `textContent`, nie mit `innerHTML` aus Daten.
 - Neue Abhängigkeiten nur nach Rücksprache.

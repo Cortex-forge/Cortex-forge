@@ -56,6 +56,8 @@ export interface Finding {
   description?: string;
   /** Kanonischer Wert, wenn mehrere Schreibweisen dieselbe Sache meinen. */
   canonical?: string;
+  /** Nur Personen: der Nachname, z. B. für "Sehr geehrte Frau Huber". */
+  nachname?: string;
 }
 
 /** Zuordnung Platzhalter -> Originaldaten. Verlässt nie den Bot. */
@@ -65,6 +67,8 @@ export interface MappingEntry {
   original: string;
   variants: string[];
   description?: string;
+  /** Nur Personen: der Nachname, den die Rückübersetzung nach einer Anrede einsetzt. */
+  nachname?: string;
 }
 
 /** Was die KI über einen Platzhalter erfahren darf. */
@@ -95,4 +99,6 @@ export interface PseudonymizeResult {
   text: string;
   mapping: MappingEntry[];
   findings: Array<Finding & { id: string }>;
+  /** Platzhalter, die schon im Original standen (z. B. "[PERSON_1]" in einer Vorlage). Sie bleiben unverändert. */
+  literal: string[];
 }

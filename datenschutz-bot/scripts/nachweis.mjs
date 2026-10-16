@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Nachweis für einen Merge (Gesetzbuch G12): führt Build, Typprüfung, Tests und die
-// Datenschutz-Probe aus und schreibt die echten Ausgaben nach docs/05-nachweise/.
+// Nachweis für einen Merge (Gesetzbuch G12): führt Build, Typprüfung, Tests, beide Datenschutz-Proben
+// (Demo und Lösungsblatt) und die Messung aus und schreibt die echten Ausgaben nach docs/05-nachweise/.
 import { execSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -36,8 +36,17 @@ steps.push({ name: "Typprüfung", ...run(npm, ["run", "typecheck", "--silent"]) 
 const tests = run(process.execPath, ["--test", "dist/test/*.test.js"]);
 const testLines = tests.out.split("\n").filter((l) => /^(ok|not ok) \d+|^# (tests|pass|fail|cancelled|skipped)/.test(l));
 steps.push({ name: "Tests", ...tests, out: tests.ok ? testLines.join("\n") : tests.out });
-steps.push({ name: "Datenschutz-Probe (Demo)", ...run(process.execPath, ["dist/scripts/demo.js", "--leise"], { DSB_DATA_DIR: tmpData }) });
+steps.push({ name: "Datenschutz-Probe (Demo, Lösungsblatt der Beispiele)", ...run(process.execPath, ["dist/scripts/demo.js", "--leise"], { DSB_DATA_DIR: tmpData }) });
 fs.rmSync(tmpData, { recursive: true, force: true });
+steps.push({ name: "Datenschutz-Probe (Lösungsblatt: Beispiele und Testset über den MCP-Server)", ...run(process.execPath, ["dist/scripts/probe.js"]) });
+const messung = (name, args) => {
+  const r = run(process.execPath, ["dist/scripts/messung.js", ...args]);
+  return { name, ...r, out: r.out.split("\n")[0] ?? "" };
+};
+steps.push(messung("Messung Testset (Entwicklungsset)", []));
+if (fs.existsSync(path.join(root, "testset", "pruefset.json"))) {
+  steps.push(messung("Messung Prüfset (unabhängig erstellt, nicht zum Entwickeln benutzt)", ["--datei", "testset/pruefset.json"]));
+}
 
 const allOk = steps.every((s) => s.ok);
 const sha = git("rev-parse --short HEAD") || "ohne-git";

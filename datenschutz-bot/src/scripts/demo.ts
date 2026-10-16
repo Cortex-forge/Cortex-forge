@@ -1,12 +1,13 @@
 // Demo ohne KI-Konto: Ein Skript spielt die Rolle von Claude und ruft den MCP-Server genau so auf,
-// wie es Claude oder Codex tun würden. So sieht man den ganzen Ablauf und prüft nebenbei,
-// dass kein einziger Originalwert den Bot verlässt.
+// wie es Claude oder Codex tun würden. So sieht man den ganzen Ablauf und prüft nebenbei mit dem
+// Lösungsblatt (examples/loesungen.json), dass keine sensible Angabe den Bot verlässt.
 import fs from "node:fs";
 import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { EXAMPLES_DIR, PROJECT_ROOT } from "../config.js";
 import { JobStore } from "../store/jobs.js";
+import { containsValue, loadExamples } from "./probe-lib.js";
 
 const quiet = process.argv.includes("--leise");
 const say = (line = "") => {
@@ -111,13 +112,12 @@ say(
 );
 await client.close();
 
-// 3) Datenschutz-Probe: Kommt irgendein Originalwert in einer Antwort an die KI vor?
+// 3) Datenschutz-Probe gegen das Lösungsblatt: Kommt eine sensible Angabe in einer Antwort an die KI vor?
+//    Das Lösungsblatt ist unabhängig von der Erkennung, die Probe findet also auch Übersehenes.
 const leaks: string[] = [];
-for (const job of [hotel, beleg, auftrag]) {
-  for (const entry of store.detail(job.id).zuordnung) {
-    for (const variant of entry.variants) {
-      if (responses.some((r) => r.includes(variant))) leaks.push(`${entry.id}: ${variant}`);
-    }
+for (const fall of loadExamples()) {
+  for (const s of fall.sensibel) {
+    if (responses.some((r) => containsValue(r, s.wert))) leaks.push(`${fall.id}: ${s.typ} „${s.wert}“`);
   }
 }
 
@@ -142,6 +142,6 @@ if (leaks.length) {
   process.exit(1);
 }
 console.log(
-  `Datenschutz-Probe bestanden: ${responses.length} Antworten an die KI geprüft, kein einziger Originalwert enthalten.`,
+  `Datenschutz-Probe bestanden: ${responses.length} Antworten an die KI gegen das Lösungsblatt geprüft, keine sensible Angabe enthalten.`,
 );
 console.log("Öffne die Oberfläche (npm start) und prüfe die drei Ergebnisse.");

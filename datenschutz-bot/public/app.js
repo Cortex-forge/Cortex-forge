@@ -8,9 +8,9 @@ const GROUP = {
 };
 const STEPS = ["Prüfen", "KI arbeitet", "Ergebnis prüfen", "Erledigt"];
 const STEP_INDEX = { neu: 0, bereit: 1, zur_pruefung: 2, freigegeben: 3, abgeschlossen: 4 };
-const PLACEHOLDER_RE = /\[([A-ZÄÖÜ]+)_(\d+)(?::[^\]\n]*)?\]/g;
-
-const state = { info: null, beispiele: [], list: [], current: null, selection: "", busy: false };
+const state = { info: null, beispiele: [], list: [], defekt: 0, current: null, selection: "", busy: false };
+// Das Platzhalter-Muster kommt vom Server (eine Quelle für Bot und Oberfläche).
+let placeholderRe = /\[([A-Z]+)_(\d+)(?::[^\]\n]*)?\]/gi;
 const main = document.getElementById("main");
 const listEl = document.getElementById("doc-list");
 
@@ -78,13 +78,6 @@ const artLabel = (id) => (state.info?.arten.find((a) => a.id === id) || {}).labe
 const typeLabel = (id) => (state.info?.typen.find((t) => t.id === id) || {}).label || id;
 const statusLabel = (s) => (state.info?.status || {})[s] || s;
 
-/** Titel eines Dokuments: Betreff-Zeile, sonst erste Zeile. */
-function docTitle(text) {
-  const lines = (text || "").split("\n").map((l) => l.trim()).filter(Boolean);
-  const subject = lines.find((l) => /^(Betreff|Subject|Oggetto|Onderwerp)\s*:/i.test(l));
-  return (subject ? subject.replace(/^[^:]+:\s*/, "") : lines[0] || "").slice(0, 90);
-}
-
 function badge(status) {
   return h("span", { class: `badge st-${status}`, text: statusLabel(status) });
 }
@@ -111,9 +104,10 @@ function highlightOriginal(text, marks) {
 function highlightPlaceholders(text) {
   const frag = document.createDocumentFragment();
   let pos = 0;
-  for (const m of text.matchAll(PLACEHOLDER_RE)) {
+  for (const m of text.matchAll(placeholderRe)) {
+    const type = (m[1] || m[3] || "").toUpperCase();
     frag.append(text.slice(pos, m.index));
-    frag.append(h("span", { class: `ph g-${GROUP[m[1]] || "sonst"}`, title: typeLabel(m[1]), text: m[0] }));
+    frag.append(h("span", { class: `ph g-${GROUP[type] || "sonst"}`, title: typeLabel(type), text: m[0] }));
     pos = m.index + m[0].length;
   }
   frag.append(text.slice(pos));
@@ -125,6 +119,9 @@ function highlightPlaceholders(text) {
 
 function renderList() {
   listEl.replaceChildren();
+  if (state.defekt) {
+    listEl.append(h("p", { class: "empty-list", text: `⚠ ${state.defekt} Datei(en) im Datenordner konnten nicht gelesen werden.` }));
+  }
   if (state.list.length === 0) {
     listEl.append(h("p", { class: "empty-list", text: "Noch keine Dokumente. Lege eines ab oder lade ein Beispiel." }));
     return;
@@ -146,7 +143,9 @@ function renderList() {
 }
 
 async function refreshList() {
-  state.list = await api("/api/dokumente");
+  const { dokumente, defekt } = await api("/api/dokumente");
+  state.list = dokumente;
+  state.defekt = defekt;
   renderList();
 }
 
@@ -308,9 +307,10 @@ function viewNeu(detail) {
             const value = state.selection.trim();
             if (!value) return toast("Bitte zuerst Text im Original markieren.", true);
             act(async () => {
-              await api(`/api/dokumente/${detail.job.id}/markieren`, { method: "POST", body: { wert: value, typ: typeSelect.value } });
+              const { treffer } = await api(`/api/dokumente/${detail.job.id}/markieren`, { method: "POST", body: { wert: value, typ: typeSelect.value } });
               await loadDetail(detail.job.id);
-            }, "Geschwärzt.");
+              toast(`Geschwärzt: ${treffer} Stelle${treffer === 1 ? "" : "n"}.`);
+            });
           } }),
         ),
       ),
@@ -333,6 +333,16 @@ function viewNeu(detail) {
   ];
 }
 
+function backToReviewButton(id) {
+  return h("button", { type: "button", text: "Zurück zur Prüfung", title: "Etwas übersehen? Die KI verliert den Zugriff, bis du neu freigibst.", onclick: () =>
+    act(async () => {
+      await api(`/api/dokumente/${id}/zur-pruefung`, { method: "POST", body: {} });
+      await loadDetail(id);
+      await refreshList();
+    }, "Zurück in der Prüfung. Die KI hat keinen Zugriff mehr."),
+  });
+}
+
 function viewBereit(detail) {
   return [
     h("div", { class: "callout info" },
@@ -345,6 +355,7 @@ function viewBereit(detail) {
       h("h3", {}, "Das sieht die KI", h("small", { text: "nur Platzhalter" })),
       h("pre", { class: "doc" }, highlightPlaceholders((detail.job.betreffKi ? detail.job.betreffKi + "\n\n" : "") + detail.job.textKi)),
     ),
+    h("div", { class: "bar" }, backToReviewButton(detail.job.id)),
   ];
 }
 
@@ -396,16 +407,20 @@ function checksView(job) {
   if (!p) return null;
   const warnings = [
     ...p.unbekannt.map((u) => `Die KI hat einen Platzhalter verwendet, den es nicht gibt: ${u}`),
+    ...(p.reste || []).map((r) => `Das sieht wie ein Platzhalter aus, wurde aber nicht ersetzt: ${r}. Bitte prüfen.`),
     ...p.erfunden.map((e) => `Die KI hat selbst ${e.label === "E-Mail" ? "eine E-Mail-Adresse" : e.label} geschrieben: ${e.value}. Bitte prüfen.`),
     ...p.hinweise,
   ];
-  const info = p.repariert.length ? `Leicht veränderte Platzhalter wurden erkannt und ersetzt: ${p.repariert.join(", ")}` : null;
-  if (!warnings.length && !info) {
+  const infos = [
+    p.repariert.length ? `Leicht veränderte Platzhalter wurden erkannt und ersetzt: ${p.repariert.join(", ")}` : null,
+    p.nichtVerwendet.length ? `Nicht verwendet: ${p.nichtVerwendet.map((id) => `[${id}]`).join(", ")}. Fehlt im Ergebnis etwas?` : null,
+  ].filter(Boolean);
+  if (!warnings.length && !infos.length) {
     return h("div", { class: "callout ok" }, h("strong", { text: "Keine Auffälligkeiten. " }), "Alle Platzhalter wurden zurückübersetzt. Bitte trotzdem inhaltlich prüfen.");
   }
   return h("div", { class: warnings.length ? "callout warn" : "callout info" },
     h("strong", { text: warnings.length ? `${warnings.length} Prüfhinweis(e)` : "Hinweis" }),
-    h("ul", {}, warnings.map((w) => h("li", { text: w })), info ? h("li", { text: info }) : null),
+    h("ul", {}, warnings.map((w) => h("li", { text: w })), infos.map((i) => h("li", { text: i }))),
   );
 }
 
@@ -435,10 +450,14 @@ function copyButton(detail) {
 function viewPruefung(detail) {
   const id = detail.job.id;
   return [
+    state.replaced === id
+      ? h("div", { class: "callout warn" }, h("strong", { text: "Die KI hat das Ergebnis ersetzt. " }), "Bitte die neue Fassung prüfen. Freigegeben wird nur, was hier angezeigt ist.")
+      : null,
     checksView(detail.job),
     h("div", { class: "pane" }, h("h3", {}, "Ergebnis mit echten Daten", h("small", { text: "nur hier sichtbar" })), resultView(detail)),
     aiAnswer(detail.job),
     h("div", { class: "bar" },
+      backToReviewButton(id),
       h("button", { type: "button", text: "Zurück an die KI", onclick: () =>
         act(async () => {
           await api(`/api/dokumente/${id}/zurueck`, { method: "POST", body: {} });
@@ -449,7 +468,9 @@ function viewPruefung(detail) {
       copyButton(detail),
       h("button", { class: "primary", type: "button", text: "Freigeben ✓", onclick: () =>
         act(async () => {
-          await api(`/api/dokumente/${id}/freigeben`, { method: "POST", body: {} });
+          // Freigegeben wird genau die angezeigte Fassung; hat die KI sie inzwischen ersetzt, lehnt der Bot ab.
+          await api(`/api/dokumente/${id}/freigeben`, { method: "POST", body: { ergebnisRev: detail.job.ergebnisRev } });
+          state.replaced = null;
           await loadDetail(id);
           await refreshList();
         }, detail.ergebnis && detail.ergebnis.art === "rechnung" ? "Freigegeben, Rechnungsnummer vergeben." : "Freigegeben."),
@@ -464,14 +485,19 @@ function viewFreigegeben(detail) {
     h("div", { class: "callout ok" },
       h("strong", { text: "Freigegeben. " }),
       detail.job.rechnungsnummer ? `Rechnungsnummer ${detail.job.rechnungsnummer}. ` : "",
-      "Jetzt herunterladen oder kopieren und versenden bzw. buchen. Danach abschließen, dann werden die Originaldaten gelöscht.",
+      detail.job.rechnungsnummer
+        ? "Jetzt herunterladen und versenden. Danach abschließen: Die Rechnung kommt verschlüsselt ins Archiv, alles andere wird gelöscht."
+        : "Jetzt herunterladen oder kopieren und versenden bzw. buchen. Danach abschließen, dann werden die Originaldaten gelöscht.",
     ),
     h("div", { class: "pane" }, h("h3", { text: "Ergebnis" }), resultView(detail)),
     h("div", { class: "bar" },
       h("a", { class: "btn", href: `/api/dokumente/${id}/export`, download: "", text: "Herunterladen" }),
       copyButton(detail),
-      h("button", { class: "danger", type: "button", text: "Abschließen & Originaldaten löschen", onclick: () => {
-        if (!confirm("Originaldaten, Zuordnung und Ergebnis endgültig löschen? Lade das Ergebnis vorher herunter.")) return;
+      h("button", { class: "danger", type: "button", text: detail.job.rechnungsnummer ? "Abschließen & archivieren" : "Abschließen & Originaldaten löschen", onclick: () => {
+        const frage = detail.job.rechnungsnummer
+          ? "Abschließen? Die Rechnung wird verschlüsselt archiviert, Original, Zuordnung und Platzhalter-Fassung werden gelöscht."
+          : "Originaldaten, Zuordnung, Platzhalter-Fassung und Ergebnis endgültig löschen? Lade das Ergebnis vorher herunter.";
+        if (!confirm(frage)) return;
         act(async () => {
           await api(`/api/dokumente/${id}/abschliessen`, { method: "POST", body: {} });
           await loadDetail(id);
@@ -483,31 +509,31 @@ function viewFreigegeben(detail) {
 }
 
 function viewAbgeschlossen(detail) {
+  const nr = detail.job.rechnungsnummer;
   return [
     h("div", { class: "callout" },
       h("strong", { text: "Abgeschlossen. " }),
-      "Originaldaten, Zuordnung und Ergebnis wurden gelöscht. Übrig ist nur die anonyme Platzhalter-Version.",
+      nr
+        ? `Original, Zuordnung und Platzhalter-Fassung wurden gelöscht. Die Rechnung ${nr} liegt verschlüsselt im Archiv.`
+        : "Original, Zuordnung, Platzhalter-Fassung und Ergebnis wurden gelöscht. Übrig sind nur Verwaltungsdaten und das Protokoll.",
     ),
-    h("div", { class: "pane" },
-      h("h3", { text: "Platzhalter-Version" }),
-      h("pre", { class: "doc" }, highlightPlaceholders((detail.job.betreffKi ? detail.job.betreffKi + "\n\n" : "") + detail.job.textKi)),
-    ),
+    nr ? h("div", { class: "bar" }, h("a", { class: "btn", href: `/api/rechnungen/${nr}`, download: "", text: `Rechnung ${nr} herunterladen` })) : null,
   ];
 }
 
 function renderDetail(detail) {
   const job = detail.job;
   const views = { neu: viewNeu, bereit: viewBereit, zur_pruefung: viewPruefung, freigegeben: viewFreigegeben, abgeschlossen: viewAbgeschlossen };
-  const title = docTitle(detail.original || (job.betreffKi ? job.betreffKi + "\n" : "") + job.textKi) || job.id;
+  const title = job.titel || job.id;
 
   const head = h("div", { class: "doc-head" },
     h("div", {},
       h("div", { class: "kicker", text: artLabel(job.art) }),
       h("h2", { text: title }),
-      h("div", { class: "sub", text: `${job.id} · abgelegt ${relTime(job.erstellt)} · ${job.platzhalter.length} Angaben ersetzt` }),
+      h("div", { class: "sub", text: `${job.id} · abgelegt ${relTime(job.erstellt)} · ${job.anzahlPlatzhalter} Angaben ersetzt` }),
     ),
     h("div", { class: "row" }, badge(job.status),
-      h("button", { class: "small danger", type: "button", text: "Verwerfen", onclick: () => {
+      job.rechnungsnummer ? null : h("button", { class: "small danger", type: "button", text: "Verwerfen", onclick: () => {
         if (!confirm("Dokument komplett löschen?")) return;
         act(async () => {
           await api(`/api/dokumente/${job.id}`, { method: "DELETE" });
@@ -541,7 +567,7 @@ async function loadDetail(id) {
 async function route() {
   const hash = location.hash.slice(1);
   try {
-    if (/^D-[0-9a-f]{6}$/.test(hash)) await loadDetail(hash);
+    if (/^D-[0-9a-f]{12}$/.test(hash)) await loadDetail(hash);
     else if (hash === "hilfe") renderHelp();
     else renderNew();
   } catch (err) {
@@ -569,7 +595,14 @@ async function poll() {
     if (cur && location.hash === `#${cur.job.id}`) {
       const fresh = state.list.find((d) => d.id === cur.job.id);
       const selecting = document.getSelection() && document.getSelection().toString().trim();
-      if (fresh && fresh.aktualisiert !== cur.job.aktualisiert && !selecting) await loadDetail(cur.job.id);
+      if (fresh && fresh.aktualisiert !== cur.job.aktualisiert && !selecting) {
+        // Hat die KI ein Ergebnis ersetzt, während es hier angezeigt wurde: deutlich darauf hinweisen.
+        if (cur.job.status === "zur_pruefung" && fresh.status === "zur_pruefung" && fresh.ergebnisRev !== cur.job.ergebnisRev) {
+          state.replaced = cur.job.id;
+          toast("Die KI hat das Ergebnis ersetzt. Bitte neu prüfen.", true);
+        }
+        await loadDetail(cur.job.id);
+      }
     }
   } catch {
     // Server kurz nicht erreichbar: beim nächsten Durchlauf erneut versuchen.
@@ -578,6 +611,7 @@ async function poll() {
 
 async function init() {
   [state.info, state.beispiele] = await Promise.all([api("/api/info"), api("/api/beispiele")]);
+  if (state.info.platzhalterMuster) placeholderRe = new RegExp(state.info.platzhalterMuster, "giu");
   document.getElementById("btn-new").addEventListener("click", () => {
     if (location.hash === "#neu") renderNew();
     location.hash = "neu";

@@ -1,4 +1,4 @@
-import { KNOWN_VAT_RATES, formatEuro, round2 } from "./money.js";
+import { KNOWN_VAT_RATES, cent, euro, formatEuro, hatBruchteilCent, steuerCent } from "./money.js";
 
 export interface Konto {
   nummer: string;
@@ -30,8 +30,8 @@ export interface BuchungsSummen {
 }
 
 /**
- * Der Bot rechnet selbst nach, statt der KI zu vertrauen: Steuer und Brutto werden hier
- * berechnet, Abweichungen zum Beleg und unbekannte Konten werden als Hinweis gemeldet.
+ * Der Bot rechnet selbst nach, statt der KI zu vertrauen: Steuer und Brutto werden hier in ganzen Cent berechnet,
+ * Abweichungen zum Beleg (ab 1 Cent) und unbekannte Konten werden als Hinweis gemeldet.
  */
 export function computeBookings(
   rows: BuchungKi[],
@@ -39,10 +39,18 @@ export function computeBookings(
 ): { buchungen: BuchungBerechnet[]; summen: BuchungsSummen; hinweise: string[] } {
   const hinweise: string[] = [];
   const known = new Set(kontenplan.map((k) => k.nummer));
+  let summeNetto = 0n;
+  let summeUst = 0n;
+  let summeBrutto = 0n;
   const buchungen = rows.map((row, i) => {
     const nr = i + 1;
-    const ust_betrag = round2((row.netto * row.ust_satz) / 100);
-    const brutto = round2(row.netto + ust_betrag);
+    if (hatBruchteilCent(row.netto)) hinweise.push(`Buchung ${nr}: Nettobetrag ${row.netto} auf Cent gerundet.`);
+    const nettoC = cent(row.netto);
+    const ustC = steuerCent(nettoC, row.ust_satz);
+    const bruttoC = nettoC + ustC;
+    summeNetto += nettoC;
+    summeUst += ustC;
+    summeBrutto += bruttoC;
     if (!KNOWN_VAT_RATES.includes(row.ust_satz)) {
       hinweise.push(`Buchung ${nr}: ungewöhnlicher Steuersatz ${row.ust_satz} %.`);
     }
@@ -51,29 +59,43 @@ export function computeBookings(
         if (!known.has(konto)) hinweise.push(`Buchung ${nr}: Konto ${konto} steht nicht im Kontenplan.`);
       }
     }
-    if (row.brutto_laut_beleg !== undefined && Math.abs(row.brutto_laut_beleg - brutto) > 0.01) {
+    if (row.brutto_laut_beleg !== undefined && cent(row.brutto_laut_beleg) !== bruttoC) {
       hinweise.push(
-        `Buchung ${nr}: berechnet ${formatEuro(brutto)} brutto, laut Beleg ${formatEuro(row.brutto_laut_beleg)}.`,
+        `Buchung ${nr}: berechnet ${formatEuro(euro(bruttoC))} brutto, laut Beleg ${formatEuro(row.brutto_laut_beleg)}.`,
       );
     }
-    return { ...row, ust_betrag, brutto };
+    return { ...row, netto: euro(nettoC), ust_betrag: euro(ustC), brutto: euro(bruttoC) };
   });
-  const summen = {
-    netto: round2(buchungen.reduce((s, b) => s + b.netto, 0)),
-    ust: round2(buchungen.reduce((s, b) => s + b.ust_betrag, 0)),
-    brutto: round2(buchungen.reduce((s, b) => s + b.brutto, 0)),
-  };
+  const summen = { netto: euro(summeNetto), ust: euro(summeUst), brutto: euro(summeBrutto) };
   return { buchungen, summen, hinweise };
+}
+
+/**
+ * Zelleninhalt, den Tabellenprogramme als Formel lesen könnten ("=HYPERLINK(…)", "+1", "@SUM"), wird mit einem
+ * Apostroph entschärft. Gilt nur für Textspalten; Beträge formatiert der Bot selbst.
+ */
+export function csvTextCell(value: string): string {
+  return /^[\s]*[=+\-@]/.test(value) || /^[\t\r]/.test(value) ? `'${value}` : value;
 }
 
 /** CSV für den Import in die Buchhaltung (allgemeines Format; BMD-/RZL-/DATEV-Formate folgen im Pilot). */
 export function bookingsToCsv(buchungen: BuchungBerechnet[]): string {
   const header = ["Datum", "Belegnummer", "Konto", "Gegenkonto", "Text", "Netto", "USt-Satz", "USt-Betrag", "Brutto"];
-  const esc = (v: string) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const quote = (v: string) => (/[;"\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const num = (v: number) => v.toFixed(2).replace(".", ",");
   const lines = buchungen.map((b) =>
-    [b.datum, b.belegnummer ?? "", b.konto, b.gegenkonto, b.text, num(b.netto), String(b.ust_satz), num(b.ust_betrag), num(b.brutto)]
-      .map((v) => esc(v))
+    [
+      csvTextCell(b.datum),
+      csvTextCell(b.belegnummer ?? ""),
+      csvTextCell(b.konto),
+      csvTextCell(b.gegenkonto),
+      csvTextCell(b.text),
+      num(b.netto),
+      String(b.ust_satz),
+      num(b.ust_betrag),
+      num(b.brutto),
+    ]
+      .map(quote)
       .join(";"),
   );
   return [header.join(";"), ...lines].join("\n") + "\n";

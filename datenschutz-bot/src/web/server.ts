@@ -3,9 +3,20 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { EXAMPLES_DIR, HOST, PORT, PROJECT_ROOT, PUBLIC_DIR } from "../config.js";
-import { bookingsToCsv } from "../core/accounting.js";
+import { PLACEHOLDER_SOURCE } from "../core/placeholders.js";
 import { ENTITY_LABELS, ENTITY_TYPES, isEntityType } from "../core/types.js";
+import { KeyError } from "../core/vault.js";
 import { ARTEN, ART_LABELS, JobError, JobStore, STATUS_LABELS } from "../store/jobs.js";
+import { ConfigError } from "../store/settings.js";
+
+// Die Oberfläche hat kein Login. Sie läuft deshalb nur auf dem eigenen Rechner (Loopback).
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1"]);
+if (!LOOPBACK.has(HOST)) {
+  console.error(
+    `DSB_HOST=${HOST} wird nicht unterstützt: Die Oberfläche hat kein Login und läuft nur auf 127.0.0.1, localhost oder ::1.`,
+  );
+  process.exit(1);
+}
 
 const store = new JobStore();
 
@@ -81,65 +92,39 @@ function str(body: Record<string, unknown>, key: string, required = true): strin
   throw new HttpError(400, `Feld "${key}" fehlt.`);
 }
 
-/** Schutz gegen fremde Webseiten, die die lokale Oberfläche ansprechen (DNS-Rebinding, CSRF). */
+/**
+ * Schutz gegen fremde Webseiten, die die lokale Oberfläche ansprechen (DNS-Rebinding, CSRF):
+ * Der Host-Kopf muss immer eine lokale Adresse sein, und Änderungen dürfen nur von der eigenen Seite kommen.
+ */
 function checkOrigin(req: http.IncomingMessage) {
   const host = (req.headers.host ?? "").toLowerCase();
   const allowedHosts = [`127.0.0.1:${PORT}`, `localhost:${PORT}`, `[::1]:${PORT}`];
-  if (HOST === "127.0.0.1" || HOST === "localhost" || HOST === "::1") {
-    if (!allowedHosts.includes(host)) throw new HttpError(403, "Zugriff nur über localhost.");
-  }
+  if (!allowedHosts.includes(host)) throw new HttpError(403, "Zugriff nur über localhost.");
   const origin = req.headers.origin;
   if (req.method !== "GET" && origin && origin !== `http://${host}`) throw new HttpError(403, "Fremder Ursprung.");
 }
 
-/** Titel eines Dokuments: Betreff-Zeile einer E-Mail, sonst die erste Zeile. */
-function titleOf(text: string): string {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  const subject = lines.find((l) => /^(Betreff|Subject|Oggetto|Onderwerp)\s*:/i.test(l));
-  return (subject ? subject.replace(/^[^:]+:\s*/, "") : (lines[0] ?? "")).slice(0, 90);
-}
-
 function listForUi() {
-  return store.list().map((job) => {
-    let titel = job.betreffKi || titleOf(job.textKi);
-    try {
-      const detail = store.detail(job.id);
-      if (detail.original) titel = titleOf(detail.original);
-    } catch {
-      // Originaldaten gelöscht: Platzhalter-Titel anzeigen.
-    }
-    return {
+  const { dokumente, defekt } = store.list();
+  return {
+    defekt,
+    dokumente: dokumente.map((job) => ({
       id: job.id,
       art: job.art,
       status: job.status,
       erstellt: job.erstellt,
       aktualisiert: job.aktualisiert,
-      titel,
-      ersetzt: job.platzhalter.length,
-      hinweise: job.pruefung
-        ? job.pruefung.unbekannt.length + job.pruefung.erfunden.length + job.pruefung.hinweise.length
-        : 0,
-    };
-  });
+      ergebnisRev: job.ergebnisRev ?? null,
+      titel: job.titel,
+      ersetzt: job.anzahlPlatzhalter,
+      hinweise: job.anzahlHinweise,
+      rechnungsnummer: job.rechnungsnummer ?? null,
+    })),
+  };
 }
 
-function exportResult(res: http.ServerResponse, id: string) {
-  const detail = store.detail(id);
-  const result = detail.ergebnis;
-  if (!result) throw new HttpError(404, "Noch kein Ergebnis vorhanden.");
-  const base = `${id}${detail.job.rechnungsnummer ? "-" + detail.job.rechnungsnummer : ""}`;
-  if (result.art === "text") {
-    const body = (result.titel ? result.titel + "\n\n" : "") + result.text + "\n";
-    send(res, 200, body, "text/plain; charset=utf-8", { "Content-Disposition": `attachment; filename="${base}.txt"` });
-  } else if (result.art === "buchungen") {
-    send(res, 200, "﻿" + bookingsToCsv(result.buchungen), "text/csv; charset=utf-8", {
-      "Content-Disposition": `attachment; filename="${base}-buchungen.csv"`,
-    });
-  } else {
-    send(res, 200, result.html, "text/html; charset=utf-8", {
-      "Content-Disposition": `attachment; filename="${base}-rechnung.html"`,
-    });
-  }
+function download(res: http.ServerResponse, file: { dateiname: string; typ: string; inhalt: string }) {
+  send(res, 200, file.inhalt, file.typ, { "Content-Disposition": `attachment; filename="${file.dateiname}"` });
 }
 
 async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -159,6 +144,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
       arten: ARTEN.map((a) => ({ id: a, label: ART_LABELS[a] })),
       status: STATUS_LABELS,
       mcpPfad: path.join(PROJECT_ROOT, "dist", "mcp", "server.js"),
+      platzhalterMuster: PLACEHOLDER_SOURCE,
     });
   }
 
@@ -179,7 +165,13 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
     }
   }
 
-  const m = /^\/api\/dokumente\/(D-[0-9a-f]{6})(?:\/([a-z-]+))?$/.exec(p);
+  const r = /^\/api\/rechnungen\/(\d{4}-\d{4,})$/.exec(p);
+  if (r && req.method === "GET") {
+    const nummer = r[1] ?? "";
+    return download(res, { dateiname: `Rechnung-${nummer}.html`, typ: "text/html; charset=utf-8", inhalt: store.archivedInvoice(nummer).html });
+  }
+
+  const m = /^\/api\/dokumente\/(D-[0-9a-f]{12})(?:\/([a-z-]+))?$/.exec(p);
   if (m) {
     const id = m[1] ?? "";
     const action = m[2];
@@ -188,15 +180,15 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
       store.remove(id);
       return json(res, 200, { ok: true });
     }
-    if (action === "export" && req.method === "GET") return exportResult(res, id);
+    if (action === "export" && req.method === "GET") return download(res, store.export(id));
     if (req.method === "POST") {
       const body = await readBody(req);
       switch (action) {
         case "markieren": {
           const typ = str(body, "typ");
           if (!isEntityType(typ)) throw new HttpError(400, "Unbekannter Typ.");
-          store.mark(id, { value: str(body, "wert"), type: typ });
-          break;
+          const { treffer } = store.mark(id, { value: str(body, "wert"), type: typ });
+          return json(res, 200, { ok: true, treffer });
         }
         case "ausnehmen":
           store.exclude(id, str(body, "wert"));
@@ -207,11 +199,17 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
         case "ki-freigeben":
           store.releaseForAi(id);
           break;
-        case "freigeben":
-          store.approve(id);
+        case "freigeben": {
+          const rev = body.ergebnisRev;
+          if (typeof rev !== "number") throw new HttpError(400, "Feld \"ergebnisRev\" fehlt.");
+          store.approve(id, rev);
           break;
+        }
         case "zurueck":
           store.sendBack(id);
+          break;
+        case "zur-pruefung":
+          store.backToReview(id);
           break;
         case "abschliessen":
           store.close(id);
@@ -230,7 +228,9 @@ const server = http.createServer((req, res) => {
   handle(req, res).catch((err: unknown) => {
     if (err instanceof HttpError) return json(res, err.status, { fehler: err.message });
     if (err instanceof JobError) return json(res, 400, { fehler: err.message });
-    console.error(err);
+    if (err instanceof ConfigError || err instanceof KeyError) return json(res, 500, { fehler: err.message });
+    // Ins Konsolenprotokoll nur die Art des Fehlers, keine Inhalte.
+    console.error(`Interner Fehler (${err instanceof Error ? err.name : typeof err})`);
     return json(res, 500, { fehler: "Interner Fehler." });
   });
 });

@@ -15,7 +15,8 @@
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "nachweis": "node scripts/nachweis.mjs",
-    "messung": "node dist/scripts/messung.js"
+    "messung": "node dist/scripts/messung.js",
+    "probe": "node dist/scripts/probe.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",

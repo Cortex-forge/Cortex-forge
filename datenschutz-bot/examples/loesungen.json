@@ -1,0 +1,53 @@
+{
+  "_hinweis": "Lösungsblatt für die Beispiel-Dokumente: jede Angabe, die die KI nie sehen darf, so wie sie im Text steht. Unabhängig von der Erkennung gepflegt, damit die Datenschutz-Probe auch Übersehenes findet.",
+  "beispiele": [
+    {
+      "datei": "hotel-anfrage.txt",
+      "art": "hotel",
+      "betreff": "",
+      "sensibel": [
+        { "wert": "Anna Huber", "typ": "PERSON" },
+        { "wert": "Anna", "typ": "PERSON" },
+        { "wert": "Huber", "typ": "PERSON" },
+        { "wert": "Thomas", "typ": "PERSON" },
+        { "wert": "Lena", "typ": "PERSON" },
+        { "wert": "anna.huber@example.com", "typ": "EMAIL" },
+        { "wert": "0664 1234567", "typ": "TELEFON" },
+        { "wert": "Nussallergie", "typ": "GESUNDHEIT" },
+        { "wert": "I-123AB", "typ": "KENNZEICHEN" },
+        { "wert": "Bergweg 12", "typ": "ADRESSE" },
+        { "wert": "6020 Innsbruck", "typ": "ADRESSE" }
+      ]
+    },
+    {
+      "datei": "eingangsrechnung.txt",
+      "art": "buchhaltung",
+      "betreff": "Eingangsrechnung Elektriker",
+      "sensibel": [
+        { "wert": "Alpenblick Elektrotechnik GmbH", "typ": "FIRMA" },
+        { "wert": "Hotel Alpenrose Huber KG", "typ": "FIRMA" },
+        { "wert": "Industriestraße 5", "typ": "ADRESSE" },
+        { "wert": "6060 Hall in Tirol", "typ": "ADRESSE" },
+        { "wert": "Dorfstraße 1", "typ": "ADRESSE" },
+        { "wert": "6094 Axams", "typ": "ADRESSE" },
+        { "wert": "ATU12345678", "typ": "UID" },
+        { "wert": "+43 5223 12345", "typ": "TELEFON" },
+        { "wert": "office@alpenblick-elektro.example", "typ": "EMAIL" },
+        { "wert": "Maria Gruber", "typ": "PERSON" },
+        { "wert": "Markus Leitner", "typ": "PERSON" },
+        { "wert": "K-4711", "typ": "KUNDENNR" },
+        { "wert": "AT61 1904 3002 3457 3201", "typ": "IBAN" }
+      ]
+    },
+    {
+      "datei": "rechnungsauftrag.txt",
+      "art": "hotel",
+      "betreff": "Rechnung Aufenthalt",
+      "sensibel": [
+        { "wert": "Anna Huber", "typ": "PERSON" },
+        { "wert": "Bergweg 12", "typ": "ADRESSE" },
+        { "wert": "6020 Innsbruck", "typ": "ADRESSE" }
+      ]
+    }
+  ]
+}
