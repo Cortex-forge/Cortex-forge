@@ -645,3 +645,13 @@ test("Verschieden geschriebene Kennungen und mehrdeutige Nachnamen werden nicht 
   assert.equal(r.zurueck, text);
   assert.equal(r.ki, "[PERSON_1] kommt. [PERSON_2] kommt. [PERSON_3] kommt. [PERSON_4] zahlt.");
 });
+
+test("Bezeichnung ohne Leerzeichen direkt vor der Nummer (Kopien aus PDF)", () => {
+  assert.equal(ki("UID-NummerATU12345678"), "UID-Nummer[UID_1]");
+  assert.equal(ki("Telefon0664 1234567"), "Telefon[TELEFON_1]");
+  assert.equal(ki("Tel.0512/123456"), "Tel.[TELEFON_1]");
+  assert.equal(ki("Tel+43 664 1234567"), "Tel[TELEFON_1]");
+  assert.equal(ki("Steuernummer12 345/6789"), "Steuernummer[STEUERNR_1]");
+  // Gegenproben: ein Datum nach „Tel.“, „tel“ mitten im Wort
+  assert.equal(ki("Tel.01.09.2026 und Hotel0664"), "Tel.01.09.2026 und Hotel0664");
+});

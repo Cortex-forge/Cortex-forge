@@ -397,11 +397,22 @@ function phoneParts(value: string): Array<[number, string]> {
   return parts;
 }
 
+/** Ein Muster ohne seine Prüfung davor, verankert an einer Stelle (lastIndex). */
+function anchored(rx: RegExp, lookbehind: string): RegExp {
+  if (!rx.source.startsWith(lookbehind)) throw new Error(`Muster beginnt nicht mit ${lookbehind}`);
+  return new RegExp(rx.source.slice(lookbehind.length), "uy");
+}
+// Bezeichnung direkt vor der Nummer ("Telefon0664 1234567", "Tel.0512/123456"), typisch für Kopien aus PDF. Die
+// Muster oben schließen einen Buchstaben oder Punkt davor aus, damit keine Zahl mitten in einem Wort oder Datum zählt.
+const PHONE_LABEL_GLUED_RE = /(?<![\p{L}])(?:Telefon|Telefono|Telefoon|Tel|Mobil|Mobile|Handy|Fax|Phone|Cell|Mob)\.?(?=\+|0)/giu;
+const PHONE_INTL_AT = anchored(PHONE_INTL_RE, String.raw`(?<![\p{L}\p{N}+])`);
+const PHONE_NATIONAL_AT = anchored(PHONE_NATIONAL_RE, String.raw`(?<![\p{L}\p{N}.,+/-])`);
+
 export function detectPhones(text: string): Finding[] {
   const out: Finding[] = [];
   const consider = (start: number, value: string, kind: "intl" | "national" | "context" | "fest") => {
     const digits = digitsOnly(value);
-    if (digits.length > 15 && (kind === "intl" || kind === "national")) {
+    if (digits.length > 15 && kind !== "context") {
       const parts = phoneParts(value);
       if (parts.length > 1) {
         for (const [offset, part] of parts) consider(start + offset, part, /^(?:\+|00)/.test(part) ? "intl" : "national");
@@ -427,6 +438,17 @@ export function detectPhones(text: string): Finding[] {
   for (const m of matchAll(text, PHONE_NATIONAL_RE)) consider(m.index, m[0], "national");
   for (const m of matchAll(text, PHONE_CONTEXT_RE)) consider(m.index, m[0], "context");
   for (const m of matchAll(text, ITALIAN_MOBILE_RE)) consider(m.index, m[0], "fest");
+  for (const m of matchAll(text, PHONE_LABEL_GLUED_RE)) {
+    const at = m.index + m[0].length;
+    for (const rx of [PHONE_INTL_AT, PHONE_NATIONAL_AT]) {
+      rx.lastIndex = at;
+      const v = rx.exec(text);
+      if (v) {
+        consider(at, v[0], "fest");
+        break;
+      }
+    }
+  }
   for (const m of matchAll(text, MESSENGER_LINK_RE)) {
     const span = groupSpan(m, "v");
     if (span) out.push(finding(text, span[0], span[1], "TELEFON", "telefon"));
@@ -437,8 +459,8 @@ export function detectPhones(text: string): Finding[] {
 // ---------------------------------------------------------------------------
 // UID-Nummern (Umsatzsteuer-Identifikationsnummern)
 
-const VAT_RE =
-  /(?<![\p{L}\p{N}])(?:ATU ?\d{8}|ATU ?\d{4} ?\d{4}|DE ?\d{9}|DE ?\d{3} ?\d{3} ?\d{3}|GB ?\d{3} ?\d{4} ?\d{2}(?: ?\d{3})?|GB ?\d{9}(?:\d{3})?|CHE[- ]?\d{3}\.?\d{3}\.?\d{3}(?: ?(?:MWST|TVA|IVA))?|IT ?\d{11}|NL ?\d{9}B\d{2}|FR ?[A-Z0-9]{2}\d{9}|BE ?0?\d{9}|LU ?\d{8}|CZ ?\d{8,10}|PL ?\d{10}|HU ?\d{8}|SI ?\d{8}|SK ?\d{10}|DK ?\d{8})(?![\p{L}\p{N}])/gu;
+const VAT_BODY = String.raw`ATU ?\d{8}|ATU ?\d{4} ?\d{4}|DE ?\d{9}|DE ?\d{3} ?\d{3} ?\d{3}|GB ?\d{3} ?\d{4} ?\d{2}(?: ?\d{3})?|GB ?\d{9}(?:\d{3})?|CHE[- ]?\d{3}\.?\d{3}\.?\d{3}(?: ?(?:MWST|TVA|IVA))?|IT ?\d{11}|NL ?\d{9}B\d{2}|FR ?[A-Z0-9]{2}\d{9}|BE ?0?\d{9}|LU ?\d{8}|CZ ?\d{8,10}|PL ?\d{10}|HU ?\d{8}|SI ?\d{8}|SK ?\d{10}|DK ?\d{8}`;
+const VAT_RE = new RegExp(String.raw`(?<![\p{L}\p{N}])(?:${VAT_BODY})(?![\p{L}\p{N}])`, "gu");
 
 export function detectVatIds(text: string): Finding[] {
   const out: Finding[] = [];
@@ -451,7 +473,8 @@ export function detectVatIds(text: string): Finding[] {
 // ---------------------------------------------------------------------------
 // Steuernummern (AT: "12 345/6789", DE: "123/456/78901")
 
-const TAX_RE = /(?<![\p{L}\p{N}])(?:\d{2}[ -]?\d{3}\/\d{4}|\d{2,3}\/\d{3}\/\d{4,5}|[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z])(?![\p{L}\p{N}])/gu;
+const TAX_BODY = String.raw`\d{2}[ -]?\d{3}\/\d{4}|\d{2,3}\/\d{3}\/\d{4,5}|[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z]`;
+const TAX_RE = new RegExp(String.raw`(?<![\p{L}\p{N}])(?:${TAX_BODY})(?![\p{L}\p{N}])`, "gu");
 
 export function detectTaxNumbers(text: string): Finding[] {
   const out: Finding[] = [];
@@ -532,6 +555,21 @@ const CONTEXT_RULES: ContextRule[] = [
     type: "SONSTIGES",
     description: "Register- oder Kontonummer",
     re: /(?<![\p{L}])(?:KvK(?:-nummer|-nr\.?)?|Company (?:No\.?|Number|Reg(?:istration)?\.?(?: No\.?)?)|account (?:no\.?|number)|Kontonummer|Konto-Nr\.?|Kto\.?-?Nr\.?|BLZ|Bankleitzahl|rekeningnummer)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{5,12})(?![\p{N}])/giud,
+  },
+  {
+    // Bezeichnung direkt vor der Nummer, ohne Leerzeichen ("UID-NummerATU12345678"), typisch für Kopien aus PDF
+    type: "UID",
+    re: new RegExp(
+      String.raw`(?<![\p{L}])(?:UID|UID-Nummer|UID-Nr\.?|USt-?Id(?:Nr|-Nr)?\.?|VAT(?:-?(?:No|ID|Nr)\.?)?|MwSt-?Nr\.?|P\.?IVA|BTW(?:-?nummer|-?nr\.?)?)[:#]?(?<v>${VAT_BODY})(?![\p{L}\p{N}])`,
+      "giud",
+    ),
+  },
+  {
+    type: "STEUERNR",
+    re: new RegExp(
+      String.raw`(?<![\p{L}])(?:Steuernummer|Steuer-?Nr\.?|StNr\.?|Codice[ \t]fiscale|CF)[:#]?(?<v>${TAX_BODY})(?![\p{L}\p{N}])`,
+      "giud",
+    ),
   },
   {
     // Konten in Messengern: "WeChat: wanglei_sh88"
