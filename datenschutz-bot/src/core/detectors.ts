@@ -142,6 +142,11 @@ function isNotSurname(word: string): boolean {
   return NOT_SURNAME.has(word) || NOT_SURNAME.has(capitalize(word));
 }
 
+/** Hauptwort, das auch ein häufiger Nachname ist ("Berg", "Sommer", "Koch"). */
+function isNounSurname(word: string): boolean {
+  return NOUN_SURNAMES.has(word) || NOUN_SURNAMES.has(capitalize(word));
+}
+
 // Abkürzungen in Großbuchstaben, die kein Name sind.
 const ACRONYMS = new Set(
   `GMBH AG KG OG UG SE GESMBH OHG EU USA UK UID IBAN BIC SWIFT PLZ TEL FAX MWST UST CEO CFO CTO GF HR IT PDF CSV MBH
@@ -726,7 +731,9 @@ function nameAt(
     // Nach einem Zusatz ist auch ein Allerweltswort ein Nachname ("van der Berg"), aber keine Abteilung, kein
     // Betrieb, kein Verein und keine Domain ("Ferdinand vom Skiclub", "Thomas von der Rezeption", "von Booking.com").
     if (particle && !particleLeadsToName(text, token, p + token.length)) break;
-    if (tokens.length > 0 && !particle && isNotSurname(token)) break;
+    // Nach einem Vornamen ist ein Hauptwort, das auch ein häufiger Nachname ist, der Nachname ("Maria Sommer").
+    const afterFirstName = tokens.length > 0 && isFirstName(tokens[tokens.length - 1] ?? "") && isNounSurname(token);
+    if (tokens.length > 0 && !particle && isNotSurname(token) && !afterFirstName) break;
     if (tokens.length === 0) firstParticle = particle;
     tokens.push(token);
     lastStart = partStart;
@@ -762,9 +769,11 @@ const CLOSING_RE =
   /^[ \t]{0,20}(?:(?:liebe|viele|beste|herzliche|freundliche|schöne|sonnige|sportliche|liebste)[ \t]{1,20}grüße|mit freundlichen grüßen|freundliche grüße|grüß gott|grüße|gruß|mfg|lg|glg|vg|servus|ciao|tschüss|best regards|kind regards|warm regards|regards|best|cheers|thanks|thank you|cordiali saluti|distinti saluti|saluti|grazie mille|grazie|met vriendelijke groet(?:en)?|groetjes|groeten|danke und liebe grüße|danke)(?=[\s,.!]|$)/gimu;
 const HEADER_RE = /^[ \t>]*(?:Von|From|An|To|Cc|Absender|Da|Van|Aan)[ \t]{0,20}:[ \t]{0,20}(?<name>[^<\n\s][^<\n]{0,119}?)[ \t]{0,20}</gmud;
 const LABEL_RE =
-  /(?<![\p{L}])(?<label>Name|Vorname|Nachname|Familienname|Gast|Gastname|Gäste|Guest|Guest name|Name of guest|Teilnehmer|Teilnehmerin|Teilnehmende|Anwesend|Anwesende|Fahrer|Fahrerin|Dienstnehmer|Dienstnehmerin|Mitarbeiter|Mitarbeiterin|Karteninhaber|Karteninhaberin|Kontoinhaber|Kontoinhaberin|Inhaber|Inhaberin|Ansprechpartner|Ansprechpartnerin|Ansprechperson|Kontaktperson|Referente|Referent|Sachbearbeiter|Sachbearbeiterin|Geschäftsführer|Geschäftsführerin|Obmann|Obfrau|Brautpaar|Bewerber|Bewerberin|Patient|Patientin|Mieter|Mieterin|Antragsteller|Antragstellerin|Besteller|Bestellerin|Gebucht von|Booked by|Contact person|Nome|Cognome|Naam|Organisator|Organisatorin|Verantwortlich|Trainer|Trainerin|Notfallkontakt|Kunde|Kundin|Empfänger|Empfängerin|Reservierung|Reserviert auf|Reserviert für|Buchung|Gebucht auf|Reservation|Booking|Prenotazione|Reservering)[ \t]{0,20}:[ \t]{0,20}/gu;
+  /(?<![\p{L}])(?<label>Name|Vorname|Nachname|Familienname|Gast|Gastname|Gäste|Guest|Guest name|Name of guest|Teilnehmer|Teilnehmerin|Teilnehmende|Anwesend|Anwesende|Fahrer|Fahrerin|Dienstnehmer|Dienstnehmerin|Mitarbeiter|Mitarbeiterin|Karteninhaber|Karteninhaberin|Kontoinhaber|Kontoinhaberin|Inhaber|Inhaberin|Ansprechpartner|Ansprechpartnerin|Ansprechperson|Kontaktperson|Surname|Last name|Family name|Achternaam|Referente|Referent|Sachbearbeiter|Sachbearbeiterin|Geschäftsführer|Geschäftsführerin|Obmann|Obfrau|Brautpaar|Bewerber|Bewerberin|Patient|Patientin|Mieter|Mieterin|Antragsteller|Antragstellerin|Besteller|Bestellerin|Gebucht von|Booked by|Contact person|Nome|Cognome|Naam|Organisator|Organisatorin|Verantwortlich|Trainer|Trainerin|Notfallkontakt|Kunde|Kundin|Empfänger|Empfängerin|Reservierung|Reserviert auf|Reserviert für|Buchung|Gebucht auf|Reservation|Booking|Prenotazione|Reservering)[ \t]{0,20}:[ \t]{0,20}/gu;
 const LIST_LABELS = new Set(["Gäste", "Teilnehmer", "Teilnehmerin", "Teilnehmende", "Anwesend", "Anwesende", "Brautpaar"]);
 const WEAK_LABELS = new Set(["Kunde", "Kundin", "Empfänger", "Empfängerin", "Verantwortlich"]);
+// In diesen Feldern steht nur ein Nachname, auch wenn er wie ein Hauptwort aussieht ("Nachname: Berg").
+const SURNAME_LABELS = new Set(["Nachname", "Familienname", "Cognome", "Surname", "Last name", "Family name", "Achternaam"]);
 // Nach "Reservierung:" steht oft etwas anderes ("Reservierung: Doppelzimmer"): nur Vornamen oder GROSS geschriebene Namen.
 const BOOKING_LABELS = new Set(["Reservierung", "Reserviert auf", "Reserviert für", "Buchung", "Gebucht auf", "Reservation", "Booking", "Prenotazione", "Reservering"]);
 const FAMILY_AFTER_RE = new RegExp(String.raw`(?<![\p{L}])[Tt]he[ \t]{1,20}(?<n>${NAME_WORD})[ \t]{1,20}family(?![\p{L}])`, "gud");
@@ -960,8 +969,10 @@ export function detectPersons(text: string): Finding[] {
 
 function labelValueIsName(span: NameSpan, label: string): boolean {
   const first = span.tokens[0] ?? "";
-  if (span.firstParticle) return true;
-  if (isNotSurname(first) || BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || MONTHS.has(first)) return false;
+  if (span.firstParticle || SURNAME_LABELS.has(label)) return true;
+  // Nach eindeutigen Namensfeldern ("Gast:", "Fahrer:") gilt ein häufiger Nachname, der auch ein Hauptwort ist, als Name.
+  const nounSurname = isNounSurname(first) && !WEAK_LABELS.has(label) && !BOOKING_LABELS.has(label);
+  if ((isNotSurname(first) && !nounSurname) || BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || MONTHS.has(first)) return false;
   if (isFirstName(first)) return true;
   if (BOOKING_LABELS.has(label)) return span.tokens.every((t) => isCaps(t) && t.length >= 2 && !ACRONYMS.has(t));
   // Nach "Kunde:" oder "Empfänger:" steht oft eine Firma: dort nur mit bekanntem Vornamen.
@@ -1248,14 +1259,18 @@ export function detectTables(text: string): Finding[] {
           // Eine Zeile ohne Trennzeichen ist keine Tabellenzeile mehr (z. B. "Danke!" nach der Tabelle).
           if (record.fields.length < 2) break;
           const fields = record.fields.map((f) => trimmedSpan(text, f));
-          // Leere Felder am Ende (Trennzeichen am Zeilenende) zählen nicht.
-          while (fields.length > 1 && fields[fields.length - 1]?.start === fields[fields.length - 1]?.end) fields.pop();
-          if (fields.length < header.length - 1 || fields.length > header.length + 3) break;
-          const extra = Math.max(0, fields.length - header.length);
-          fields.forEach(({ start, end }, c) => {
-            const type = cellType(types, c, extra);
-            if (type && end > start) out.push(finding(text, start, end, type, `tabelle:${type.toLowerCase()}`));
-          });
+          // Leere Felder am Ende zählen nur, soweit die Kopfzeile keine Spalten dafür hat: "Zorwin;5551234567;;" ist
+          // eine vollständige Zeile mit zwei leeren Spalten, ein Trennzeichen am Zeilenende keine zusätzliche Spalte.
+          while (fields.length > header.length && fields[fields.length - 1]?.start === fields[fields.length - 1]?.end) fields.pop();
+          // Kürzere Zeilen (fehlende Spalten am Ende) werden nach Position zugeordnet. Eine Zeile mit viel mehr Feldern
+          // gehört nicht zur Tabelle; sie wird übersprungen, die Zeilen danach werden weiter geprüft.
+          if (fields.length <= header.length + 3) {
+            const extra = Math.max(0, fields.length - header.length);
+            fields.forEach(({ start, end }, c) => {
+              const type = cellType(types, c, extra);
+              if (type && end > start) out.push(finding(text, start, end, type, `tabelle:${type.toLowerCase()}`));
+            });
+          }
           row = record.next;
         }
         next = Math.max(next, row);
@@ -1373,11 +1388,14 @@ export function normalizeValue(type: EntityType, value: string): string {
     case "IBAN":
     case "UID":
     case "KENNZEICHEN":
-    case "KUNDENNR":
     case "SVNR":
     case "STEUERNR":
     case "AUSWEIS":
       return v.replace(/[\s.-]/g, "").toUpperCase();
+    case "KUNDENNR":
+      // Freie Kennungen: Bindestriche, Punkte und Groß-/Kleinschreibung können unterscheiden ("A-123" und "A123"
+      // sind zwei Kunden). Lieber zwei Platzhalter für dieselbe Nummer als eine falsch eingesetzte.
+      return v;
     default:
       return v.toLowerCase();
   }

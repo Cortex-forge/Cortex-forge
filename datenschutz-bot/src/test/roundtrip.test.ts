@@ -148,3 +148,15 @@ test("Gleicher Nachname bei zwei Personen: kein Raten, wer gemeint ist", () => {
   // Bei nur einer Person mit diesem Nachnamen bleibt die Zuordnung.
   assert.equal(pseudonymize("Anna Huber kommt. Huber zahlt.").text, "[PERSON_1] kommt. [PERSON_1] zahlt.");
 });
+
+// Review Codex 3 #14
+test("Rückübersetzung bleibt linear, auch bei sehr vielen Platzhaltern", () => {
+  const mapping = [{ id: "UID_1", type: "UID" as const, original: "ATU12345678", variants: ["ATU12345678"] }];
+  const t0 = performance.now();
+  const r = reidentify("[UID_1] ".repeat(25_000), mapping);
+  assert.ok(performance.now() - t0 < 300, `zu langsam: ${Math.round(performance.now() - t0)} ms`);
+  assert.equal(r.text, "ATU12345678 ".repeat(25_000));
+  assert.deepEqual(r.leftovers, []);
+  // Reste zwischen und nach Platzhaltern werden weiter gefunden.
+  assert.deepEqual(reidentify("[UID_1] [NAME_1] [UID_1] PERSON 1", mapping).leftovers, ["[NAME_1]", "PERSON 1"]);
+});

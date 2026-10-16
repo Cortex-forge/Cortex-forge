@@ -19,7 +19,7 @@ import {
   type RechnungInhalt,
   type RechnungsSummen,
 } from "../core/invoice.js";
-import { nachkommastellen, produktCent } from "../core/money.js";
+import { nachkommastellen } from "../core/money.js";
 import { normalizeChars, prepareDocument } from "../core/normalize.js";
 import { placeholderRegex } from "../core/placeholders.js";
 import { placeholderLegend, pseudonymize } from "../core/pseudonymize.js";
@@ -1079,17 +1079,25 @@ function checkInvoiceInput(r: RechnungInhalt): void {
       "Die Positionen mischen Brutto- und Nettopreise. Bitte alle Preise einheitlich netto oder einheitlich brutto angeben (preis_ist_brutto bei allen Positionen gleich).",
     );
   }
-  // Rabattzeilen dürfen negativ sein, die Rechnung als Ganzes nicht: Eine Gutschrift braucht den Bezug zur
-  // ursprünglichen Rechnung, das kann der Bot noch nicht.
-  if (r.positionen.reduce((sum, p) => sum + produktCent(p.menge, p.einzelpreis), 0n) <= 0n) {
-    throw new JobError("Der Rechnungsbetrag ist nicht positiv. Gutschriften (mit Bezug auf die ursprüngliche Rechnung) kann der Bot noch nicht erstellen.");
-  }
   r.positionen.forEach((p, i) => {
     if (nachkommastellen(p.menge) > 3) throw new JobError(`Position ${i + 1}: Menge bitte mit höchstens 3 Nachkommastellen angeben.`);
     if (nachkommastellen(p.einzelpreis) > 4) {
       throw new JobError(`Position ${i + 1}: Einzelpreis bitte mit höchstens 4 Nachkommastellen angeben.`);
     }
   });
+  // Rabattzeilen dürfen negativ sein, die Rechnung als Ganzes nicht und auch kein einzelner Steuersatz: Eine
+  // Gutschrift braucht den Bezug zur ursprünglichen Rechnung, das kann der Bot noch nicht. Geprüft wird der
+  // berechnete Zahlbetrag mit Steuer.
+  const summen = computeInvoice(r.positionen);
+  const negativ = summen.steuern.find((g) => g.brutto < 0);
+  if (negativ) {
+    throw new JobError(
+      `Im Steuersatz ${negativ.satz} % ergibt sich ein negativer Betrag. Rabatte bitte im selben Steuersatz wie die rabattierten Leistungen angeben. Gutschriften (mit Bezug auf die ursprüngliche Rechnung) kann der Bot noch nicht erstellen.`,
+    );
+  }
+  if (summen.brutto <= 0) {
+    throw new JobError("Der Rechnungsbetrag ist nicht positiv. Gutschriften (mit Bezug auf die ursprüngliche Rechnung) kann der Bot noch nicht erstellen.");
+  }
 }
 
 /** Obergrenzen für Ergebnisse der KI, damit niemand den Bot mit riesigen Eingaben lahmlegt. */

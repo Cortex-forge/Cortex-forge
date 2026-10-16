@@ -102,11 +102,15 @@ export function reidentify(
   }
   pieces.push(aiText.slice(pos));
 
+  // Reste außerhalb der erkannten Platzhalter. Beide Listen sind nach Position sortiert: Ein Zeiger, der nur
+  // vorwärts läuft, reicht (lineare Laufzeit auch bei Zehntausenden Platzhaltern).
   const leftovers = new Set<string>();
+  let k = 0;
   for (const m of aiText.matchAll(leftoverRegex())) {
     const s = m.index;
     const e = s + m[0].length;
-    if (spans.some(([a, b]) => s < b && a < e) || !isLeftover(m)) continue;
+    while (k < spans.length && (spans[k]?.[1] ?? 0) <= s) k++;
+    if ((k < spans.length && (spans[k]?.[0] ?? Infinity) < e) || !isLeftover(m)) continue;
     leftovers.add(m[0]);
   }
 

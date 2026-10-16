@@ -806,3 +806,25 @@ test("Beschädigter Rechnungszähler: Abbruch vor jeder Änderung statt ungülti
   fs.writeFileSync(counterFile, JSON.stringify({ [year]: 7 }));
   assert.equal(store.approve(id, rev(store, id)).rechnungsnummer, `${year}-0008`);
 });
+
+// Review Codex 3 #9
+test("Rechnung: geprüft wird der Zahlbetrag mit Steuer, auch je Steuersatz", () => {
+  const store = tempStore();
+  const id = ready(store);
+  const rechnung = (positionen: RechnungsPosition[]): ErgebnisKi => ({ art: "rechnung", rechnung: { empfaenger: "[PERSON_1]", positionen } });
+  assert.throws(
+    () => save(store, id, rechnung([
+      { beschreibung: "Leistung", menge: 1, einzelpreis: 100, ust_satz: 0 },
+      { beschreibung: "Rabatt", menge: 1, einzelpreis: -99, ust_satz: 20 },
+    ])),
+    /Steuersatz 20 % ergibt sich ein negativer Betrag/,
+  );
+  assert.equal(store.detail(id).job.status, "bereit");
+  // Rabatt im selben Steuersatz ist in Ordnung, ebenso eine kostenlose Position.
+  const { summen } = save(store, id, rechnung([
+    { beschreibung: "Leistung", menge: 1, einzelpreis: 100, ust_satz: 20 },
+    { beschreibung: "Rabatt", menge: 1, einzelpreis: -99, ust_satz: 20 },
+    { beschreibung: "Kinderbett", menge: 1, einzelpreis: 0, ust_satz: 10 },
+  ]));
+  assert.deepEqual(summen, { netto: 1, ust: 0.2, brutto: 1.2 });
+});

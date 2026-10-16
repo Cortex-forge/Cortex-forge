@@ -400,3 +400,41 @@ test("Platzhalter-Muster bleibt linear; Abkürzungen mit Zahl gelten nicht als P
     ["[NAME_1]", "PERSON 1", "PERSN_1", "[KUNDE 2]", "[PERSON_1"],
   );
 });
+
+// ---------------------------------------------------------------------------
+// Dritte Prüfrunde (Codex 3)
+
+// Review Codex 3 #4
+test("CSV: leere Spalten am Zeilenende, kürzere und ungewöhnliche Zeilen beenden die Tabelle nicht", () => {
+  assert.equal(
+    ki("Name;Telefon;Kommentar;Ankunft\nZorwin;5551234567;;\nZarwan;5557654321;;"),
+    "Name;Telefon;Kommentar;Ankunft\n[PERSON_1];[TELEFON_1];;\n[PERSON_2];[TELEFON_2];;",
+  );
+  assertHidden("Name;Telefon;Kommentar\nZorwin;5551234567\nZarwan;5557654321;spät", ["Zorwin", "5551234567", "Zarwan", "5557654321"]);
+  assertHidden("Name,Telefon\nZorwin,5551234567\na,b,c,d,e,f,g,h\nZarwan,5557654321", ["Zorwin", "5551234567", "Zarwan", "5557654321"]);
+  // Gegenproben: Eine Zeile ohne Trennzeichen beendet die Tabelle, leere Kommentarspalten erzeugen keine Funde.
+  assert.equal(ki("Name;Telefon;Kommentar\nZorwin;5551234567;;\nDanke, bis bald!"), "Name;Telefon;Kommentar\n[PERSON_1];[TELEFON_1];;\nDanke, bis bald!");
+});
+
+// Review Codex 3 #5
+test("Nachnamen, die auch Hauptwörter sind: nach Vornamen und in Nachnamen-Feldern geschützt", () => {
+  assert.equal(ki("Name: Anna\nNachname: Berg"), "Name: [PERSON_1]\nNachname: [PERSON_2]");
+  assert.equal(ki("Sehr geehrte Frau Maria Sommer,"), "Sehr geehrte Frau [PERSON_1],");
+  assert.equal(ki("Maria Sommer kommt. Im Sommer wandern wir auf den Berg."), "[PERSON_1] kommt. Im Sommer wandern wir auf den Berg.");
+  assert.equal(ki("Familienname: WINTER"), "Familienname: [PERSON_1]");
+  assert.equal(ki("Last name: Berg\nFirst name: Anna"), "Last name: [PERSON_1]\nFirst name: [PERSON_2]");
+  assert.equal(ki("Achternaam: Visser"), "Achternaam: [PERSON_1]");
+  assert.equal(ki("Gast: Winter"), "Gast: [PERSON_1]");
+  // Gegenproben
+  for (const text of ["Im Sommer wandern wir auf den Berg.", "Reservierung: Sommer 2027", "Surname: please fill in"]) assert.equal(ki(text), text);
+  assert.equal(ki("Für Anna Frühstück aufs Zimmer."), "Für [PERSON_1] Frühstück aufs Zimmer.");
+});
+
+// Review Codex 3 #8
+test("Kundennummern, die sich nur in Bindestrich oder Punkt unterscheiden, bleiben getrennt", () => {
+  const r = pseudonymize("Kundennummer: A-123\nKundennummer: A123\nKundennummer: A-123");
+  assert.equal(r.text, "Kundennummer: [KUNDENNR_1]\nKundennummer: [KUNDENNR_2]\nKundennummer: [KUNDENNR_1]");
+  assert.equal(reidentify("[KUNDENNR_1] und [KUNDENNR_2]", r.mapping).text, "A-123 und A123");
+  // Formatierte Nummern mit fester Form werden weiter zusammengeführt.
+  assert.equal(ki("IBAN AT61 1904 3002 3457 3201, also AT611904300234573201"), "IBAN [IBAN_1], also [IBAN_1]");
+});
