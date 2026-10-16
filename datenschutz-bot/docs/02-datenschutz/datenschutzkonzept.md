@@ -32,15 +32,18 @@ Ob der KI-Anbieter überhaupt personenbezogene Daten erhält, ist nach EuGH C-41
 | Pseudonymisierung vor der KI | umgesetzt | zweite Erkennungsstufe mit lokalem Modell |
 | Menschliche Prüfung vor Freigabe an die KI | umgesetzt | |
 | Menschliche Prüfung vor Versand oder Buchung | umgesetzt | |
-| Verschlüsselung gespeicherter Originale (AES-256-GCM) | umgesetzt | Schlüssel in KMS/HSM statt neben den Daten |
-| Zugriff nur lokal (localhost) mit Host- und Origin-Prüfung | umgesetzt | Login, Rollen, TLS bei Serverbetrieb |
+| Verschlüsselung aller gespeicherten Inhalte (AES-256-GCM, an Dokument und Feld gebunden), auch der Platzhalter-Fassung | umgesetzt | Schlüssel in KMS/HSM bzw. Schlüsselbund des Betriebssystems |
+| Schlüssel getrennt von den Daten (`DSB_KEY`/`DSB_KEY_FILE`), Schlüsselkennung je Dokument | umgesetzt (optional) | Pflicht im Echtbetrieb |
+| Kein Zugriff lokaler KI-Agenten auf Daten und Schlüssel | dokumentiert, Sperre für Claude Code | Bot unter eigenem Benutzer oder in einem Container |
+| Datenschutz-Probe gegen Lösungsblatt vor jedem Merge | umgesetzt (`npm run probe`, Nachweis) | Probe mit echten, anonymisierten Dokumenten vor Ort |
+| Zugriff nur lokal (localhost) mit Host- und Origin-Prüfung; andere Adressen verweigert | umgesetzt | Login, Rollen, TLS bei Serverbetrieb |
 | Protokoll ohne Inhalte | umgesetzt | Aufbewahrungsfrist festlegen |
 | Löschen nach Abschluss | umgesetzt (manuell) | automatische Löschfrist |
 | Datensicherung | keine | Konzept nötig (verschlüsselt, mit Löschung) |
 | Vertrag mit KI-Anbieter | – | Business-/API-Bedingungen ohne Training, möglichst EU-Datenhaltung |
 
 ## Speicherdauer
-Original, Zuordnung und Ergebnis bleiben nur bis zum Abschluss eines Vorgangs. „Abschließen“ löscht sie. Die Platzhalter-Version und das Protokoll (ohne Inhalte) bleiben.
+Original, Zuordnung, Platzhalter-Fassung und Ergebnis bleiben nur bis zum Abschluss eines Vorgangs. „Abschließen“ löscht sie. Übrig bleiben Verwaltungsdaten (Status, Zeiten, Anzahl der Platzhalter, verschlüsselter Titel der Platzhalter-Fassung) und das Protokoll ohne Inhalte. Ausnahme: Rechnungen mit vergebener Nummer kommen verschlüsselt ins Rechnungsarchiv, weil sie aufbewahrt werden müssen (§ 132 BAO, 7 Jahre), und lassen sich nicht löschen.
 
 ## Betroffenenrechte
 Auskunft und Löschung laufen über die führenden Systeme des Betriebs (Hotelsoftware, Buchhaltung). Der Bot hält Daten nur vorübergehend und kann einen Vorgang jederzeit löschen („Verwerfen“).
