@@ -1,0 +1,1839 @@
+{
+  "_hinweis": "Unabhängiges Prüfset (blind erstellt, nicht zum Entwickeln benutzen). Nur erfundene Daten. 'sensibel' listet jede Angabe, die die KI nicht sehen darf, so wie sie im Text steht.",
+  "version": 1,
+  "faelle": [
+    {
+      "id": "P01",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Familienanfrage aus Deutschland, Kind mit Allergie, deutsche Telefonnummer, Doppelname, Adresse ohne Straßen-Endung",
+      "text": "Betreff: Anfrage Sommerferien 2027 – Familienzimmer\n\nSehr geehrte Damen und Herren,\n\nwir sind eine vierköpfige Familie aus Regensburg und würden gerne vom 31.07. bis 14.08.2027 bei Ihnen Urlaub machen. Gibt es noch ein Familienzimmer mit Balkon (gerne Richtung Süden)? Unsere Kinder sind 6 und 9 Jahre alt.\n\nWichtig für uns: Unser Sohn Lukas hat eine schwere Erdnussallergie und trägt immer einen Notfall-Pen bei sich. Kann Ihre Küche das beim Frühstück und beim Abendessen berücksichtigen?\n\nLaut Ihrer Website kostet die Halbpension ab 129 € pro Person und Nacht. Ist die Gästekarte für die Bergbahnen da schon inklusive?\n\nÜber ein Angebot würden wir uns sehr freuen. Sie erreichen mich am besten unter +49 941 5987 2263 oder per Mail.\n\nViele Grüße\nKatrin Schöllhorn-Weber\nAm Hirschgraben 17\n93053 Regensburg\nk.schoellhorn@example.com",
+      "sensibel": [
+        {
+          "wert": "Lukas",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Erdnussallergie",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Notfall-Pen",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "+49 941 5987 2263",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Katrin Schöllhorn-Weber",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Am Hirschgraben 17",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "93053 Regensburg",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "k.schoellhorn@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "P02",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "Irische Anfrage, Rollstuhl und Verletzung umschrieben, irische Handynummer, Eircode, Vorname des Partners allein",
+      "text": "Subject: Accessible room – 3 nights in February\n\nHi there,\n\nMy partner and I are planning a short ski trip and would love to stay at Hotel Alpenrose from 18 to 21 February 2027. I've been using a wheelchair since a spinal injury a few years ago, so I need to ask a few practical things before we book:\n\n- Is there step-free access from the car park to the lift?\n- Does the room have a walk-in shower with a seat?\n- How wide are the doors? I need at least 80 cm.\n\nMy partner, Ciarán, will be skiing, I'll mostly enjoy the spa and the views. We'd be flying into Innsbruck with Aer Lingus and would need a transfer for two people plus my wheelchair.\n\nYou can reach me on +353 87 214 6630 (WhatsApp too) or at niamh.oconnell@example.com.\n\nThanks a million,\nNiamh O'Connell\n14 Ashgrove Terrace, Dublin 6, D06 K2P7",
+      "sensibel": [
+        {
+          "wert": "wheelchair",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "spinal injury",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Ciarán",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+353 87 214 6630",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "niamh.oconnell@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Niamh O'Connell",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "14 Ashgrove Terrace",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Dublin 6, D06 K2P7",
+          "typ": "ADRESSE"
+        }
+      ]
+    },
+    {
+      "id": "P03",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Lieferantenrechnung einer kleinen Bäckerei mit UID, Steuernummer, Firmenbuchnummer, IBAN, Ansprechpartnerin; viele Beträge und Rechnungsnummer als Fallen",
+      "text": "Bäckerei & Konditorei Strickner KG\nUnterdorf 23 · 6100 Seefeld in Tirol\nTel. 05212/2318 · office@baeckerei-strickner.example\nUID: ATU64812377 · StNr. 81 418/2237 · FN 418237 m · LG Innsbruck\n\nAn\nHotel Alpenrose\nz. H. Buchhaltung\n\nRECHNUNG Nr. 2026-1187                         Datum: 30.09.2026\nLieferschein-Nr.: LS 9921 bis LS 9950\nLieferzeitraum: 01.09.2026 – 30.09.2026\n\nPos  Artikel                  Menge    Einzel      Gesamt\n1    Semmeln (Stk.)           3.120      0,38    1.185,60\n2    Vollkornbrot 1 kg           94      4,90      460,60\n3    Topfengolatschen           210      1,45      304,50\n4    Apfelstrudel Blech          12     38,00      456,00\n\nNettobetrag                                     2.406,70\nzzgl. 10 % USt                                    240,67\nRechnungsbetrag                                 2.647,37\n\nZahlbar binnen 14 Tagen ohne Abzug auf\nRaiffeisen Regionalbank, IBAN AT62 2050 3003 1204 9871, BIC RZTIAT22263\nAnsprechpartnerin: Magdalena Strickner",
+      "sensibel": [
+        {
+          "wert": "Bäckerei & Konditorei Strickner KG",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Unterdorf 23",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6100 Seefeld in Tirol",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "05212/2318",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "office@baeckerei-strickner.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "ATU64812377",
+          "typ": "UID"
+        },
+        {
+          "wert": "81 418/2237",
+          "typ": "STEUERNR"
+        },
+        {
+          "wert": "FN 418237 m",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "AT62 2050 3003 1204 9871",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Magdalena Strickner",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P04",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Speisekarte ohne sensible Angaben; Gerichte wie 'Forelle Müllerin Art', 'Pfirsich Melba' und 'Hugo' sehen wie Namen aus",
+      "text": "HOTEL ALPENROSE – Abendkarte Herbst 2026\nKüche täglich 18:00 bis 21:30 Uhr · Ruhetag Restaurant: Dienstag\n\nVORSPEISEN\nKürbiscremesuppe mit Kernöl (A, G)                        6,90\nRindercarpaccio mit Parmesan und Rucola (G)              14,50\nTiroler Speckbrettl für 2 Personen (A, M)                18,00\n\nHAUPTGERICHTE\nTiroler Gröstl mit Spiegelei und Krautsalat (C)          16,90\nForelle Müllerin Art mit Petersilkartoffeln (D, G)       22,50\nWiener Schnitzel vom Kalb, Preiselbeeren (A, C, G)       26,00\nKaspressknödel auf Sauerkraut (A, C, G)                  15,50\nGemüsecurry mit Basmatireis – vegan (F, N)               17,90\n\nDESSERTS\nKaiserschmarrn mit Zwetschkenröster (A, C, G)            11,50\nPfirsich Melba (G)                                        8,90\nGermknödel mit Mohnbutter und Vanillesauce (A, C, G)      9,50\n\nGETRÄNKE\nHugo 0,2 l                                                6,50\nAperol Spritz                                             6,90\nAlmdudler 0,35 l                                          3,90\nZipfer Märzen vom Fass 0,5 l                              4,80\n\nGlutenfreie und laktosefreie Varianten auf Anfrage.\nAllergeninformation: Bitte fragen Sie unser Service-Team.\nAlle Preise in Euro inkl. MwSt.",
+      "sensibel": []
+    },
+    {
+      "id": "P05",
+      "art": "hotel",
+      "sprache": "it",
+      "beschreibung": "Italienische Anfrage, Tochter mit Zöliakie, Codice fiscale für die Rechnung, Handynummer ohne Ländervorwahl",
+      "text": "Oggetto: Richiesta preventivo – settimana bianca gennaio\n\nBuongiorno,\n\nsiamo in quattro (due adulti e due ragazzi di 12 e 15 anni) e vorremmo soggiornare da voi dal 9 al 16 gennaio 2027, mezza pensione, possibilmente due camere comunicanti.\n\nUna domanda importante: mia figlia Chiara è celiaca, la cucina può preparare colazione e cena senza glutine? Abbiamo avuto brutte esperienze in passato.\n\nPer la fattura mi servirebbe intestarla a me: Francesca Zanetti, codice fiscale ZNTFNC88D52A952W, Via Giacomo Matteotti 41, 40129 Bologna.\n\nPotete chiamarmi al 347 821 0936 dopo le 18:00 oppure scrivere a fra.zanetti@example.com.\n\nGrazie mille e cordiali saluti,\nFrancesca Zanetti",
+      "sensibel": [
+        {
+          "wert": "Chiara",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "celiaca",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Francesca Zanetti",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "ZNTFNC88D52A952W",
+          "typ": "STEUERNR"
+        },
+        {
+          "wert": "Via Giacomo Matteotti 41",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "40129 Bologna",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "347 821 0936",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "fra.zanetti@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "P06",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Storno in österreichischem Ton, Herzinfarkt des Ehemanns, Kreditkarte mit anderem Karteninhaber, Polizzennummer, Telefon mit Schrägstrich nach 'Telefonnummer'",
+      "text": "Betreff: Storno Buchung 48213 – leider\n\nGriaß Gott Frau Hechenblaikner,\n\nleider müssen wir unseren Aufenthalt vom 12. bis 19. Dezember stornieren. Mein Mann hatte letzte Woche einen Herzinfarkt und liegt noch auf der Kardiologie in der Klinik, an einen Urlaub ist heuer nicht mehr zu denken.\n\nWir haben ja die Stornoversicherung über die Europäische abgeschlossen (Polizze 7730-2291-04) – brauchen Sie dafür eine Bestätigung vom Spital? Die Anzahlung von 450 € hab ich damals mit der Kreditkarte bezahlt (Mastercard 5555 5555 5555 4444, lautend auf Gerhard Lechleitner).\n\nMeine Telefonnummer: 0664 / 312 87 40, ich bin meistens am Vormittag daheim.\n\nMit freundlichen Grüßen und danke für Ihr Verständnis\nElfriede Lechleitner\nBahnhofstraße 8a, 6460 Imst",
+      "sensibel": [
+        {
+          "wert": "Hechenblaikner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Herzinfarkt",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Kardiologie",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "7730-2291-04",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "5555 5555 5555 4444",
+          "typ": "KREDITKARTE"
+        },
+        {
+          "wert": "Gerhard Lechleitner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0664 / 312 87 40",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Elfriede Lechleitner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Bahnhofstraße 8a",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6460 Imst",
+          "typ": "ADRESSE"
+        }
+      ]
+    },
+    {
+      "id": "P07",
+      "art": "hotel",
+      "sprache": "nl",
+      "beschreibung": "Niederländische Anfrage zu Parken und später Ankunft, Kennzeichen, zwei Handynummern in NL-Formaten, Name mit 'van den', Allergie des Kindes",
+      "text": "Onderwerp: Vraag over parkeren en late aankomst\n\nBeste mevrouw/meneer,\n\nWij hebben via jullie website geboekt voor 27 december t/m 3 januari (reserveringsnummer AR-77120). We komen met de auto uit Utrecht en verwachten pas rond 22:30 uur aan te komen, omdat we onderweg nog bij familie in München stoppen.\n\nIs de receptie dan nog open, of kunnen we de sleutel ergens ophalen? En kunnen we de auto in de garage zetten? Het gaat om een grijze Volvo XC60 met kenteken GZ-418-T, met dakkoffer, dus hoogte ongeveer 2,05 m.\n\nOnze dochter Fenna (8) is erg allergisch voor katten – hebben jullie huisdieren in het hotel?\n\nMijn mobiele nummer is +31 6 41 82 77 09, mijn man Joost is bereikbaar op 06-29374415.\n\nMet vriendelijke groet,\nLotte van den Heuvel\nKromme Nieuwegracht 52\n3512 HM Utrecht",
+      "sensibel": [
+        {
+          "wert": "GZ-418-T",
+          "typ": "KENNZEICHEN"
+        },
+        {
+          "wert": "Fenna",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "allergisch voor katten",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "+31 6 41 82 77 09",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Joost",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "06-29374415",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Lotte van den Heuvel",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Kromme Nieuwegracht 52",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "3512 HM Utrecht",
+          "typ": "ADRESSE"
+        }
+      ]
+    },
+    {
+      "id": "P08",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Beschwerde mit Tippfehlern und Umgangssprache, Kopfzeile mit abgekürztem Namen, Vorname der Mitarbeiterin, Handynummer nach 'ruft mich an'; Zimmer- und Rechnungsnummer als Fallen",
+      "text": "Von: Dragan P. <draganp1984@example.at>\nAn: Rezeption Hotel Alpenrose\nBetreff: beschwerde zimmer 314!!!\n\nHallo,\n\nalso ich muss jetzt echt mal was loswerden. Wir waren vom 3.10 bis 6.10 bei euch im zimmer 314 und es war ehrlichgesagt eine Zumutung. Die Heizung hat die ganze Nacht geklopft, der Hausmeister ist zwar gekommen aber hat nur gemeint „des isch normal“. Am zweiten Tag gabs kein warmes Wasser, an der Rezeption hieß es das liegt an der Anlage.\n\nDas Frühstück war ok, aber um 9:40 waren keine Eier mehr da und der Kaffeautomat war kaputt. Für 189 Euro die Nacht erwart ich mir was anders.\n\nIhre Kollegin an der Rezeption (Sabrina glaub ich?) war sehr nett und hat sich bemüht, das möchte ich schon sagen. Aber ich hätte gern zumindest einen Teil vom Geld zurück, Rechnungsnr. war R-2026-04471.\n\nBitte um Rückmeldung an diese Adresse oder ruft mich an 0699 1904 2287\n\nlg Dragan Petrović",
+      "sensibel": [
+        {
+          "wert": "Dragan P.",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "draganp1984@example.at",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Sabrina",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0699 1904 2287",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Dragan Petrović",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P09",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Kassenbeleg eines Großmarkts ohne sensible Angaben; Bon-, Beleg-, Terminal- und Autorisierungsnummern, maskierte Karte, Beträge",
+      "text": "METRO Cash & Carry Österreich\nGroßmarkt Innsbruck\n==========================================\nKassa 07   Bon 4471   16.10.2026   10:42\n==========================================\nRapsöl 10 l             2 x 24,99    49,98 A\nMehl glatt T480 25 kg   1 x 18,49    18,49 A\nButter 250 g           20 x  2,39    47,80 A\nSchlagobers 1 l         6 x  3,79    22,74 A\nServietten 3-lagig      4 x  8,90    35,60 B\n------------------------------------------\nSUMME EUR                           174,61\nA = 10 % USt   netto 126,37   USt 12,64\nB = 20 % USt   netto  29,67   USt  5,93\n------------------------------------------\nDebitkarte  **** **** **** 0815\nAutorisierung 038812   Terminal 7741-02\nBetrag EUR 174,61   ZAHLUNG ERFOLGT\n------------------------------------------\nRegistrierkasse AT1-K07   Beleg 2026/118734\nVielen Dank für Ihren Einkauf!\nUmtausch nur mit Bon innerhalb von 14 Tagen.",
+      "sensibel": []
+    },
+    {
+      "id": "P10",
+      "art": "buchhaltung",
+      "sprache": "en",
+      "beschreibung": "Rechnung eines kleinen britischen Lieferanten: Firmenname in Großbuchstaben und normal, UK-Adresse, VAT-Nummer, Company No., IBAN und Kontonummer; Produktname 'Heather Grey' als Falle",
+      "text": "MOORLAND TEXTILES LTD\nUnit 4, Calder Mill, 27 Canal Road, Leeds LS12 2PL, United Kingdom\nVAT Reg. No. GB 284 7193 56 · Company No. 09817342\n\nINVOICE                                Invoice no.: MT-10392\nInvoice date: 02 October 2026          Due date: 01 November 2026\n\nBill to: Hotel Alpenrose GmbH, Attn. Accounts Payable, Tyrol, Austria\nYour order ref.: PO-2026-118 (e-mail of 14 Sept 2026)\n\nQty  Description                               Unit GBP   Total GBP\n40   Wool throw \"Heather Grey\" 130 x 170 cm       38.50    1,540.00\n60   Cushion cover, tweed, 45 x 45 cm             12.20      732.00\n1    Pallet shipping via DPD to Austria          145.00      145.00\n\nSubtotal                                                  2,417.00\nVAT 0 % (export, zero-rated)                                  0.00\nTOTAL DUE                                             GBP 2,417.00\n\nPlease pay by bank transfer to Barclays Bank UK PLC\nIBAN GB50 BARC 2031 5841 8776 54 · BIC BUKBGB22\n(Sort code 20-31-58, account no. 41877654)\n\nQuestions about this invoice? Imran Qureshi, Accounts\naccounts@moorland-textiles.example · +44 113 496 0712\n\nMoorland Textiles Ltd is registered in England and Wales.",
+      "sensibel": [
+        {
+          "wert": "MOORLAND TEXTILES LTD",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Moorland Textiles Ltd",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Unit 4, Calder Mill, 27 Canal Road",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Leeds LS12 2PL",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "GB 284 7193 56",
+          "typ": "UID"
+        },
+        {
+          "wert": "09817342",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "GB50 BARC 2031 5841 8776 54",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "41877654",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "Imran Qureshi",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "accounts@moorland-textiles.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "+44 113 496 0712",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "P11",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Gästeblatt nach Meldegesetz, polnische Familie: Nachname in Großbuchstaben und Vorname getrennt, Nachname zuerst, Kosename, drei Datumsformate, Pass- und Ausweisnummer, polnische Adresse",
+      "text": "GÄSTEBLATT (Gästeverzeichnis gemäß Meldegesetz)\nBeherbergungsbetrieb: Hotel Alpenrose          Zimmer: 207\nAnkunft: 14.10.2026                            Abreise (voraussichtlich): 18.10.2026\n\n1. Gast\nFamilienname: WIŚNIEWSKI\nVorname: Paweł\nGeburtsdatum: 03.11.1979\nStaatsangehörigkeit: Polen\nWohnadresse: ul. Długa 17 m. 4, 31-147 Kraków, Polen\nReisedokument: Reisepass Nr. EA 4417302, ausgestellt von Wojewoda Małopolski\n\n2. Mitreisende\nWiśniewska, Joanna – geb. 21.6.1982 – Personalausweis CBK 128734\nWiśniewski, Kuba – geb. 2014-02-09 (Kind)\n\nHaustier: 1 Hund (klein)                       Anzahl Personen: 3\nOrtstaxe: 3 Pers. x 4 Nächte x 2,50 € = 30,00 €\n\nUnterschrift Gast: ..........................",
+      "sensibel": [
+        {
+          "wert": "WIŚNIEWSKI",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Paweł",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "03.11.1979",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "ul. Długa 17 m. 4",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "31-147 Kraków",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "EA 4417302",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Wiśniewska, Joanna",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "21.6.1982",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "CBK 128734",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Wiśniewski, Kuba",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "2014-02-09",
+          "typ": "GEBURTSDATUM"
+        }
+      ]
+    },
+    {
+      "id": "P12",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Wegbeschreibung ohne sensible Angaben; Straßennummern, Ausfahrten, Koordinaten, Zugverbindungen, Preise und Uhrzeiten als Fallen",
+      "text": "So finden Sie zu uns – Anreise ins Hotel Alpenrose\n\nMit dem Auto\nAus Richtung Deutschland (München): A8 bis Inntaldreieck, weiter auf der A12 Richtung Innsbruck. Ausfahrt Zirl-Ost (Nr. 87), dann der B177 Richtung Seefeld folgen. Achtung: Die Zirler Bergstraße hat bis zu 16 % Gefälle und ist für Wohnwagen gesperrt. Im Ort beim zweiten Kreisverkehr die dritte Ausfahrt nehmen, nach ca. 600 m sehen Sie unser Haus auf der linken Seite.\nAus Richtung Italien (Brenner): A13 bis Innsbruck-Süd, dann A12 Richtung Bregenz bis Ausfahrt Zirl-Ost.\nNavi-Tipp: Geben Sie die Koordinaten 47.3291, 11.1873 ein.\nVignette nicht vergessen: Für die Autobahnen in Österreich brauchen Sie eine Vignette, die 10-Tages-Vignette gibt es auch digital.\n\nMit der Bahn\nMit dem ÖBB Railjet oder ICE bis Innsbruck Hbf, dann mit der S5 Richtung Scharnitz bis Seefeld (Fahrzeit ca. 37 Minuten, Abfahrt stündlich um xx:10). Vom Bahnhof holen wir Sie gerne ab – bitte geben Sie uns bis 17:00 Uhr am Vortag Bescheid.\n\nParken\nTiefgarage mit 24 Stellplätzen, Einfahrtshöhe 2,10 m, 15 € pro Tag. Zwei Ladestationen für E-Autos (11 kW).\n\nVom Flughafen\nFlughafen Innsbruck (INN): Taxi ca. 30 Minuten. Flughafen München (MUC): ca. 2 Stunden, Shuttle auf Anfrage ab 189 € pro Strecke.",
+      "sensibel": []
+    },
+    {
+      "id": "P13",
+      "art": "buchhaltung",
+      "sprache": "it",
+      "beschreibung": "Italienische Rechnung einer kleinen Käserei aus dem Trentino: Firmenname mit Inhabername, Partita IVA, PEC-Adresse, IBAN, Referentin; Gesetzesverweis und DDT-Nummer als Fallen",
+      "text": "CASEIFICIO MORESCHINI di Moreschini Luca & C. s.n.c.\nVia del Lago 6 – 38027 Malè (TN)\nP.IVA / C.F. IT01873620221 · Tel. 0463 901 274\nPEC: caseificiomoreschini@pec.example\n\nSpett.le\nHotel Alpenrose GmbH\nTirolo – Austria\n\nFATTURA N. 214/2026 del 05/10/2026\nDDT n. 388 del 28/09/2026 – Ordine Vs. e-mail del 22/09/2026\n\nDescrizione                         Q.tà    Prezzo      Importo\nFormaggio Casolet stagionato kg     42,5    14,80 €     629,00 €\nBurro di malga kg                   20,0    11,20 €     224,00 €\nRicotta fresca kg                   15,0     6,50 €      97,50 €\nTrasporto refrigerato                  1    80,00 €      80,00 €\n\nImponibile                                          1.030,50 €\nIVA: operazione non imponibile – art. 41 D.L. 331/1993 (cessione intracomunitaria)\nTotale fattura                                      1.030,50 €\n\nPagamento: bonifico bancario a 30 gg d.f.\nBanca: Cassa Rurale Val di Sole – IBAN IT42 V080 8158 1600 0030 0271 945\nReferente: Sig.ra Elisa Moreschini – amministrazione@caseificio-moreschini.example",
+      "sensibel": [
+        {
+          "wert": "CASEIFICIO MORESCHINI di Moreschini Luca & C. s.n.c.",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Via del Lago 6",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "38027 Malè (TN)",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "IT01873620221",
+          "typ": "UID"
+        },
+        {
+          "wert": "0463 901 274",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "caseificiomoreschini@pec.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "IT42 V080 8158 1600 0030 0271 945",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Elisa Moreschini",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "amministrazione@caseificio-moreschini.example",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "P14",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Personalnotiz an die Lohnverrechnung: Neueintritt mit SVNR, ausgeschriebenem Geburtsdatum, Adresse mit Türnummer, Handy mit 0043, IBAN; Steuerberaterin nur mit Titel und Doppel-Nachnamen; Lohnbeträge als Fallen",
+      "text": "Betreff: Neueintritt Küche – bitte bei der ÖGK anmelden\n\nHallo Frau Mag. Sailer-Prantl,\n\nanbei die Daten für unseren neuen Jungkoch, Eintritt 01.11.2026, Vollzeit 40 Std., KV Hotel- und Gastgewerbe, Lohngruppe 3, ein Monat Probezeit:\n\nName: Mehmet Öztürk\ngeb. 14. März 1991\nSVNR: 5138 140391\nAdresse: Reichenauer Straße 72/3, 6020 Innsbruck\nHandy: 0043 664 918 23 07\nFamilienstand: verheiratet, 2 Kinder (Familienbonus Plus beantragt, Formular kommt nach)\nBank: BTV, IBAN AT05 1600 0007 0041 2233\nGehalt: 2.380,00 € brutto, 14 x jährlich\nVerpflegung: Mittagessen frei, kein Personalzimmer\n\nBitte auch an die Urlaubsaliquotierung denken, er bringt aus dem alten Job noch 6 Tage mit.\n\nDanke & lg\nHannes Plattner\nKüchenchef",
+      "sensibel": [
+        {
+          "wert": "Sailer-Prantl",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Mehmet Öztürk",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "14. März 1991",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "5138 140391",
+          "typ": "SVNR"
+        },
+        {
+          "wert": "Reichenauer Straße 72/3",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "0043 664 918 23 07",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "AT05 1600 0007 0041 2233",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Hannes Plattner",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P15",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "WhatsApp-Verlauf im Tiroler Dialekt, klein geschrieben, Kosenamen, Rückenleiden umschrieben, Absender nur als Nummer",
+      "text": "[14.10.26, 19:02] +43 676 5523180: Servus, do is de Resi vom Zimmer 12, mia kemman morgen erst um 11 zum frühstück, geht des no?\n[14.10.26, 19:05] Hotel Alpenrose Rezeption: Hallo Resi, kein Problem, Frühstück gibt's bis 10:30, für euch richten wir gern bis 11 was her :)\n[14.10.26, 19:06] +43 676 5523180: super danke!! und da Toni hätt gern a extra kissn, er hot's mitn rücken\n[14.10.26, 19:07] Hotel Alpenrose Rezeption: Bringt der Hausmeister gleich vorbei. Gute Besserung an Toni!\n[14.10.26, 19:12] +43 676 5523180: ah und mei schwester kimmt morgn a no auf an kaffee, de Burgi, de hot a eigene nummer 0664-8812 077 falls sie di ned findt\n[14.10.26, 19:13] Hotel Alpenrose Rezeption: Passt, sie soll einfach an der Rezeption nach euch fragen.",
+      "sensibel": [
+        {
+          "wert": "+43 676 5523180",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Resi",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Toni",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "mitn rücken",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Burgi",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0664-8812 077",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "P16",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "Weitergeleitete Mail mit Kopfzeilen und Zitat: koschere Ernährung, Diabetes umschrieben, US-Adresse mit Apartment, US-Telefon in Klammern, Nachname mit Bindestrich auch allein, Mitarbeiterin mit Vorname und vollem Namen",
+      "text": "FYI kitchen – can we do this? Guests arrive 22.12. Thanks, Ivana\n\n---------- Forwarded message ---------\nFrom: Rachel Goldberg-Hayes <r.goldberg.hayes@example.com>\nDate: Tue, Oct 13, 2026 at 4:17 PM\nSubject: Re: Your stay 22–29 December / booking AL-26-3318\nTo: Hotel Alpenrose Reservations\n\nHello again,\n\nThank you for the quick reply! Just to be clear about the food: we keep kosher, so we'd need meals without pork or shellfish and no mixing of meat and dairy. Sealed meals from a certified caterer in Munich would be perfectly fine for dinner if that's easier. My father-in-law is also diabetic, so less sugar at breakfast would help.\n\nWe land at MUC on December 22 at 11:05 (United UA 106) and will rent a car at the airport.\n\nBest,\nRachel\n\nRachel Goldberg-Hayes\n2140 N. Lincoln Park West, Apt 9C\nChicago, IL 60614\nCell (312) 555-0147\n\n> On Mon, Oct 12, 2026, Hotel Alpenrose Reservations wrote:\n> Dear Mrs. Goldberg-Hayes,\n> thank you for your booking for 4 adults in two Superior rooms.\n> Please let us know about any dietary requirements.\n> Kind regards, Ivana Marković",
+      "sensibel": [
+        {
+          "wert": "Ivana",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Rachel Goldberg-Hayes",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "r.goldberg.hayes@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "kosher",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "diabetic",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Rachel",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "2140 N. Lincoln Park West, Apt 9C",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Chicago, IL 60614",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "(312) 555-0147",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Goldberg-Hayes",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Ivana Marković",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P17",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Kurze Telefonnotiz der Rezeption: ungarischer Name in ungarischer Reihenfolge, dieselbe Nummer international und national, Vorname der Mitarbeiterin; Hunderasse 'Golden Retriever', Angebotsnummer und Rabattcode als Fallen",
+      "text": "Telefonnotiz 15.10., 14:20 – Sabine\nSzabó Réka (Ungarn) möchte für Silvester 2 DZ + 1 EZ, 30.12.–2.1., HP, mit Hund (Golden Retriever). Rückruf unter 0036 30 418 2275 (= 06 30 418 2275) nach 17 Uhr. Angebot Nr. 26-0912 bitte neu an szabo.reka@example.org, Code WINTER26.",
+      "sensibel": [
+        {
+          "wert": "Sabine",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Szabó Réka",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0036 30 418 2275",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "06 30 418 2275",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "szabo.reka@example.org",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "P18",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Newsletter ohne sensible Angaben; 'Nikolaus', Marken, Rabattcode, Daten, Uhrzeiten und Prozente als Fallen",
+      "text": "Betreff: Wintergrüße aus dem Hotel Alpenrose – Neuigkeiten für die Saison 2026/27\n\nLiebe Gäste, liebe Freunde des Hauses,\n\nder erste Schnee ist da und wir starten am 4. Dezember in die Wintersaison! Hier unsere Neuigkeiten:\n\n• Neuer Wellnessbereich: Ab Dezember erwartet Sie eine Zirbensauna mit Panoramablick, ein Kneippbecken und ein Ruheraum mit Wasserbetten.\n• Kulinarik: Unser Küchenteam kocht jeden Donnerstag ein Tiroler Bauernbuffet mit Produkten von Höfen aus der Region. Neu: eine vegane Wochenkarte.\n• Nikolausabend am 5. Dezember: Nikolaus und Krampus besuchen die Kinder in der Hotelhalle (17:30 Uhr).\n• Silvester-Gala mit Live-Musik, Mitternachtsbuffet und Feuerwerk über dem See.\n• Skipass-Vorteil: Ab 5 Nächten erhalten Sie 10 % Ermäßigung auf den Skipass der Region.\n\nFrühbucher-Angebot: Bis 15. November buchen und 12 % sparen – einfach den Code FRUEH26 auf unserer Website, telefonisch an der Rezeption oder bei Booking.com angeben.\n\nWir freuen uns auf Sie!\nIhre Gastgeberfamilie und das ganze Team vom Hotel Alpenrose\n\nSie erhalten diesen Newsletter, weil Sie sich dafür angemeldet haben. Abmelden können Sie sich jederzeit über den Link in dieser E-Mail.",
+      "sensibel": []
+    },
+    {
+      "id": "P19",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Dienstplan als Tabelle: nur Vornamen, Vorname mit Initiale, nur Nachname, Doppelvorname; Knie-OP und Freitagsgebet als besondere Kategorien; Kürzel und Uhrzeiten als Fallen",
+      "text": "DIENSTPLAN Service & Rezeption – KW 43 (19.10.–25.10.2026)\nStand: 16.10., erstellt von der Hotelleitung\n\nName        | Mo   | Di   | Mi   | Do   | Fr   | Sa   | So\n------------|------|------|------|------|------|------|-----\nSabrina     | F    | F    | frei | S    | S    | S    | frei\nJelena M.   | S    | S    | S    | frei | frei | F    | F\nKowalski    | U    | U    | U    | U    | U    | frei | frei\nAhmet       | F    | frei | F    | F    | F    | S    | S\nLisa-Marie  | K    | K    | K    | K    | K    | –    | –\nAushilfe    | –    | –    | –    | –    | S    | S    | –\n\nF = Frühdienst 06:30–15:00 · S = Spätdienst 14:00–22:30 · U = Urlaub · K = Krankenstand\n\nHinweise:\n- Lisa-Marie ist nach ihrer Knie-OP voraussichtlich bis 26.10. im Krankenstand, die Bestätigung liegt im Personalordner.\n- Ahmet hat am Freitag ab 12 Uhr wegen dem Freitagsgebet getauscht, dafür Sa/So Spätdienst.\n- Kowalski: Urlaub genehmigt (Resturlaub 2025).\n- Tauschwünsche bitte bis Mittwoch 12:00 an die Hotelleitung, nicht per WhatsApp an die Kolleginnen.",
+      "sensibel": [
+        {
+          "wert": "Sabrina",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Jelena M.",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Kowalski",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Ahmet",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Lisa-Marie",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Knie-OP",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Freitagsgebet",
+          "typ": "RELIGION"
+        }
+      ]
+    },
+    {
+      "id": "P20",
+      "art": "hotel",
+      "sprache": "nl",
+      "beschreibung": "Niederländische Stornierung wegen Schwangerschaft und Schwangerschaftsdiabetes, Rückzahlung auf NL-IBAN, abgekürzter Name 't.n.v.', Partner mit 'de', Telefon mit 0031",
+      "text": "Onderwerp: Annulering boeking 2026-NL-0457 / terugbetaling aanbetaling\n\nBeste Hotel Alpenrose,\n\nHelaas moeten wij onze reis van 6 t/m 13 februari annuleren. Ik ben 24 weken zwanger en de gynaecoloog heeft me afgeraden om nog naar de bergen te reizen, omdat ik last heb van zwangerschapsdiabetes.\n\nVolgens jullie voorwaarden is annuleren tot 60 dagen voor aankomst kosteloos. Willen jullie de aanbetaling van € 380,- terugstorten op rekening NL59 RABO 0312 8475 64 t.n.v. S. van Dijk?\n\nMijn partner Bram de Groot heeft de boeking destijds gemaakt via zijn e-mailadres (bramdegroot@example.com), maar u kunt mij ook direct bereiken op 0031 6 1934 5520.\n\nAlvast bedankt en hartelijke groeten,\nSanne van Dijk\nWilhelminalaan 118\n2012 JK Haarlem",
+      "sensibel": [
+        {
+          "wert": "zwanger",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "gynaecoloog",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "zwangerschapsdiabetes",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "NL59 RABO 0312 8475 64",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "S. van Dijk",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Bram de Groot",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "bramdegroot@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "0031 6 1934 5520",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Sanne van Dijk",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Wilhelminalaan 118",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "2012 JK Haarlem",
+          "typ": "ADRESSE"
+        }
+      ]
+    },
+    {
+      "id": "P21",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Lange Mail eines kleinen Reiseveranstalters mit Rooming List als CSV: Nachname und Vorname in getrennten Spalten, viele Geburtsdaten und Ausweisnummern, Gesundheit und Religion in der Hinweisspalte, Bus-Kennzeichen, USt-IdNr. und Handelsregister des Veranstalters, Schlaganfall umschrieben",
+      "text": "Von: Gruppenreisen Anatolia-Alpin <buchung@anatolia-alpin.example>\nAn: Hotel Alpenrose – Gruppen\nBetreff: Rooming List Gruppe \"Tirol Herbst 2026\" – Anreise 23.10.\n\nLiebe Kolleginnen,\n\nanbei wie besprochen die Rooming List für unsere Gruppe (Bus aus Köln, Ankunft ca. 17:30 Uhr, Abreise 27.10. nach dem Frühstück). Busfahrer ist Herr Wolfgang Brandl, er hat ein EZ auf Kosten des Veranstalters (Zimmerkategorie egal). Kennzeichen des Busses: K-AT 4417.\n\nBitte die Hinweise in der letzten Spalte beachten, vor allem zum Essen. Bei Fragen erreichen Sie mich unter +49 221 9937 4410 oder mobil 0172 / 448 19 02.\n\nHerzliche Grüße\nEmre Çelik\nGruppenreisen Anatolia-Alpin GmbH\nVenloer Straße 214, 50823 Köln\nAmtsgericht Köln HRB 98417 · USt-IdNr. DE 287 401 935\n\n--- rooming_list_tirol_herbst_2026.csv ---\nNr;Nachname;Vorname;Geburtsdatum;Nation;Ausweis-Nr.;Zimmer;Hinweis\n1;Kaya;Ayşe;12.04.1956;TR;U 18837342;DZ 1;Diabetes, zuckerfreie Desserts\n2;Kaya;Mustafa;01.09.1953;TR;U 18837343;DZ 1;Gehstock, Zimmer nahe Lift\n3;Yılmaz-Becker;Derya;23.11.1968;DE;L01X84T27;DZ 2;halal\n4;Becker;Thomas;07.05.1965;DE;L01X91R33;DZ 2;-\n5;Schmitz;Hildegard;30.01.1949;DE;C4J7N2X81;EZ 3;Rollator\n6;Haddad;Fatima;15.06.1972;DE;T22000129;DZ 4;halal\n7;Haddad;Omar;09.10.1970;DE;T22000130;DZ 4;halal + Nussallergie\n8;Novak;Ivana;19.02.1981;HR;117283340;DZ 5;vegetarisch\n9;Novak;Luka;02.08.1979;HR;117283341;DZ 5;vegetarisch\n10;Brandl;Wolfgang;;DE;;EZ 6;Busfahrer, Abrechnung über Veranstalter\n--- Ende ---\n\nGruppenpreis wie vereinbart: 4 Nächte HP, 92 € pro Person und Nacht im DZ, EZ-Zuschlag 18 € pro Nacht, Ortstaxe extra. Gesamt laut Angebot GA-2026-077: 3.384,00 € zzgl. Ortstaxe. Freiplatz: Busfahrer.\n\nBitte für Fr. Schmitz, wenn möglich, ein Zimmer im Erdgeschoss oder direkt beim Lift – sie ist nach dem Schlaganfall im Frühjahr noch etwas unsicher auf den Beinen. Die Rechnung bitte wie immer an uns, nicht an die Gäste, und mit unserer Gruppennummer TH-26-14 als Referenz.\n\nPS: Das Ehepaar auf Nr. 1 und 2 feiert am 25.10. den 50. Hochzeitstag – vielleicht eine kleine Torte zum Abendessen? Bezahlt wird das vor Ort von unserer Reiseleitung.\n\nDanke und bis bald!",
+      "sensibel": [
+        {
+          "wert": "Gruppenreisen Anatolia-Alpin",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "buchung@anatolia-alpin.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Wolfgang Brandl",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "K-AT 4417",
+          "typ": "KENNZEICHEN"
+        },
+        {
+          "wert": "+49 221 9937 4410",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "0172 / 448 19 02",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Emre Çelik",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Venloer Straße 214",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "50823 Köln",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "HRB 98417",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "DE 287 401 935",
+          "typ": "UID"
+        },
+        {
+          "wert": "Kaya",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Ayşe",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "12.04.1956",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "U 18837342",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Diabetes",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Mustafa",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "01.09.1953",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "U 18837343",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Gehstock",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Yılmaz-Becker",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Derya",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "23.11.1968",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "L01X84T27",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "halal",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "Becker",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Thomas",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "07.05.1965",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "L01X91R33",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Schmitz",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Hildegard",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "30.01.1949",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "C4J7N2X81",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Rollator",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Haddad",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Fatima",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "15.06.1972",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "T22000129",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Omar",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "09.10.1970",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "T22000130",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Nussallergie",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Novak",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Ivana",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "19.02.1981",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "117283340",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Luka",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "02.08.1979",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "117283341",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Brandl",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Wolfgang",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Schlaganfall",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "unsicher auf den Beinen",
+          "typ": "GESUNDHEIT"
+        }
+      ]
+    },
+    {
+      "id": "P22",
+      "art": "hotel",
+      "sprache": "it",
+      "beschreibung": "Sehr kurzer italienischer WhatsApp-Verlauf: späte Ankunft, Name mit 'Dalla', Kfz-Kennzeichen, Schwangerschaft; Stellplatznummer und Uhrzeiten als Fallen",
+      "text": "[18:41] +39 335 712 4098: Buonasera, sono Marco Dalla Torre, arriviamo verso le 23 :(\n[18:44] Hotel Alpenrose: Nessun problema, signor Dalla Torre!\n[18:45] +39 335 712 4098: Grazie! Targa FT 482 KX per il garage. Mia moglie Giulia è incinta: un cuscino in più?\n[18:46] Hotel Alpenrose: Posto 17 :)",
+      "sensibel": [
+        {
+          "wert": "+39 335 712 4098",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Marco Dalla Torre",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Dalla Torre",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "FT 482 KX",
+          "typ": "KENNZEICHEN"
+        },
+        {
+          "wert": "Giulia",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "incinta",
+          "typ": "GESUNDHEIT"
+        }
+      ]
+    },
+    {
+      "id": "P23",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Preisliste ohne sensible Angaben; Zimmernamen wie 'Zirbe' oder 'Karwendel', Zeiträume, Prozente und Beträge als Fallen",
+      "text": "PREISLISTE WINTER 2026/27 – Hotel Alpenrose\nAlle Preise pro Person und Nacht inkl. Halbpension, Wellness und MwSt., zzgl. Ortstaxe 2,50 €\n\nZimmerkategorie                    Nebensaison   Hauptsaison   Weihnachten/Silvester\n                                   04.–19.12.    02.01.–31.03. 20.12.–01.01.\nEinzelzimmer \"Zirbe\" (18 m²)        119 €         149 €         179 €\nDoppelzimmer \"Alpenblick\" (26 m²)   109 €         139 €         169 €\nJunior Suite \"Karwendel\" (38 m²)    139 €         169 €         209 €\nFamilienzimmer \"Wetterstein\" (42 m²) 125 €        155 €         189 €\n\nKinderermäßigung im Zimmer der Eltern:\n0–2,9 Jahre frei · 3–6,9 Jahre –70 % · 7–11,9 Jahre –50 % · 12–15,9 Jahre –30 %\n\nZuschläge und Extras\nHund (ohne Futter): 18 € pro Nacht\nTiefgaragenplatz: 15 € pro Nacht\nMassage 50 Minuten: 79 € · Hot-Stone 80 Minuten: 115 €\nSkiraum mit Schuhtrockner: kostenlos\nSpätabreise bis 16:00 Uhr: 35 € (nach Verfügbarkeit)\n\nMindestaufenthalt: 3 Nächte, zu Weihnachten/Silvester 7 Nächte (Anreise Samstag).\nStornobedingungen: bis 60 Tage vor Anreise kostenlos, bis 30 Tage 40 %, bis 7 Tage 70 %, danach 90 % des Arrangementpreises.\nPreisänderungen und Druckfehler vorbehalten. Stand: Oktober 2026.",
+      "sensibel": []
+    },
+    {
+      "id": "P24",
+      "art": "hotel",
+      "sprache": "gemischt",
+      "beschreibung": "Buchungsbestätigung eines Portals (Deutsch/Englisch): Name in Großbuchstaben mit Nachname zuerst, Weiterleitungs-Mail des Portals, Nummer der Emirate, Religion und Migräne im Sonderwunsch; Buchungsnummer sieht wie Telefonnummer aus",
+      "text": "Booking.com – Neue Buchung / New reservation\nBuchungsnummer / Booking number: 4417 220 913\nGastname / Guest name: AL-MANSOURI, AHMED\nLand / Country: Vereinigte Arabische Emirate\nE-Mail: aalmansouri.731044@guest.booking.example\nTelefon / Phone: +971 50 418 2290\nAnreise / Check-in: Sa, 20. Feb. 2027 (ab 15:00)\nAbreise / Check-out: Sa, 27. Feb. 2027 (bis 10:00)\nZimmer / Room: 1 x Junior Suite \"Karwendel\" – Halbpension / Half board\nGäste / Guests: 2 Erwachsene, 2 Kinder (5, 9)\nPreis / Total price: € 3.276,00 (inkl. MwSt., zzgl. Ortstaxe)\nProvision / Commission: € 491,40 (15 %)\nGenius-Level 2 · Zahlung: Booking.com Payments (virtuelle Kreditkarte, Freischaltung am Anreisetag)\n\nBesondere Wünsche / Special requests:\n\"We are Muslim family, please no pork and no alcohol in the food for the children. My wife Noura needs a quiet room, she has strong migraine. Also is there a sign for the Qibla or can you tell us the direction? Thank you, Ahmed\"\n\nVoraussichtliche Ankunftszeit / Estimated arrival: 20:00–21:00\nInterner Vermerk: Zustellbett für das ältere Kind ja, Kinderbett nicht nötig.",
+      "sensibel": [
+        {
+          "wert": "AL-MANSOURI, AHMED",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "aalmansouri.731044@guest.booking.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "+971 50 418 2290",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Muslim",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "Noura",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "migraine",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Qibla",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "Ahmed",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P25",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Wertgutschein: Beschenkte mit Kosenamen, nur Vornamen der Enkel (auch kurz wie 'Mia'), Käuferin mit Doppelnamen und Kundennummer, Telefon mit Klammern; Gutschein-, Beleg- und Kontonummern als Fallen",
+      "text": "WERTGUTSCHEIN Nr. GS-2026-0318\n\nim Wert von € 300,– (dreihundert Euro)\n\nfür: Frau Theresia Haselwanter („Oma Resi“)\nvon: deinen Enkelkindern Leonie, Jonas & Mia – alles Liebe zum 80. Geburtstag!\n\nEinzulösen für Übernachtung, Restaurant und Wellness im Hotel Alpenrose.\nGültig bis 31.10.2029. Keine Barablöse. Bei Verlust kein Ersatz.\n\nAusgestellt am 02.10.2026 · bezahlt per Überweisung (Beleg 26-11873)\nGekauft von: Daniela Haselwanter-Rainer (Kundennr. 30218), Tel. (0512) 39 41 87, Anton-Rauch-Straße 9, 6020 Innsbruck\n\nHinweis Buchhaltung: Erlös erst bei Einlösung buchen (Konto 3610 Gutscheinverbindlichkeiten).",
+      "sensibel": [
+        {
+          "wert": "Theresia Haselwanter",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Resi",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Leonie",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Jonas",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Mia",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Daniela Haselwanter-Rainer",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "30218",
+          "typ": "KUNDENNR"
+        },
+        {
+          "wert": "(0512) 39 41 87",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Anton-Rauch-Straße 9",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6020 Innsbruck",
+          "typ": "ADRESSE"
+        }
+      ]
+    },
+    {
+      "id": "P26",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Bewerbung einer bosnischen Rezeptionistin: ausgeschriebenes Geburtsdatum, Behinderung und Hörgerät umschrieben, Adresse mit Stiege und Tür; Software-Marken und Jobportal als Fallen",
+      "text": "Betreff: Bewerbung als Rezeptionistin für die Wintersaison 2026/27\n\nSehr geehrte Frau Hechenblaikner,\n\nmit großem Interesse habe ich Ihre Stellenanzeige auf karriere.at gelesen und bewerbe mich hiermit als Rezeptionistin für die Wintersaison.\n\nZu meiner Person: Ich heiße Amra Hodžić, bin am 7. Juli 1997 in Tuzla geboren und lebe seit 2015 in Österreich. Nach der Tourismusschule in Bad Hofgastein habe ich drei Saisonen im Gasteinertal an der Rezeption gearbeitet (Fidelio, Protel), zuletzt als Front Office Supervisor. Ich spreche Deutsch, Bosnisch/Kroatisch/Serbisch, Englisch und etwas Italienisch.\n\nDer Ordnung halber möchte ich erwähnen, dass ich einen Behindertenpass habe (wegen einer Hörminderung auf dem linken Ohr). Im Arbeitsalltag schränkt mich das nicht ein, ich trage ein Hörgerät.\n\nIch bin ab 1. Dezember verfügbar, Führerschein B und eigenes Auto sind vorhanden. Ein Personalzimmer wäre schön, ist aber keine Bedingung.\n\nMeinen Lebenslauf und die Dienstzeugnisse finden Sie im Anhang.\n\nMit freundlichen Grüßen\nAmra Hodžić\nGasteiner Straße 31/2/14, 5630 Bad Hofgastein\nMobil: +43 660 7318 204\namra.hodzic@example.at",
+      "sensibel": [
+        {
+          "wert": "Hechenblaikner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Amra Hodžić",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "7. Juli 1997",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "Behindertenpass",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Hörminderung",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Hörgerät",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Gasteiner Straße 31/2/14",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "5630 Bad Hofgastein",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+43 660 7318 204",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "amra.hodzic@example.at",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "P27",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Ärztliche Bestätigung für einen Mitarbeiter: Ärztin mit Titeln und später nur Nachname, Ordinationsadresse, SVNR, Diagnose mit Fach- und Alltagswort, Arbeitsunfähigkeit; Ordinationszeiten als Fallen",
+      "text": "Dr. med. univ. Elif Yıldız\nÄrztin für Allgemeinmedizin · alle Kassen\nKlosterbräugasse 4, 6100 Seefeld · Tel. 05212 / 4 77 31\nOrdination: Mo–Fr 8–12 Uhr, Di und Do 15–18 Uhr\n\nÄRZTLICHE BESTÄTIGUNG\nzur Vorlage beim Dienstgeber\n\nHerr Nemanja Ilić, geb. 22.11.1999, SV-Nr. 6345 221199, wohnhaft im Personalhaus des Hotel Alpenrose, war am 14.10.2026 in meiner Ordination in Behandlung.\n\nEr ist wegen einer akuten Lumbago (Hexenschuss) vom 14.10.2026 bis einschließlich 20.10.2026 arbeitsunfähig. Schweres Heben ist bis Ende Oktober zu vermeiden.\n\nSeefeld, 14.10.2026\n\n(Stempel und Unterschrift)\nDr. Yıldız",
+      "sensibel": [
+        {
+          "wert": "Elif Yıldız",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Klosterbräugasse 4",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6100 Seefeld",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "05212 / 4 77 31",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Nemanja Ilić",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "22.11.1999",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "6345 221199",
+          "typ": "SVNR"
+        },
+        {
+          "wert": "Lumbago",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Hexenschuss",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "arbeitsunfähig",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Yıldız",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P28",
+      "art": "allgemein",
+      "sprache": "en",
+      "beschreibung": "Wetterwarnung an die Gäste ohne sensible Angaben; Notrufnummern, Höhen, Uhrzeiten, Warnstufen und Liftnamen als Fallen",
+      "text": "WEATHER WARNING – please read\nIssued by the reception team, Friday 15 January 2027, 07:30\n\nDear guests,\n\nthe national weather service has issued an orange warning (level 3 of 4) for our region from Saturday 12:00 until Sunday 18:00. Expected are 40–60 cm of fresh snow above 1,200 m, gusts of up to 90 km/h on the ridges and a high avalanche danger (level 4).\n\nWhat this means for you:\n- The Rosshütte and Härmelekopf lifts will most likely stay closed on Saturday afternoon. Please check the lift app before you leave.\n- Do not go off-piste or on winter hikes above the tree line.\n- Snow chains are compulsory on the road to Leutasch. Our garage staff will help you fit them (free of charge, 08:00–10:00).\n- Buses to Innsbruck are running, trains on the Karwendel line may be delayed.\n\nThe spa, the indoor pool and the restaurant are open as usual. We will show a mountain film at 17:00 in the library, and the kids' club has an extra programme from 14:00.\n\nIn an emergency dial 112 (European emergency number) or 140 (mountain rescue). The reception is staffed 24 hours: dial 9 from your room phone.\n\nStay safe and enjoy the snow!\nYour Hotel Alpenrose team",
+      "sensibel": []
+    },
+    {
+      "id": "P29",
+      "art": "buchhaltung",
+      "sprache": "it",
+      "beschreibung": "Italienischer Saisonmitarbeiter schickt Daten für den Dienstvertrag: Codice fiscale, Carta d'identità, Geburtsdatum mit Schrägstrichen, IBAN, Adresse mit Buchstaben-Hausnummer, Laktoseintoleranz, Vorname allein als Gruß",
+      "text": "Oggetto: documenti per l'assunzione – stagione invernale\n\nGentile signora Hechenblaikner,\n\ncome d'accordo Le invio i miei dati per il contratto da cameriere (dal 1° dicembre 2026 al 6 aprile 2027):\n\nNome e cognome: Matteo Dallapiccola\nNato a Trento il 14/07/1995\nCodice fiscale: DLLMTT95L14L378V\nCarta d'identità n. CA48211XK, rilasciata dal Comune di Trento, scadenza 03/2031\nResidenza: Via Brennero 118/B, 38121 Trento\nIBAN: IT02 N030 6911 8841 0000 0003 741 (Intesa Sanpaolo)\nCellulare: +39 342 557 9081\n\nTaglia della divisa: camicia M, pantaloni 48, scarpe 43.\nPer il vitto: sono intollerante al lattosio, il resto va bene.\n\nLa foto per il badge la porto il primo giorno.\n\nCordiali saluti\nMatteo",
+      "sensibel": [
+        {
+          "wert": "Hechenblaikner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Matteo Dallapiccola",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "14/07/1995",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "DLLMTT95L14L378V",
+          "typ": "STEUERNR"
+        },
+        {
+          "wert": "CA48211XK",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Via Brennero 118/B",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "38121 Trento",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "IT02 N030 6911 8841 0000 0003 741",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "+39 342 557 9081",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "intollerante al lattosio",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Matteo",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P30",
+      "art": "buchhaltung",
+      "sprache": "nl",
+      "beschreibung": "Niederländische Bitte um Rechnungskorrektur: kleine Firma mit Kurzform, KvK- und Btw-Nummer, IBAN, Kontaktperson mit Initiale und vollem Namen, Privatadresse einer Mitreisenden mit Doppelnamen; Rechnungs- und Zimmernummer als Fallen",
+      "text": "Onderwerp: Factuur 2026-0815 – graag aanpassen\n\nGoedemiddag,\n\nBedankt voor de factuur van ons groepsverblijf (12 fietsers, 5–8 september). Kunnen jullie de factuur opnieuw uitreiken op onze bedrijfsnaam? Voor de btw-aangifte hebben we de volgende gegevens nodig:\n\nFietsreizen De Wolk B.V.\nt.a.v. de heer K. Dijkstra\nVismarkt 14\n9712 CA Groningen\nKvK-nummer: 74120598\nBtw-id: NL862301477B01\n\nHet bedrag van € 4.608,00 hebben we gisteren al overgemaakt vanaf NL12 INGB 0006 7123 98, met omschrijving \"AR-0815 De Wolk\".\n\nEen van onze gasten, mevrouw Joke Bakker-Visser, heeft haar oplader en een sjaal in kamer 108 laten liggen. Zouden jullie die naar haar thuisadres kunnen sturen? Dat is Prinsengracht 7-II, 1015 DK Amsterdam. De verzendkosten mogen op onze rekening.\n\nMet vriendelijke groet,\nKoen Dijkstra\nFietsreizen De Wolk\n06 18 42 93 07",
+      "sensibel": [
+        {
+          "wert": "Fietsreizen De Wolk",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "De Wolk",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "K. Dijkstra",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Vismarkt 14",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "9712 CA Groningen",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "74120598",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "NL862301477B01",
+          "typ": "UID"
+        },
+        {
+          "wert": "NL12 INGB 0006 7123 98",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Joke Bakker-Visser",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Prinsengracht 7-II",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "1015 DK Amsterdam",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Koen Dijkstra",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "06 18 42 93 07",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "P31",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Lange, zweimal weitergeleitete Mail mit Kopfzeilen und Zitaten: Titel, Adelsname mit 'von' und 'v.', Initialen als Unterschrift, Doppelnamen, Herzschrittmacher, Allergie, Zöliakie, Firmenkreditkarte mit Ablaufdatum, Telefon und Fax mit Durchwahl, Nummer nach 'erreichbar unter', Stammgastnummer, Wiener Kennzeichen",
+      "text": "Von: Florian Prantl <f.prantl@hotel-alpenrose.example>\nGesendet: Donnerstag, 15. Oktober 2026 09:12\nAn: Rezeption; Küche; Spa\nBetreff: WG: WG: Aufenthalt Prof. Dr. Wolfram von Hagenberg 2.–9.11.\n\nHallo zusammen,\n\nbitte unten alles genau lesen, das ist ein wichtiger Stammgast (Stammgast-Nr. SG-2291, 12. Aufenthalt!). Zimmer 401 (Suite) ist geblockt, bitte Blumen und Obstkorb ins Zimmer und die Kopfkissen laut unten tauschen. Gisela, kannst du bitte im Spa die Termine fixieren, aber KEINE Magnetfeldtherapie und keine Elektrostimulation!\n\nDanke, Florian\n\n-----Ursprüngliche Nachricht-----\nVon: Mag. Sandra Kreuzer-Eberharter <kanzlei@kreuzer-eberharter.example>\nGesendet: Mittwoch, 14. Oktober 2026 16:48\nAn: Florian Prantl\nBetreff: WG: Aufenthalt Prof. Dr. Wolfram von Hagenberg 2.–9.11.\n\nSehr geehrter Herr Prantl,\n\nanbei die Wünsche meines Mandanten. Ergänzend: Herr Professor von Hagenberg hat seit dem Frühjahr einen Herzschrittmacher, daher bitte keine Behandlungen mit Strom oder Magneten und kein Dampfbad. Die Sauna bis 70 Grad ist laut seinem Kardiologen in Ordnung.\n\nDie Garantie erfolgt wie immer über die Firmenkreditkarte der Kanzlei: VISA 4012 8888 8888 1881, gültig bis 08/28, Karteninhaberin Sandra Kreuzer-Eberharter.\n\nMit freundlichen Grüßen\nMag. Sandra Kreuzer-Eberharter\nKanzlei Kreuzer-Eberharter, Rechtsanwälte\nMaria-Theresien-Straße 21, 6020 Innsbruck\nT +43 512 58 33 21 | F +43 512 58 33 21-9\n\n-----Ursprüngliche Nachricht-----\nVon: Wolfram v. Hagenberg <wvh@example.org>\nGesendet: Mittwoch, 14. Oktober 2026 11:03\nAn: Kanzlei Kreuzer-Eberharter\nBetreff: Aufenthalt 2.–9.11.\n\nLiebe Frau Mag. Kreuzer-Eberharter,\n\nwäre nett, wenn Sie das an das Hotel weiterleiten:\n\n> Anreise 2.11. gegen 16 Uhr mit meinem Fahrer (Herr Bajramović, Kennzeichen W-48213K, er braucht ein Zimmer für eine Nacht).\n> Bitte wie immer: Kopfkissen ohne Daunen (Allergie gegen Hausstaubmilben) und zum Frühstück glutenfrei wegen meiner Zöliakie.\n> Meine Frau Henriette kommt am 5.11. nach, sie ist erreichbar unter 0699/10 44 82 17.\n> Bitte keine Zeitung aufs Zimmer, die FAZ und den Standard lese ich digital am iPad.\n> Am 7.11. hätten wir gerne einen Tisch für 6 Personen um 19:30 im Restaurant – meine Tochter Dr. Clara Hagenberg-Moosbrugger kommt mit Familie aus Dornbirn.\n\nHerzlichst\nIhr W. v. H.",
+      "sensibel": [
+        {
+          "wert": "Florian Prantl",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "f.prantl@hotel-alpenrose.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Wolfram von Hagenberg",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "SG-2291",
+          "typ": "KUNDENNR"
+        },
+        {
+          "wert": "Gisela",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Florian",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Sandra Kreuzer-Eberharter",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "kanzlei@kreuzer-eberharter.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Prantl",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "von Hagenberg",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Herzschrittmacher",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Kardiologen",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "4012 8888 8888 1881",
+          "typ": "KREDITKARTE"
+        },
+        {
+          "wert": "08/28",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "Kanzlei Kreuzer-Eberharter",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Maria-Theresien-Straße 21",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+43 512 58 33 21",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "+43 512 58 33 21-9",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Wolfram v. Hagenberg",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "wvh@example.org",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Kreuzer-Eberharter",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Bajramović",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "W-48213K",
+          "typ": "KENNZEICHEN"
+        },
+        {
+          "wert": "Allergie gegen Hausstaubmilben",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Zöliakie",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Henriette",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0699/10 44 82 17",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Clara Hagenberg-Moosbrugger",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "W. v. H.",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P32",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Interne Notiz der Haustechnik ohne Namen und ohne sensible Angaben; Zimmernummern, Uhrzeiten, Preise, Kleidergröße und 'Hausmeister', 'Rezeption' als Fallen",
+      "text": "INTERNE NOTIZ – Haustechnik / Housekeeping\nFrühbesprechung 16.10.2026\n\n1. Zimmer 214: Wasserschaden an der Decke im Bad (vom Zimmer 314 darüber). Zimmer bis auf Weiteres gesperrt, der Hausmeister hat den Installateur für Montag 7:30 bestellt. Die Gäste wurden auf 218 umgebucht.\n2. Lift B ist am Dienstag zwischen 9 und 11 Uhr wegen der jährlichen Aufzugsprüfung außer Betrieb. Die Rezeption informiert die Gäste beim Check-in.\n3. Neue Minibar-Preise ab 1. November: Wasser 3,20 €, Bier 4,50 €, Piccolo 9,00 €. Bitte die alten Preisschilder in allen 46 Zimmern tauschen.\n4. Wäsche: Die Frottierware kommt erst am Donnerstag, bis dahin Handtuchwechsel nur auf Wunsch.\n5. Brandschutzübung für alle Abteilungen am 28.10. um 14:30, Treffpunkt Parkplatz Nord.\n6. Fundsachen: 1 Kinderjacke (rot, Gr. 116) und 1 Ladekabel USB-C bitte an der Rezeption abgeben und nicht im Büro liegen lassen.",
+      "sensibel": []
+    },
+    {
+      "id": "P33",
+      "art": "hotel",
+      "sprache": "gemischt",
+      "beschreibung": "WhatsApp-Verlauf Englisch/Deutsch mit chinesischem Gast: chinesische Namen mit Nachname zuerst, Anrede nur mit Nachname, Passnummern, chinesische Handynummer, WeChat-ID, Vorname des Fahrers, Allergie; Zugzeit als Falle",
+      "text": "[16.10.26, 08:12] Wang Lei: Good morning! We arrive tomorrow at Innsbruck Hbf 14:52 with Railjet, can someone pick us up? We are 3 persons with 4 big luggage.\n[16.10.26, 08:20] Hotel Alpenrose: Good morning Mr. Wang, sure! Our driver Stefan will wait at the main exit with a sign \"Alpenrose\". Die Fahrt ist für Sie gratis.\n[16.10.26, 08:22] Wang Lei: Thank you!! For check-in my passport number is EJ5582731, my wife is Chen Xiaoyu, passport EJ5582904. Our daughter Lily is 6.\n[16.10.26, 08:23] Wang Lei: My phone in Austria not working well, please call my China number +86 138 1047 2296 or WeChat: wanglei_sh88\n[16.10.26, 08:31] Hotel Alpenrose: Danke, notiert! Stefan hat die Nummer 0676 412 33 08, falls etwas ist. Is there anything else we should know?\n[16.10.26, 08:35] Wang Lei: My wife cannot eat seafood, she is allergic to shrimp. Lily eats everything. Also do you have rice cooker? haha\n[16.10.26, 08:36] Hotel Alpenrose: No problem, die Küche weiß Bescheid. Rice we can do every evening :)",
+      "sensibel": [
+        {
+          "wert": "Wang Lei",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Wang",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Stefan",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "EJ5582731",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Chen Xiaoyu",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "EJ5582904",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "Lily",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+86 138 1047 2296",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "wanglei_sh88",
+          "typ": "SONSTIGES"
+        },
+        {
+          "wert": "0676 412 33 08",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "allergic to shrimp",
+          "typ": "GESUNDHEIT"
+        }
+      ]
+    },
+    {
+      "id": "P34",
+      "art": "hotel",
+      "sprache": "en",
+      "beschreibung": "Englische Hochzeitsanfrage aus London: Religion über Ernährung (Jain), Sehbehinderung mit Blindenhund, Elektromobil, kleine Hochzeitsagentur, UK-Adresse mit Flat, UK-Nummern mit und ohne +44, Vorname allein",
+      "text": "Subject: Wedding party in June 2027 – 18 guests, 3 nights\n\nDear Events Team,\n\nI'm getting married in Innsbruck on 12 June 2027 and we'd love to put up our families at Hotel Alpenrose from 11 to 14 June. That would be about 9 rooms (18 guests, including two children).\n\nA few things you should know in advance:\n- Most of my family are Jain, so we need strictly vegetarian food without onion, garlic or root vegetables, and no eggs. Could your chef manage a separate menu for the welcome dinner on the 11th?\n- My grandmother, Mrs Kamala Shah, is partially sighted and travels with her guide dog. Is that OK in the restaurant?\n- My fiancé's best man, Tom, uses a mobility scooter – is there a charging point in the garage?\n\nOur planner, Bright Day Events Ltd (contact: Harriet Quinn, +44 20 7946 0381), will send you the rooming list later. Please send the quote to me directly.\n\nKind regards,\nPriya Shah\nFlat 3, 41 Wellington Road, Harrow HA1 4LP\n07700 900 314\npriya.shah.wedding@example.com",
+      "sensibel": [
+        {
+          "wert": "Jain",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "Kamala Shah",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "partially sighted",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "guide dog",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Tom",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "mobility scooter",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Bright Day Events Ltd",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Harriet Quinn",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "+44 20 7946 0381",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Priya Shah",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Flat 3, 41 Wellington Road",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Harrow HA1 4LP",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "07700 900 314",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "priya.shah.wedding@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "P35",
+      "art": "hotel",
+      "sprache": "it",
+      "beschreibung": "Italienische Stornierung aus dem Tessin wegen Krankenhausaufenthalt und Herzoperation der Ehefrau, Kreditkarte und Schweizer IBAN, Schweizer Festnetz- und Handynummer, Adresse in Lugano; Buchungsnummer und Prozente als Fallen",
+      "text": "Oggetto: Disdetta prenotazione n. 26-4471 – richiesta rimborso\n\nGentilissimi,\n\npurtroppo devo annullare il soggiorno dal 27 dicembre al 3 gennaio. Mia moglie è stata ricoverata d'urgenza la settimana scorsa per un intervento al cuore e dovrà fare la riabilitazione per almeno un mese.\n\nAvevo versato un acconto di 600 € con carta di credito (VISA 4111 1111 1111 1111 intestata a Roberto Ferrante). So che secondo le vostre condizioni la penale sarebbe del 40 %, ma vi chiedo gentilmente di valutare un buono oppure il rimborso, visto il motivo. Se è più semplice, potete anche fare un bonifico sul mio conto svizzero: IBAN CH25 0070 0110 0045 8923 1.\n\nAllego il certificato dell'ospedale. Per qualsiasi cosa sono raggiungibile al numero +41 91 922 46 18 (ufficio) o al cellulare 079 418 22 63.\n\nDistinti saluti,\nRoberto Ferrante\nVia Besso 47, 6900 Lugano",
+      "sensibel": [
+        {
+          "wert": "ricoverata",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "intervento al cuore",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "riabilitazione",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "4111 1111 1111 1111",
+          "typ": "KREDITKARTE"
+        },
+        {
+          "wert": "Roberto Ferrante",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "CH25 0070 0110 0045 8923 1",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "+41 91 922 46 18",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "079 418 22 63",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Via Besso 47",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6900 Lugano",
+          "typ": "ADRESSE"
+        }
+      ]
+    },
+    {
+      "id": "P36",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Sehr kurze WhatsApp eines Bauern im Tiroler Dialekt, alles klein: Kosename im Kontaktnamen, Hofname, Vorname klein geschrieben, Nummer ohne Hinweiswort; Mengen als Fallen",
+      "text": "[Mo 06:47] Sepp (Unterwegerhof): griaß di hannes, i bring heit erscht um 10e de oar und die milch, da traktor hot an patschn. 60 oar und 40 liter, zohlst ma's wia imma bar. 0664 2210 873 wenn wos isch",
+      "sensibel": [
+        {
+          "wert": "Sepp",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Unterwegerhof",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "hannes",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "0664 2210 873",
+          "typ": "TELEFON"
+        }
+      ]
+    },
+    {
+      "id": "P37",
+      "art": "buchhaltung",
+      "sprache": "de",
+      "beschreibung": "Zahlungserinnerung an einen kleinen Firmenkunden: Firmenname mit Familiennamen, Name mit 'jun.', Nachname allein in der Anrede, Mitarbeiterin mit spanischem Doppelnachnamen, Gewerbezone als Adresse ohne Straßen-Endung, Kundennummer, UID; Rechnungsnummer, Beträge und Durchwahl als Fallen",
+      "text": "Hotel Alpenrose GmbH · Buchhaltung\n\nTischlerei Gstrein & Söhne OG\nz. H. Herrn Josef Gstrein jun.\nGewerbezone 12\n6460 Imst\n\nKundennummer: K-10882\nIhre UID: ATU73190450\n\nSeefeld, 16.10.2026\n\n1. ZAHLUNGSERINNERUNG\n\nSehr geehrter Herr Gstrein,\n\nbei der Durchsicht unserer Konten ist uns aufgefallen, dass folgende Rechnung noch offen ist:\n\nRechnung Nr. 2026-0912 vom 18.08.2026 – Betriebsausflug 14.–15.08.2026 (22 Personen, Halbpension, Seminarraum)\nRechnungsbetrag: 4.356,80 €\nfällig am: 01.09.2026\nbereits bezahlt: 2.000,00 € (Anzahlung)\noffen: 2.356,80 €\n\nSicher handelt es sich um ein Versehen. Bitte überweisen Sie den offenen Betrag bis 30.10.2026 unter Angabe der Rechnungsnummer. Sollte sich Ihre Zahlung mit diesem Schreiben überschnitten haben, betrachten Sie es bitte als gegenstandslos.\n\nFür Rückfragen: Buchhaltung, Frau Lucía Fernández García, Durchwahl -23\n\nMit freundlichen Grüßen\nHotel Alpenrose GmbH",
+      "sensibel": [
+        {
+          "wert": "Tischlerei Gstrein & Söhne OG",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Josef Gstrein",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Gewerbezone 12",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6460 Imst",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "K-10882",
+          "typ": "KUNDENNR"
+        },
+        {
+          "wert": "ATU73190450",
+          "typ": "UID"
+        },
+        {
+          "wert": "Gstrein",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Lucía Fernández García",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P38",
+      "art": "buchhaltung",
+      "sprache": "gemischt",
+      "beschreibung": "Südtiroler Weinhändler schreibt Deutsch und Italienisch gemischt: zweisprachiger Firmenname und Adresse, P.IVA, IBAN, Fahrer mit Kennzeichen, Vornamen allein; Weinnamen, Jahrgänge und Preise als Fallen",
+      "text": "Betreff: Lieferung Weine KW 44 / consegna vini settimana 44\n\nServus Hannes, ciao!\n\nwie telefonisch besprochen liefern wir am Dienstag, 27.10., zwischen 8 und 10 Uhr:\n- Lagrein Riserva 2022 – 60 Fl. à 14,20 € netto\n- Gewürztraminer 2024 – 48 Fl. à 11,50 € netto\n- Vernatsch 2024 – 36 Fl. à 7,90 € netto\n\nIl nostro autista Kevin Mahlknecht arriva con il furgone bianco, targa GH 512 TV. Bitte die Einfahrt zur Anlieferung freihalten, grazie!\n\nDie Rechnung kommt wie immer elektronisch. I nostri dati per il vostro gestionale:\nWeinhandel Pichler Lorenz & Co. KG / Enoteca Pichler s.a.s.\nHandwerkerzone Nord 4 / Zona artigianale Nord 4\n39042 Brixen/Bressanone (BZ)\nMwSt.-Nr. / P.IVA IT02945180210\nIBAN IT65 A083 0758 2210 0030 1847 726\n\nBei Fragen: Lorenz Pichler, 348 902 1137 (anche WhatsApp)\n\nGrazie e a presto,\nLorenz",
+      "sensibel": [
+        {
+          "wert": "Hannes",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Kevin Mahlknecht",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "GH 512 TV",
+          "typ": "KENNZEICHEN"
+        },
+        {
+          "wert": "Weinhandel Pichler Lorenz & Co. KG",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Enoteca Pichler s.a.s.",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Handwerkerzone Nord 4",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "Zona artigianale Nord 4",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "39042 Brixen/Bressanone",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "IT02945180210",
+          "typ": "UID"
+        },
+        {
+          "wert": "IT65 A083 0758 2210 0030 1847 726",
+          "typ": "IBAN"
+        },
+        {
+          "wert": "Lorenz Pichler",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "348 902 1137",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Lorenz",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P39",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Anfrage komplett klein geschrieben und fast ohne Satzzeichen: Hüft-OP und Dialyse mehrfach umschrieben, Gehbehinderung, Telefonnummer ohne Hinweiswort, Namen klein mit gemeinsamem Nachnamen",
+      "text": "hallo\n\nwir möchten im jänner eine woche kommen zu zweit mit hund (kleiner mischling 8kg) ab 16.1 bis 23.1 wenn möglich zimmer im erdgeschoß weil mein mann nach seiner hüft op nicht gut stiegen steigen kann\n\nwichtig mein mann ist dialysepatient er muss 3 mal die woche zur dialyse gibts in der nähe ein dialysezentrum oder könnts ihr uns da was organisieren in innsbruck hätten wir schon angefragt\n\nwas kostet das mit halbpension und hund ca\n\nbitte um rückruf 0650 772 31 08 ab 14 uhr\n\nlg brigitte und herbert moosleitner",
+      "sensibel": [
+        {
+          "wert": "hüft op",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "nicht gut stiegen steigen kann",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "dialysepatient",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "dialyse",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "dialysezentrum",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "0650 772 31 08",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "brigitte",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "herbert moosleitner",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "P40",
+      "art": "allgemein",
+      "sprache": "de",
+      "beschreibung": "Vertrauliche Aktennotiz Personal: Aufenthaltstitel-, Pass- und SV-Nummer, zwei Geburtsdaten in verschiedenen Formaten, buddhistischer Feiertag, Arbeitsunfall mit Verletzung, neue Handynummer; Behörde, Termine und Personalzimmer als Fallen",
+      "text": "Aktennotiz Personal – vertraulich\n16.10.2026, Gespräch mit Pemba Sherpa (Koch, seit 2024 im Haus)\n\n- Seine Rot-Weiß-Rot – Karte läuft am 31.01.2027 ab (Karten-Nr. RWR 0418823). Die Verlängerung muss rechtzeitig bei der BH Innsbruck-Land beantragt werden: Termin am 04.11. um 9:30, ich fahre ihn hin.\n- Reisepass (Nepal) Nr. 10894417, gültig bis 2029 – Kopie liegt im Personalakt.\n- SV-Nummer 3584 270488 passt, die e-card hat er bekommen.\n- Geburtsdatum laut Pass: 1988/04/27, im alten Lohnkonto stand fälschlich 27.4.1989 – bitte in der Lohnverrechnung korrigieren lassen.\n- Er möchte zu Losar (tibetisches Neujahr, buddhistischer Feiertag) im Februar 3 Tage Urlaub. Mit der Küchenleitung abgesprochen, geht in Ordnung.\n- Wohnt weiterhin im Personalhaus, Zimmer P7. Neue Handynummer: 0681 2049 3381.\n- Nach dem Arbeitsunfall im August (Schnittverletzung an der linken Hand) wieder voll einsatzfähig.\n\nNotiz: Hannes Plattner, Küchenchef",
+      "sensibel": [
+        {
+          "wert": "Pemba Sherpa",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "RWR 0418823",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "10894417",
+          "typ": "AUSWEIS"
+        },
+        {
+          "wert": "3584 270488",
+          "typ": "SVNR"
+        },
+        {
+          "wert": "1988/04/27",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "27.4.1989",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "Losar",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "buddhistischer Feiertag",
+          "typ": "RELIGION"
+        },
+        {
+          "wert": "0681 2049 3381",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "Arbeitsunfall",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Schnittverletzung",
+          "typ": "GESUNDHEIT"
+        },
+        {
+          "wert": "Hannes Plattner",
+          "typ": "PERSON"
+        }
+      ]
+    }
+  ]
+}
