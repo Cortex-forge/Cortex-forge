@@ -745,3 +745,22 @@ test("Personen: keine Zeitwörter als Nachname, kein Satzanfang, kein Gegenstand
   assert.equal(ki("[16.10.26, 08:12] Wang Lei: Hallo"), "[16.10.26, 08:12] [PERSON_1]: Hallo");
   assert.equal(ki("Huber Anna, Zimmer 12"), "[PERSON_1], Zimmer 12");
 });
+
+// Review Claude 4 #3
+test("Nachnamen nach Titel, Briefkürzel, Ehepaar und allein unter dem Gruß", () => {
+  assert.equal(
+    ki("Mag. Leitgeb hat gestern angerufen. Dr. Valdessa kommt erst am Montag."),
+    "Mag. [PERSON_1] hat gestern angerufen. Dr. [PERSON_2] kommt erst am Montag.",
+  );
+  assert.equal(ki("Mit freundlichen Grüßen\ni. A. Leitgeb"), "Mit freundlichen Grüßen\ni. A. [PERSON_1]");
+  assert.equal(ki("gez. Moosbrugger"), "gez. [PERSON_1]");
+  assert.equal(ki("Ehepaar Moosbrugger reist am 12. Mai an"), "Ehepaar [PERSON_1] reist am 12. Mai an");
+  assert.equal(ki("Eheleute Valdessa, Zimmer 14"), "Eheleute [PERSON_1], Zimmer 14");
+  assert.equal(ki("Liebe Grüße\nMoosbrugger"), "Liebe Grüße\n[PERSON_1]");
+  assert.equal(ki("Steuerberatung Mag. Leitgeb, Rechnung 2026-17"), "Steuerberatung Mag. [PERSON_1], Rechnung 2026-17");
+  assert.equal(ki("Dr. med. Huber"), "Dr. med. [PERSON_1]");
+  // Gegenproben: Abteilung, Anlage oder Zimmer unter dem Gruß
+  for (const text of ["Mit freundlichen Grüßen\nRezeption", "Liebe Grüße\nDoppelzimmer", "Mit freundlichen Grüßen\nAnlage"]) {
+    assert.equal(ki(text), text);
+  }
+});

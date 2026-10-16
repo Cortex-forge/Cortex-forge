@@ -1067,9 +1067,20 @@ function lowercaseSurname(text: string, pos: number): number | null {
 
 // Vor einem Namen wie eine Anrede, aber mit vollem Namen danach: "t.n.v. S. van Dijk", "z. Hd. M. Leitgeb", "Attn. …"
 const NAME_PREFIX_RE = new RegExp(
-  String.raw`(?<![\p{L}])(?:t\.[ \t]?n\.[ \t]?v\.|t\.[ \t]?a\.[ \t]?v\.|z\.[ \t]?Hd\.?|z\.[ \t]?H\.|c\/o|Attn\.?|attn\.?|Attention|a\.[ \t]?c\.[ \t]?a\.)[ \t:]{1,20}(?:${SALUTATION}[ \t]{1,20})?${TITLES}(?=(?:${PARTICLE}[ \t]{1,20})?${UP})`,
+  String.raw`(?<![\p{L}])(?:t\.[ \t]?n\.[ \t]?v\.|t\.[ \t]?a\.[ \t]?v\.|z\.[ \t]?Hd\.?|z\.[ \t]?H\.|c\/o|Attn\.?|attn\.?|Attention|a\.[ \t]?c\.[ \t]?a\.|i\.[ \t]?A\.|i\.[ \t]?V\.|ppa\.|gez\.|Ehepaar|Eheleute|Geschwister)[ \t:]{1,20}(?:${SALUTATION}[ \t]{1,20})?${TITLES}(?=(?:${PARTICLE}[ \t]{1,20})?${UP})`,
   "gu",
 );
+// Titel ohne Anrede: "Mag. Leitgeb hat angerufen", "Dr. Valdessa kommt" (Review Claude 4 #3). Nachgestellte Grade
+// (BSc, MBA) zählen nicht.
+const TITLE_ONLY_RE = new RegExp(
+  String.raw`(?<![\p{L}])(?:Dr\.(?:in)?|DDr\.|Mag\.(?:a)?|MMag\.|Ing\.|DI|Dipl\.-Ing\.|Dkfm\.|Prof\.|Univ\.-Prof\.|Professor|Professorin|Doktor|Prim\.|Hofrat|Dott\.(?:ssa)?|Avv\.|Arch\.)[ \t]{1,3}(?:(?:med|univ|rer|nat|phil|iur|jur|techn|vet|dent|oec|pol)\.[ \t]{1,2}){0,3}${TITLES}(?=(?:${PARTICLE}[ \t]{1,20})?${UP}${LO})`,
+  "gu",
+);
+// Unter dem Gruß, aber kein Name: Anlagen und Abteilungen
+const SIGNATURE_NOT = new Set([
+  "Anlage", "Anlagen", "Anhang", "Anhänge", "Beilage", "Beilagen", "Attachment", "Attachments", "Empfang", "Büro",
+  "Direktion", "Management", "Office", "Kontakt", "Impressum", "Datenschutz",
+]);
 // Verwandte: "unser Sohn Lukas", "My wife Noura", "Onze dochter Fenna", "mia moglie Giulia"
 const KIN_RE = new RegExp(
   String.raw`(?<![\p{L}])(?:mein|meine|meinem|meinen|meiner|mei|unser|unsere|unserem|unseren|unserer|sein|seine|seinem|seinen|seiner|ihr|ihre|ihrem|ihren|ihrer|my|our|his|her|their|mia|mio|la[ \t]mia|il[ \t]mio|nostra|nostro|onze|ons|mijn|zijn|haar)[ \t]{1,3}(?<kin>\p{L}{2,20})[ \t,]{1,3}${TITLES}(?=${UP}${LO})`,
@@ -1206,7 +1217,7 @@ export function detectPersons(text: string): Finding[] {
       checked++;
       const lineLead = /^[ \t]*/.exec(line)?.[0].length ?? 0;
       const titles = new RegExp(`^${TITLES}`, "u").exec(line.slice(lineLead))?.[0].length ?? 0;
-      signatureName(text, lineStart + lineLead + titles, lineEnd, add);
+      signatureName(text, lineStart + lineLead + titles, lineEnd, add, checked === 1);
     }
   }
 
@@ -1281,6 +1292,16 @@ export function detectPersons(text: string): Finding[] {
     const first = span.tokens[0] ?? "";
     if (BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || (isNotSurname(first) && !span.firstParticle)) continue;
     add(start, span.end, "person:zuhanden", withSurname(span, true));
+  }
+
+  // j2) Titel ohne Anrede: "Mag. Leitgeb", "Dr. Valdessa"
+  for (const m of matchAll(text, TITLE_ONLY_RE)) {
+    const start = m.index + m[0].length;
+    const span = nameAt(text, start, 3, { caps: false, particleFirst: true });
+    if (!span) continue;
+    const first = span.tokens[0] ?? "";
+    if (BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || isSentenceWord(first) || (isNotSurname(first) && !span.firstParticle)) continue;
+    add(start, span.end, "person:titel", withSurname(span, true));
   }
 
   // k) Verwandte: "unser Sohn Lukas", "My wife Noura"
@@ -1370,11 +1391,25 @@ function signatureName(
   nameStart: number,
   lineEnd: number,
   add: (start: number, end: number, source: string, extra?: Partial<Finding>) => void,
+  directlyBelow = false,
 ): void {
   const span = nameAt(text, nameStart, 4, { caps: true, particleFirst: false });
   if (span) {
-    // Eine einzelne Zeile wie "Doppelzimmer" ist kein Name: zwei Wörter oder bekannter Vorname nötig.
-    if (span.tokens.length < 2 && !isFirstName(span.tokens[0] ?? "")) return;
+    // Eine einzelne Zeile wie "Doppelzimmer" ist kein Name: zwei Wörter oder bekannter Vorname nötig. Ausnahme: ein
+    // Wort allein direkt unter dem Gruß, das kein Allerweltswort ist ("Liebe Grüße⏎Moosbrugger", Review Claude 4 #3).
+    const word = span.tokens[0] ?? "";
+    const lone =
+      directlyBelow &&
+      span.tokens.length === 1 &&
+      text.slice(nameStart, lineEnd).trim().replace(/[.,!]$/u, "") === word &&
+      word.length >= 3 &&
+      !isSentenceWord(word) &&
+      !BUSINESS_WORDS.has(word) &&
+      !ACRONYMS.has(word) &&
+      !ITINERARY_WORDS.has(word) &&
+      !SIGNATURE_NOT.has(word) &&
+      !COMMON_NOUN_END.test(word.toLowerCase());
+    if (span.tokens.length < 2 && !isFirstName(word) && !lone) return;
     if (isNotSurname(span.tokens[0] ?? "") || ROLE_WORDS.has(span.tokens[0] ?? "")) return;
     const restOfLine = text.slice(span.end, lineEnd).trim();
     if (restOfLine === "" || /^[,|–(-]/u.test(restOfLine)) {
