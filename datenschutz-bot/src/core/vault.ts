@@ -12,6 +12,16 @@ function parseKey(raw: string, source: string): Buffer {
   return key;
 }
 
+/** Woher der Schlüssel kommt. "datenordner": Er liegt neben den Daten, das ist nur für Tests und Ausprobieren gedacht. */
+export function keySource(): "umgebung" | "datei" | "datenordner" {
+  if (process.env.DSB_KEY) return "umgebung";
+  if (process.env.DSB_KEY_FILE) return "datei";
+  return "datenordner";
+}
+
+export const KEY_WARNING =
+  "Hinweis: Der Schlüssel liegt im Datenordner. Wer den Ordner lesen kann (auch ein KI-Agent mit Shell unter demselben Benutzer), kann alles entschlüsseln. Für echte Daten DSB_KEY_FILE außerhalb des Datenordners setzen und den Bot unter eigenem Benutzer betreiben (siehe README, Sicherheit).";
+
 /** Kurze Kennung eines Schlüssels. Steht bei jedem Dokument, damit ein falscher Schlüssel sofort auffällt. */
 export function keyId(key: Buffer): string {
   return crypto.createHash("sha256").update(key).digest("hex").slice(0, 12);

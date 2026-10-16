@@ -1,6 +1,7 @@
 import { detectAll, normalizeValue } from "./detectors.js";
 import { COMMON_LOWERCASE_WORDS, DETERMINERS, LOWERCASE_STOPWORDS, NOT_SURNAME, NOUN_SURNAMES } from "./names.js";
 import { formatPlaceholder, placeholderId, placeholderRegex } from "./placeholders.js";
+import { PARTICLE_WORDS } from "./salutations.js";
 import type {
   DetectOptions,
   EntityType,
@@ -18,7 +19,6 @@ export function placeholderLegend(mapping: MappingEntry[]): PlaceholderInfo[] {
   return mapping.map(({ id, type, description }) => (description ? { id, type, description } : { id, type }));
 }
 
-const PARTICLES = new Set(["von", "van", "vom", "der", "den", "dem", "de", "la", "di", "da", "del", "della", "degli", "dos", "du", "ten", "ter", "zu", "und"]);
 
 function titleCase(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -27,7 +27,7 @@ function titleCase(word: string): string {
 /** Teile eines Namens, die auch allein auf die Person verweisen ("Huber" aus "Anna Huber" oder "ANNA HUBER"). */
 function nameParts(name: string): string[] {
   return name.split(/[\s,]+/).filter((t) => {
-    if (t.length < 2 || PARTICLES.has(t.toLowerCase())) return false;
+    if (t.length < 2 || PARTICLE_WORDS.has(t.toLowerCase())) return false;
     // Kurze Nachnamen ("Herr Wu"): nur in der Form "Wu", nie als Allerweltswort ("Am", "In", "So").
     if (t.length === 2) return /^\p{Lu}\p{Ll}$/u.test(t) && !NOT_SURNAME.has(t) && !LOWERCASE_STOPWORDS.has(t.toLowerCase());
     if (/^\p{Lu}/u.test(t)) return !NOT_SURNAME.has(t) && !NOT_SURNAME.has(titleCase(t));

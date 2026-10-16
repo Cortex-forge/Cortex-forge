@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { CONFIG_DIR, PROJECT_ROOT } from "../config.js";
-import { containsValue, filesUnder, loadExamples, runProbe } from "../scripts/probe-lib.js";
+import { containsValue, filesUnder, leakedPart, loadExamples, runProbe } from "../scripts/probe-lib.js";
 import { JobStore } from "../store/jobs.js";
 
 async function connect(dataDir: string, configDir = CONFIG_DIR) {
@@ -153,5 +153,41 @@ test("Originale, die wie Platzhalter aussehen, kommen nicht über Prüfhinweise 
   for (const f of filesUnder(dataDir)) {
     assert.ok(!containsValue(f.content, "PERSON_987654"), `Klartext in ${f.name}`);
     assert.ok(!f.content.includes("PERSON_999@example.com"), `Klartext in ${f.name}`);
+  }
+});
+
+// Review Claude 2 #17: auch Teil-Lecks zählen
+test("Datenschutz-Probe erkennt Teil-Lecks: Nachname ohne Vorname, IBAN ohne letzte Ziffer, Name vor dem @", () => {
+  assert.equal(leakedPart("Hallo [PERSON_1] Hofstätter", "Gernot Hofstätter", "PERSON"), "Hofstätter");
+  assert.equal(leakedPart("IBAN AT61 1904 3002 3457 320", "AT61 1904 3002 3457 3201", "IBAN"), "AT61190");
+  assert.equal(leakedPart("Mail an anna.huber bitte", "anna.huber@example.com", "EMAIL"), "anna.huber");
+  assert.equal(leakedPart("Bitte an euren Koch weitergeben.", "Thomas Koch", "PERSON", ["Koch"]), undefined);
+  assert.equal(leakedPart("Zimmer 12, Preis 450 €", "0664 1234567", "TELEFON"), undefined);
+});
+
+// Review Claude 2 #21: Schlüssel-Kennungen und Variablennamen gehen nicht an die KI
+test("MCP: falscher Schlüssel wird der KI nur allgemein gemeldet", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-mcp-"));
+  const store = new JobStore(dataDir, CONFIG_DIR);
+  const job = store.create({ art: "hotel", text: "Anfrage von Anna Huber." });
+  store.releaseForAi(job.id, job.rev);
+  const fremd = Buffer.alloc(32, 7).toString("base64");
+  const client = new Client({ name: "test-ki", version: "1.0.0" });
+  await client.connect(
+    new StdioClientTransport({
+      command: process.execPath,
+      args: [path.join(PROJECT_ROOT, "dist", "mcp", "server.js")],
+      env: { ...(process.env as Record<string, string>), DSB_DATA_DIR: dataDir, DSB_KEY: fremd },
+      stderr: "ignore",
+    }),
+  );
+  try {
+    const r = await client.callTool({ name: "dokument_lesen", arguments: { id: job.id } });
+    const out = (r.content as Array<{ text?: string }>).map((c) => c.text ?? "").join("\n");
+    assert.equal(r.isError, true);
+    assert.match(out, /nicht richtig eingerichtet/);
+    assert.ok(!/Kennung|DSB_KEY|[0-9a-f]{12}/.test(out), out);
+  } finally {
+    await client.close();
   }
 });

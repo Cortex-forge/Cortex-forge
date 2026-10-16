@@ -1164,6 +1164,9 @@
           "wert": "John O'Neill",
           "typ": "PERSON"
         }
+      ],
+      "teilwort_erlaubt": [
+        "Koch"
       ]
     },
     {

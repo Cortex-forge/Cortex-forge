@@ -97,7 +97,7 @@ class Cdp {
 const chromium = findChromium();
 
 // Review Codex 2 #13 (verspätete Antworten), #2 (Freigabe mit geprüfter Fassung), #7 (Auswahl mit Position)
-test("Oberfläche im Browser: überholte Antworten werden verworfen, Auswahl und Freigabe nennen Stelle und Fassung", {
+test("Oberfläche im Browser: überholte Antworten verworfen, Auswahl und Freigabe mit Stelle und Fassung, kein Austausch unter der Maus", {
   skip: chromium ? false : "kein Chromium gefunden (DSB_CHROMIUM setzen)",
   timeout: 60_000,
 }, async () => {
@@ -134,7 +134,7 @@ test("Oberfläche im Browser: überholte Antworten werden verworfen, Auswahl und
       return r.result.value;
     };
     const waitFor = async (expression: string, what: string) => {
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 160; i++) {
         if (await evaluate(expression)) return;
         await new Promise((r) => setTimeout(r, 50));
       }
@@ -195,6 +195,22 @@ test("Oberfläche im Browser: überholte Antworten werden verworfen, Auswahl und
     await waitFor(`document.querySelector(".doc-head .badge")?.textContent === "Bereit für KI"`, "freigegeben");
     assert.equal(store.detail(b.id).job.status, "bereit");
     assert.equal(store.detail(b.id).job.kiFassung, 1);
+
+    // 4) Review Claude 2 #11: Ersetzt die KI ihr Ergebnis, bleibt die gelesene Fassung stehen und Freigeben ist gesperrt.
+    const resultText = `(document.querySelector(".result-text")?.textContent ?? "")`;
+    const approveButton = `([...document.querySelectorAll("button")].find((x) => x.textContent === "Freigeben ✓"))`;
+    store.saveResult(b.id, { art: "text", text: "Fassung A" }, 1);
+    await waitFor(`${resultText} === "Fassung A"`, "Fassung A angezeigt");
+    store.saveResult(b.id, { art: "text", text: "Fassung B" }, 1);
+    await waitFor(`document.body.textContent.includes("inzwischen ersetzt")`, "Hinweis auf neue Fassung");
+    assert.equal(await evaluate(resultText), "Fassung A", "kein Austausch unter der Maus");
+    assert.equal(await evaluate(`${approveButton}.disabled`), true, "alte Fassung nicht freigebbar");
+    await evaluate(`[...document.querySelectorAll("button")].find((x) => x.textContent === "Neue Fassung anzeigen").click()`);
+    await waitFor(`${resultText} === "Fassung B" && !${approveButton}.disabled`, "Fassung B angezeigt");
+    await evaluate(`${approveButton}.click()`);
+    await waitFor(`document.querySelector(".doc-head .badge")?.textContent === "Freigegeben"`, "freigegeben");
+    const fertig = store.detail(b.id).ergebnis;
+    assert.equal(fertig?.art === "text" ? fertig.text : "", "Fassung B");
   } finally {
     cdp?.close();
     browser.kill();

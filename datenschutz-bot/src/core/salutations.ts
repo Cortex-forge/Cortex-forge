@@ -16,6 +16,11 @@ export const TITLES = String.raw`(?:${TITLE}[ \t]+)*`;
  */
 export const PARTICLE = String.raw`(?:von(?:[ \t]+(?:der|dem|den|und[ \t]+zu))?|vom|van(?:[ \t]+(?:der|den|de|het))?|de(?:[ \t]+la)?|del|della|degli|di|da|dos|du|ten|ter)`;
 
+/** Die einzelnen Wörter der Namenszusätze (eine Liste für Erkennung, Nachziehen, Rückübersetzung und Probe). */
+export const PARTICLE_WORDS: ReadonlySet<string> = new Set(
+  ["von", "vom", "der", "dem", "den", "und", "zu", "van", "het", "de", "la", "del", "della", "degli", "di", "da", "dos", "du", "ten", "ter"],
+);
+
 /** Anrede (mit Titeln) direkt vor einer Stelle, z. B. vor einem Platzhalter. */
 export const SALUTATION_BEFORE = new RegExp(
   String.raw`(?<![\p{L}\p{N}])${SALUTATION}(?:[ \t]+${TITLE})*[ \t]+$`,

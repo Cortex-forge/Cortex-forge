@@ -6,7 +6,7 @@ import {
   detectVatIds,
 } from "./detectors.js";
 import { formatPlaceholder, isLeftover, leftoverRegex, placeholderId, placeholderRegex } from "./placeholders.js";
-import { SALUTATION_BEFORE } from "./salutations.js";
+import { PARTICLE_WORDS, SALUTATION_BEFORE } from "./salutations.js";
 import { ENTITY_LABELS, type EntityType, type MappingEntry } from "./types.js";
 
 export interface InventedData {
@@ -31,14 +31,13 @@ export interface ReidentifyResult {
   leftovers: string[];
 }
 
-const PARTICLES = new Set(["von", "van", "vom", "der", "den", "dem", "de", "la", "di", "da", "del", "della", "degli", "dos", "du", "ten", "ter", "zu"]);
 
 /** Nachname für "Sehr geehrte Frau …": gespeichert bei der Erkennung, sonst der letzte Teil samt Zusatz. */
 function surnameOf(entry: MappingEntry): string {
   if (entry.nachname) return entry.nachname;
   const parts = entry.original.trim().split(/[ \t]+/);
   let i = parts.length - 1;
-  while (i > 0 && PARTICLES.has((parts[i - 1] ?? "").toLowerCase())) i--;
+  while (i > 0 && PARTICLE_WORDS.has((parts[i - 1] ?? "").toLowerCase())) i--;
   return parts.slice(i).join(" ") || entry.original;
 }
 

@@ -5,6 +5,7 @@
 //   npm run messung                                  Zusammenfassung, Bericht nach messungen/ (nicht im Repo)
 //   npm run messung -- --datei testset/pruefset.json  anderes Testset messen
 //   npm run messung -- --ablegen nach-korrektur       Bericht nach docs/03-qualitaet/ (zum Committen)
+//   npm run messung -- --streng                       Exit-Code 1, wenn ein Ziel verfehlt wird (für den Nachweis)
 import fs from "node:fs";
 import path from "node:path";
 import { CONFIG_DIR, PROJECT_ROOT } from "../config.js";
@@ -106,6 +107,13 @@ const zielText = (t: EntityType, z: Zaehler) => {
     (z.erwartet === 0 || z.gefunden / z.erwartet >= ziel.treffer) && (z.ersetzungen === 0 || z.richtig / z.ersetzungen >= ziel.genau);
   return ok ? "erreicht" : "nicht erreicht";
 };
+const verfehlt = rows
+  .filter(([t, z]) => zielText(t, z) === "nicht erreicht")
+  .map(([t, z]) => {
+    const ziel = ZIELE[t] ?? { treffer: 0, genau: 0 };
+    return `${ENTITY_LABELS[t]} (Trefferquote ${pct(z.gefunden, z.erwartet)}, Ziel ${ziel.treffer * 100} %; Genauigkeit ${pct(z.richtig, z.ersetzungen)}, Ziel ${ziel.genau * 100} %)`;
+  });
+const zielZeile = verfehlt.length ? `Ziele nicht erreicht: ${verfehlt.join("; ")}.` : "Ziele: alle erreicht.";
 
 const date = new Date().toISOString().slice(0, 10);
 const relDatei = path.relative(PROJECT_ROOT, datei);
@@ -123,6 +131,8 @@ const report = [
       `| ${ENTITY_LABELS[t]} | ${z.erwartet} | ${z.gefunden} | ${pct(z.gefunden, z.erwartet)} | ${z.ersetzungen} | ${z.richtig} | ${pct(z.richtig, z.ersetzungen)} | ${zielText(t, z)} |`,
   ),
   `| **Gesamt** | ${sum("erwartet")} | ${sum("gefunden")} | ${pct(sum("gefunden"), sum("erwartet"))} | ${sum("ersetzungen")} | ${sum("richtig")} | ${pct(sum("richtig"), sum("ersetzungen"))} | |`,
+  "",
+  `**${zielZeile}**`,
   "",
   `## Übersehen (${verpasst.length})`,
   "",
@@ -149,4 +159,6 @@ console.log(
     `Genauigkeit ${pct(sum("richtig"), sum("ersetzungen"))} (${sum("richtig")}/${sum("ersetzungen")}), ` +
     `${verpasst.length} übersehen, ${fehlalarme.length} Fehlalarme, ${falscherTyp.length} mit falschem Typ.`,
 );
+console.log(zielZeile);
 console.log(`Bericht: ${path.relative(PROJECT_ROOT, outFile)}`);
+if (process.argv.includes("--streng") && verfehlt.length) process.exitCode = 1;

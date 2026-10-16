@@ -672,3 +672,34 @@ test("Speichern prüft, dass die Datei noch den geladenen Stand hat", () => {
   }
   assert.equal(store.detail(job.id).manuell.length, 0, "nichts überschrieben");
 });
+
+// Review Claude 2 #15, #18, #19, #20
+test("Übernommene übersehene Angaben werden als Leck gemeldet; Abschluss ohne Titel; neuer Typ beim Nachschwärzen; keine Gutschriften", () => {
+  const store = tempStore();
+  // #15: Die Erkennung übersieht eine Nummer (kein Signalwort), die KI übernimmt sie ins Ergebnis.
+  // (über Zeilen verteilt, wie nach einem schlechten Kopieren aus einem PDF)
+  const job = store.create({ art: "hotel", text: "Rückruf bitte:\n0512\n123456\nDanke." });
+  assert.ok((store.detail(job.id).job.textKi ?? "").includes("123456"), "Voraussetzung: hier nicht erkannt");
+  release(store, job.id);
+  const { pruefung } = save(store, job.id, { art: "text", text: "Wir rufen Sie unter 0512 123456 zurück." });
+  assert.ok(pruefung.erfunden.length > 0);
+  assert.equal(JSON.stringify(pruefung).includes("Original"), false, "die KI erfährt nichts über das Original");
+  assert.equal(store.detail(job.id).lecks.length, 1, "die Oberfläche meldet das Leck");
+
+  // #18: Nach dem Abschluss bleibt kein Titel der Platzhalter-Fassung.
+  store.approve(job.id, rev(store, job.id));
+  store.close(job.id);
+  assert.equal(store.list().dokumente.find((d) => d.id === job.id)?.titel, job.id);
+
+  // #19: Wird derselbe Text mit anderem Typ geschwärzt, gilt der neue Typ.
+  const zweites = store.create({ art: "allgemein", text: "Termin mit Gstrein am Montag." });
+  store.mark(zweites.id, { value: "Gstrein", type: "SONSTIGES" });
+  store.mark(zweites.id, { value: "Gstrein", type: "PERSON" });
+  assert.equal(store.detail(zweites.id).job.textKi, "Termin mit [PERSON_1] am Montag.");
+
+  // #20: Rabattzeilen ja, negative Rechnungssummen (Gutschrift ohne Bezug) nein.
+  const id = ready(store);
+  const rechnung = (positionen: RechnungsPosition[]): ErgebnisKi => ({ art: "rechnung", rechnung: { empfaenger: "[PERSON_1]", positionen } });
+  save(store, id, rechnung([{ beschreibung: "Zimmer", menge: 1, einzelpreis: 200, ust_satz: 10 }, { beschreibung: "Rabatt", menge: 1, einzelpreis: -20, ust_satz: 10 }]));
+  assert.throws(() => save(store, id, rechnung([{ beschreibung: "Gutschrift", menge: 1, einzelpreis: -500, ust_satz: 20 }])), /Gutschriften/);
+});

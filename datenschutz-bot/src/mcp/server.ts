@@ -7,7 +7,7 @@ import { VERSION } from "../config.js";
 import { formatEuro } from "../core/money.js";
 import { formatPlaceholder } from "../core/pseudonymize.js";
 import { ENTITY_LABELS } from "../core/types.js";
-import { KeyError } from "../core/vault.js";
+import { KEY_WARNING, KeyError, keySource } from "../core/vault.js";
 import { ART_LABELS, JobError, JobStore, type ErgebnisKi, type JobArt, type Pruefung } from "../store/jobs.js";
 import { ConfigError } from "../store/settings.js";
 
@@ -219,3 +219,5 @@ server.registerTool(
 
 await server.connect(new StdioServerTransport());
 process.stderr.write("datenschutz-bot MCP-Server läuft (stdio).\n");
+// Nur ins Fehlerprotokoll des Servers, nicht an die KI.
+if (keySource() === "datenordner") process.stderr.write(`${KEY_WARNING}\n`);

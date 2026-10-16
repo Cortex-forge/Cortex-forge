@@ -39,13 +39,17 @@ steps.push({ name: "Tests", ...tests, out: tests.ok ? testLines.join("\n") : tes
 steps.push({ name: "Datenschutz-Probe (Demo, Lösungsblatt der Beispiele)", ...run(process.execPath, ["dist/scripts/demo.js", "--leise"], { DSB_DATA_DIR: tmpData }) });
 fs.rmSync(tmpData, { recursive: true, force: true });
 steps.push({ name: "Datenschutz-Probe (Lösungsblatt: Beispiele und Testset über den MCP-Server)", ...run(process.execPath, ["dist/scripts/probe.js"]) });
+// Beide Messungen mit Zielen: Ein verfehltes Ziel lässt den Nachweis scheitern. Das Prüfset ist Pflicht, denn gute
+// Werte am Entwicklungsset sagen wenig über neue Dokumente.
 const messung = (name, args) => {
-  const r = run(process.execPath, ["dist/scripts/messung.js", ...args]);
-  return { name, ...r, out: r.out.split("\n")[0] ?? "" };
+  const r = run(process.execPath, ["dist/scripts/messung.js", "--streng", ...args]);
+  return { name, ...r, out: r.out.split("\n").filter((l) => !l.startsWith("Bericht:")).join("\n") };
 };
-steps.push(messung("Messung Testset (Entwicklungsset)", []));
+steps.push(messung("Messung Entwicklungsset", []));
 if (fs.existsSync(path.join(root, "testset", "pruefset.json"))) {
   steps.push(messung("Messung Prüfset (unabhängig erstellt, nicht zum Entwickeln benutzt)", ["--datei", "testset/pruefset.json"]));
+} else {
+  steps.push({ name: "Messung Prüfset", ok: false, out: "Das unabhängige Prüfset testset/pruefset.json fehlt.", sekunden: "0.0" });
 }
 
 const allOk = steps.every((s) => s.ok);

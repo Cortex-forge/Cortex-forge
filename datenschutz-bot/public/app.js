@@ -8,7 +8,7 @@ const GROUP = {
 };
 const STEPS = ["Prüfen", "KI arbeitet", "Ergebnis prüfen", "Erledigt"];
 const STEP_INDEX = { neu: 0, bereit: 1, zur_pruefung: 2, freigegeben: 3, abgeschlossen: 4 };
-const state = { info: null, beispiele: [], list: [], defekt: 0, current: null, selection: null, busy: false, loadSeq: 0 };
+const state = { info: null, beispiele: [], list: [], defekt: 0, current: null, selection: null, busy: false, loadSeq: 0, stale: null, replaced: null };
 // Das Platzhalter-Muster kommt vom Server (eine Quelle für Bot und Oberfläche).
 let placeholderRe = /\[([A-Z]+)_(\d+)(?::[^\]\n]*)?\]/gi;
 const main = document.getElementById("main");
@@ -444,13 +444,16 @@ function plainResult(r) {
   return "";
 }
 
-function checksView(job) {
-  const p = job.pruefung;
+function checksView(detail) {
+  const p = detail.job.pruefung;
   if (!p) return null;
+  const lecks = detail.lecks || [];
+  const leaked = (e) => lecks.includes(`${e.label}: ${e.value}`);
   const warnings = [
+    ...lecks.map((l) => `Achtung: ${l} steht im Original und war für die KI sichtbar (von der Erkennung übersehen). Bitte „Zurück zur Prüfung“ und schwärzen.`),
     ...p.unbekannt.map((u) => `Die KI hat einen Platzhalter verwendet, den es nicht gibt: ${u}`),
     ...(p.reste || []).map((r) => `Das sieht wie ein Platzhalter aus, wurde aber nicht ersetzt: ${r}. Bitte prüfen.`),
-    ...p.erfunden.map((e) => `Die KI hat selbst ${e.label === "E-Mail" ? "eine E-Mail-Adresse" : e.label} geschrieben: ${e.value}. Bitte prüfen.`),
+    ...p.erfunden.filter((e) => !leaked(e)).map((e) => `Die KI hat selbst ${e.label === "E-Mail" ? "eine E-Mail-Adresse" : e.label} geschrieben: ${e.value}. Bitte prüfen.`),
     ...p.hinweise,
   ];
   const infos = [
@@ -491,11 +494,26 @@ function copyButton(detail) {
 
 function viewPruefung(detail) {
   const id = detail.job.id;
+  // Hat die KI das Ergebnis ersetzt, bleibt die gelesene Fassung stehen (kein Austausch unter der Maus). Freigeben
+  // geht erst wieder, wenn der Mitarbeiter die neue Fassung geladen hat.
+  const stale = state.stale === id;
   return [
-    state.replaced === id
-      ? h("div", { class: "callout warn" }, h("strong", { text: "Die KI hat das Ergebnis ersetzt. " }), "Bitte die neue Fassung prüfen. Freigegeben wird nur, was hier angezeigt ist.")
-      : null,
-    checksView(detail.job),
+    stale
+      ? h("div", { class: "callout warn" },
+          h("strong", { text: "Die KI hat das Ergebnis inzwischen ersetzt. " }),
+          "Angezeigt ist noch die alte Fassung; sie kann nicht mehr freigegeben werden. ",
+          h("button", { class: "small", type: "button", text: "Neue Fassung anzeigen", onclick: () =>
+            act(async () => {
+              state.stale = null;
+              state.replaced = id;
+              await loadDetail(id);
+            }),
+          }),
+        )
+      : state.replaced === id
+        ? h("div", { class: "callout warn" }, h("strong", { text: "Neue Fassung der KI. " }), "Bitte vollständig prüfen. Freigegeben wird nur, was hier angezeigt ist.")
+        : null,
+    checksView(detail),
     h("div", { class: "pane" }, h("h3", {}, "Ergebnis mit echten Daten", h("small", { text: "nur hier sichtbar" })), resultView(detail)),
     aiAnswer(detail.job),
     h("div", { class: "bar" },
@@ -508,7 +526,7 @@ function viewPruefung(detail) {
         }, "Ergebnis verworfen. Die KI kann es neu bearbeiten."),
       }),
       copyButton(detail),
-      h("button", { class: "primary", type: "button", text: "Freigeben ✓", onclick: () =>
+      h("button", { class: "primary", type: "button", text: "Freigeben ✓", disabled: stale, title: stale ? "Erst die neue Fassung anzeigen und prüfen" : undefined, onclick: () =>
         act(async () => {
           // Freigegeben wird genau die angezeigte Fassung; hat die KI sie inzwischen ersetzt, lehnt der Bot ab.
           await api(`/api/dokumente/${id}/freigeben`, { method: "POST", body: { ergebnisRev: detail.job.ergebnisRev } });
@@ -601,6 +619,11 @@ async function loadDetail(id) {
   const detail = await api(`/api/dokumente/${id}`);
   // Inzwischen ein anderes Dokument gewählt oder neuer geladen: diese Antwort ist überholt.
   if (seq !== state.loadSeq || location.hash !== `#${id}`) return;
+  // Frisch geladen ist immer die aktuelle Fassung.
+  if (state.stale === id) {
+    state.stale = null;
+    state.replaced = id;
+  }
   state.current = detail;
   renderDetail(detail);
   renderList();
@@ -657,10 +680,15 @@ async function poll() {
       const fresh = state.list.find((d) => d.id === cur.job.id);
       const selecting = document.getSelection() && document.getSelection().toString().trim();
       if (fresh && fresh.aktualisiert !== cur.job.aktualisiert && !selecting) {
-        // Hat die KI ein Ergebnis ersetzt, während es hier angezeigt wurde: deutlich darauf hinweisen.
+        // Hat die KI ein Ergebnis ersetzt, während es hier angezeigt wird: nicht still austauschen, sondern
+        // Freigeben sperren und die neue Fassung erst auf Wunsch zeigen.
         if (cur.job.status === "zur_pruefung" && fresh.status === "zur_pruefung" && fresh.ergebnisRev !== cur.job.ergebnisRev) {
-          state.replaced = cur.job.id;
-          toast("Die KI hat das Ergebnis ersetzt. Bitte neu prüfen.", true);
+          if (state.stale !== cur.job.id) {
+            state.stale = cur.job.id;
+            toast("Die KI hat das Ergebnis ersetzt. Bitte die neue Fassung anzeigen und prüfen.", true);
+            renderDetail(cur);
+          }
+          return;
         }
         await loadDetail(cur.job.id);
       }

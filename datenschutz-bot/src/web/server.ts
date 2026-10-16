@@ -6,7 +6,7 @@ import path from "node:path";
 import { EXAMPLES_DIR, HOST, PORT, PROJECT_ROOT, PUBLIC_DIR } from "../config.js";
 import { PLACEHOLDER_SOURCE } from "../core/placeholders.js";
 import { ENTITY_LABELS, ENTITY_TYPES, isEntityType } from "../core/types.js";
-import { KeyError } from "../core/vault.js";
+import { KEY_WARNING, KeyError, keySource } from "../core/vault.js";
 import { ARTEN, ART_LABELS, JobError, JobStore, STATUS_LABELS } from "../store/jobs.js";
 import { ConfigError } from "../store/settings.js";
 
@@ -291,4 +291,5 @@ server.listen(PORT, HOST, () => {
   console.log(`Datenschutz-Bot läuft: ${base}`);
   console.log(`Zum Öffnen diesen Link verwenden (gilt bis zum nächsten Start, nicht weitergeben): ${base}/start?zugang=${ACCESS}`);
   console.log(`Daten liegen verschlüsselt in: ${store.dataDir}`);
+  if (keySource() === "datenordner") console.warn(KEY_WARNING);
 });
