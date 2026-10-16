@@ -27,7 +27,7 @@ test("Kontaktdaten und Kennnummern", () => {
   assert.equal(ki("Tel.: +43 5223 12345"), "Tel.: [TELEFON_1]");
   assert.equal(ki("UID: ATU12345678"), "UID: [UID_1]");
   assert.equal(ki("Steuernummer 12 345/6789"), "Steuernummer [STEUERNR_1]");
-  assert.equal(ki("Kreditkarte 4111 1111 1111 1111 gültig bis 12/28"), "Kreditkarte [KREDITKARTE_1] gültig bis 12/28");
+  assert.equal(ki("Kreditkarte 4111 1111 1111 1111 gültig bis 12/28"), "Kreditkarte [KREDITKARTE_1] gültig bis [SONSTIGES_1: Ablaufdatum]");
   assert.equal(
     ki("Bitte SV-Nr. 1234 010180 und Reisepass P1234567 notieren. Geb. 01.01.1980."),
     "Bitte SV-Nr. [SVNR_1] und Reisepass [AUSWEIS_1] notieren. Geb. [GEBURTSDATUM_1].",
@@ -489,4 +489,78 @@ test("Namen nach Verwandten, in Chats, nach Anreden in anderen Sprachen und in T
   ]) {
     assert.equal(ki(text).replace(/\[GESUNDHEIT_1\]/, "incinta"), text);
   }
+});
+
+// Review Claude 3 #9, #10, #14 und freigegebenes Prüfset 1: Kennungen, Telefon, Adressen, Firmen
+test("Ausweis-, Register- und Kontonummern, Steuernummern, Kennzeichen, Konten in Messengern", () => {
+  assert.equal(ki("Reisepass Nr. EA 4417302, ausgestellt in Krakau"), "Reisepass Nr. [AUSWEIS_1], ausgestellt in Krakau");
+  assert.equal(ki("my passport number is EJ5582731"), "my passport number is [AUSWEIS_1]");
+  assert.equal(ki("Carta d'identità n. CA48211XK"), "Carta d'identità n. [AUSWEIS_1]");
+  assert.equal(ki("Führerscheinnummer: 12345678"), "Führerscheinnummer: [AUSWEIS_1]");
+  assert.equal(ki("Nr;Name;Ausweis-Nr.\n1;Kaya;U 18837342"), "Nr;Name;Ausweis-Nr.\n1;[PERSON_1];[AUSWEIS_1]");
+  assert.equal(ki("codice fiscale ZNTFNC88D52A952W"), "codice fiscale [STEUERNR_1]");
+  assert.equal(ki("USt-IdNr. DE 287 401 935 · VAT Reg. No. GB 284 7193 56"), "USt-IdNr. [UID_1] · VAT Reg. No. [UID_2]");
+  assert.equal(ki("FN 418237 m · Amtsgericht Köln HRB 98417"), "[SONSTIGES_1: Registernummer] · Amtsgericht Köln [SONSTIGES_2: Registernummer]");
+  assert.equal(ki("Company No. 09817342"), "Company No. [SONSTIGES_1: Register- oder Kontonummer]");
+  assert.equal(ki("Unsere Nummerntafel: IL-748KM. Kennzeichen des Busses: K-AT 4417."), "Unsere Nummerntafel: [KENNZEICHEN_1]. Kennzeichen des Busses: [KENNZEICHEN_2].");
+  assert.equal(ki("met kenteken GZ-418-T"), "met kenteken [KENNZEICHEN_1]");
+  assert.equal(ki("WeChat: wanglei_sh88"), "WeChat: [SONSTIGES_1: Messenger-Konto]");
+  assert.equal(ki("Profil: https://www.linkedin.com/in/anna-moosbrugger-4711"), "Profil: [SONSTIGES_1: Profil-Link]");
+  assert.equal(ki("Mail: anna.moosbrugger(at)example.com"), "Mail: [EMAIL_1]");
+  assert.equal(ki("Rentenversicherungsnummer: 12 010180 A 123"), "Rentenversicherungsnummer: [SVNR_1]");
+  assert.equal(ki("Stammgast-Nr. SG-2291"), "Stammgast-Nr. [KUNDENNR_1]");
+  assert.equal(ki("bin am 7. Juli 1997 in Tuzla geboren"), "bin am [GEBURTSDATUM_1] in Tuzla geboren");
+  assert.equal(ki("Nato a Trento il 14/07/1995"), "Nato a Trento il [GEBURTSDATUM_1]");
+  // Gegenproben
+  for (const text of ["Der Pass ist bis 2029 gültig.", "Rechnung Nr. 2026-0815", "Passwort ändern", "Gültig bis 31.12.2027"]) {
+    assert.equal(ki(text), text);
+  }
+});
+
+test("Telefonnummern mit Schrägstrich, Punkten, Paaren, ohne Ländervorwahl, in Links; lange Ziffernfolgen bleiben schnell", () => {
+  assert.equal(ki("Meine Telefonnummer: 0664 / 312 87 40"), "Meine Telefonnummer: [TELEFON_1]");
+  assert.equal(ki("oder mobil 0172 / 448 19 02."), "oder mobil [TELEFON_1].");
+  assert.equal(ki("Tel. 05212 / 4 77 31"), "Tel. [TELEFON_1]");
+  assert.equal(ki("Handy 0664.123.4567"), "Handy [TELEFON_1]");
+  assert.equal(ki("Privat: 0512 12 34 56, ab 18 Uhr."), "Privat: [TELEFON_1], ab 18 Uhr.");
+  assert.equal(ki("Potete chiamarmi al 347 821 0936 dopo le 18"), "Potete chiamarmi al [TELEFON_1] dopo le 18");
+  assert.equal(ki("Bei Fragen: Lorenz Pichler, 348 902 1137"), "Bei Fragen: [PERSON_1], [TELEFON_1]");
+  assert.equal(ki("Rückruf unter 0036 30 418 2275 (= 06 30 418 2275)"), "Rückruf unter [TELEFON_1] (= [TELEFON_2])");
+  assert.equal(ki("accounts@moorland.example · +44 113 496 0712"), "[EMAIL_1] · [TELEFON_1]");
+  assert.equal(ki("Schreib mir auf https://wa.me/436641234567"), "Schreib mir auf https://wa.me/[TELEFON_1]");
+  // Gegenproben: Daten und Beträge
+  for (const text of ["Geburtstag am 01.09.1953 gefeiert", "Betrag 1.234.567 EUR", "Zimmer 12, 3 Nächte"]) assert.equal(ki(text).includes("TELEFON"), false, text);
+  const lang = Array.from({ length: 4700 }, () => "00" + "1234567890".repeat(4)).join(" ");
+  const t0 = performance.now();
+  pseudonymize(lang);
+  assert.ok(performance.now() - t0 < 1500, `zu langsam: ${Math.round(performance.now() - t0)} ms`);
+});
+
+test("Adressen aus Großbritannien, Irland, den Niederlanden, Polen und Italien; Gewerbegebiete", () => {
+  // Straße und Ort, die direkt aufeinander folgen, werden zu einer Adresse zusammengefasst.
+  for (const text of [
+    "Flat 3, 41 Wellington Road, Harrow HA1 4LP",
+    "12A High Street, Oxford OX1 4AB",
+    "14 Ashgrove Terrace, Dublin 6, D06 K2P7",
+    "2140 N. Lincoln Park West, Apt 9C",
+    "Kromme Nieuwegracht 52",
+    "Gewerbezone 12\n6460 Imst",
+  ]) {
+    assert.equal(ki(text), "[ADRESSE_1]", text);
+  }
+  assert.equal(ki("Dat is Prinsengracht 7-II, 1015 DK Amsterdam."), "Dat is [ADRESSE_1].");
+  assert.equal(ki("Wohnadresse: ul. Długa 17 m. 4, 31-147 Kraków, Polen"), "Wohnadresse: [ADRESSE_1], Polen");
+  assert.equal(ki("Via del Lago 6 – 38027 Malè (TN)"), "[ADRESSE_1] – [ADRESSE_2]");
+  assert.equal(ki("Handwerkerzone Nord 4 / Zona artigianale Nord 4\n39042 Brixen/Bressanone (BZ)"), "[ADRESSE_1] / [ADRESSE_2]");
+  // Gegenproben
+  for (const text of ["Weihnachtsmarkt 2026 am Hauptplatz", "Supermarkt 5 Minuten entfernt", "Kurzparkzone 2 Stunden"]) {
+    assert.equal(ki(text), text);
+  }
+});
+
+test("Firmen mit kleingeschriebener oder großgeschriebener Rechtsform und Verbindungswörtern", () => {
+  assert.equal(ki("MOORLAND TEXTILES LTD\nRechnung"), "[FIRMA_1]\nRechnung");
+  assert.equal(ki("CASEIFICIO MORESCHINI di Moreschini Luca & C. s.n.c.\nVia del Lago 6"), "[FIRMA_1]\n[ADRESSE_1]");
+  assert.equal(ki("Enoteca Pichler s.a.s. liefert"), "[FIRMA_1] liefert");
+  assert.equal(ki("An: Kanzlei Kreuzer-Eberharter\nBetreff: Aufenthalt"), "An: [FIRMA_1]\nBetreff: Aufenthalt");
 });

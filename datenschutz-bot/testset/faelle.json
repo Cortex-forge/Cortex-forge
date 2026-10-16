@@ -251,6 +251,10 @@
         {
           "wert": "5555 5555 5555 4444",
           "typ": "KREDITKARTE"
+        },
+        {
+          "wert": "08/29",
+          "typ": "SONSTIGES"
         }
       ]
     },
@@ -495,6 +499,10 @@
         {
           "wert": "DE09 1001 0010 1234 5678 90",
           "typ": "IBAN"
+        },
+        {
+          "wert": "HRB 12345",
+          "typ": "SONSTIGES"
         }
       ]
     },

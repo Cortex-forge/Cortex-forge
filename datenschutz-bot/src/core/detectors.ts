@@ -169,7 +169,7 @@ const ACRONYMS = new Set(
 // E-Mail
 
 const EMAIL_RE =
-  /(?<![\p{L}\p{N}._%+-])[\p{L}\p{N}._%+-]{1,64}@[\p{L}\p{N}-]{1,63}(?:\.[\p{L}\p{N}-]{1,63}){0,8}\.\p{L}{2,24}(?![\p{L}\p{N}-])/gu;
+  /(?<![\p{L}\p{N}._%+-])[\p{L}\p{N}._%+-]{1,64}(?:@|[ \t]?(?:\(at\)|\[at\]|\{at\}|\(ät\))[ \t]?)[\p{L}\p{N}-]{1,63}(?:(?:\.|[ \t]?(?:\(dot\)|\[dot\]|\(punkt\))[ \t]?)[\p{L}\p{N}-]{1,63}){0,8}(?:\.|[ \t]?(?:\(dot\)|\[dot\]|\(punkt\))[ \t]?)\p{L}{2,24}(?![\p{L}\p{N}-])/gu;
 
 export function detectEmails(text: string): Finding[] {
   const out: Finding[] = [];
@@ -260,10 +260,11 @@ export function detectCreditCards(text: string): Finding[] {
 
 const PHONE_STEMS = [
   "telefon", "telephone", "phone", "mobil", "handy", "fax", "cellular", "cellulare", "telefono", "telefoon", "mobiel",
+  "portable", "téléphone", "chiamarmi", "chiamatemi", "whatsapp", "signal",
   "whatsapp", "rufnummer", "durchwahl", "festnetz", "rückruf", "anruf", "hotline", "kundenservice", "kundendienst",
   "notruf", "zentrale",
 ];
-const PHONE_WORDS = new Set(["tel", "tlf", "fon", "ph", "cell", "mob", "fax"]);
+const PHONE_WORDS = new Set(["tel", "tlf", "fon", "ph", "cell", "mob", "fax", "tél", "cel", "privat"]);
 const DOC_STEMS = [
   "rechnung", "beleg", "auftrag", "bestell", "order", "invoice", "buchung", "booking", "reservier", "reservation",
   "ticket", "vorgang", "referenz", "reference", "aktenzeichen", "kundennr", "kundennummer", "kdnr", "vertrag",
@@ -299,7 +300,9 @@ const NUMBER_ABBREVIATIONS = new Set(["nr", "no", "num"]);
 
 function phoneVerdict(text: string, start: number): "telefon" | "beleg" | null {
   const from = lineStartWithin(text, start, 48);
-  const words = text.slice(from, start).toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  // Wörter aus E-Mail-Adressen und Links zählen nicht ("accounts@…" ist kein Konto), reine Zahlen auch nicht.
+  const before = text.slice(from, start).toLowerCase().replace(/\S+@\S+|https?:\/\/\S+|www\.\S+/gu, " ");
+  const words = (before.match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => !/^\d+$/u.test(w));
   for (let i = words.length - 1, n = 0; i >= 0 && n < 4; i--, n++) {
     const word = words[i] ?? "";
     const before = classifyWord(words[i - 1] ?? "");
@@ -317,23 +320,32 @@ function phoneVerdict(text: string, start: number): "telefon" | "beleg" | null {
 /** Festnetz in üblicher Schreibweise: Vorwahl, Trennzeichen, Rufnummer ("0512 123456", "089/12345678"). */
 const LANDLINE_SHAPE = /^0[1-9]\d{0,4}[ \t/-]{1,2}\d{3,9}(?:[ \t-]\d{1,6})?$/;
 
+// Zwischen Zifferngruppen steht immer ein Trennzeichen (oder es gibt gar keines): So hat jede Ziffernfolge genau eine
+// Aufteilung, und lange Ziffernfolgen kosten keine Zeit (Review Claude 3 #14).
 const PHONE_INTL_RE =
-  /(?<![\p{L}\p{N}+])(?:\+|00)\d{1,3}(?:[ \t/.-]{0,3}(?:\(\d{1,4}\))?[ \t/.-]{0,3}\d{1,5}){2,7}(?![\p{L}\p{N}])/gu;
+  /(?<![\p{L}\p{N}+])(?:\+|00)(?:\d{7,15}|\d{1,7}(?:[ \t/.-]{1,3}(?:\(\d{1,4}\)[ \t/.-]{0,3})?\d{1,10}|[ \t]?\(\d{1,4}\)[ \t/.-]{0,3}\d{1,10}){1,7})(?![\p{L}\p{N}])/gu;
 const PHONE_NATIONAL_RE =
-  /(?<![\p{L}\p{N}.,+/-])(?:\(0\d{1,5}\)|0[1-9]\d{0,4})(?:[ \t/-]{0,2}\d{2,8}){1,4}(?![\p{L}\p{N}]|[.,]\d)/gu;
+  /(?<![\p{L}\p{N}.,+/-])(?:0[1-9]\d{5,13}|(?:\(0\d{1,5}\)[ \t]?|0[1-9]\d{0,4}[ \t/.-]{1,3})\d{1,8}(?:[ \t/.-]{1,3}\d{1,8}){0,4})(?![\p{L}\p{N}]|[.,]\d)/gu;
 // Ohne führende 0 (italienische Handys "347 1234567", USA "(555) 123-4567"): nur mit Telefon-Wort davor.
 const PHONE_CONTEXT_RE =
-  /(?<![\p{L}\p{N}.,+/-])(?:\(\d{2,4}\)[ \t]?|[1-9]\d{1,3}[ \t/-]?)\d{2,4}(?:[ \t/-]?\d{2,5}){1,2}(?![\p{L}\p{N}]|[.,]\d)/gu;
+  /(?<![\p{L}\p{N}.,+/-])(?:\(\d{2,4}\)[ \t]?|[1-9]\d{1,3}[ \t/.-]?)\d{2,4}(?:[ \t/.-]?\d{2,5}){1,2}(?![\p{L}\p{N}]|[.,]\d)/gu;
+// Italienische Handynummern haben eine feste Form: 3xx xxx xxxx (auch ohne Signalwort).
+const ITALIAN_MOBILE_RE = /(?<![\p{L}\p{N}.,+/-])3[1-9]\d(?:[ \t.]\d{3}[ \t.]\d{3,4}|[ \t.]\d{6,7})(?![\p{L}\p{N}]|[.,]\d)/gu;
+// Messenger-Links mit Rufnummer: "wa.me/436641234567"
+const MESSENGER_LINK_RE = /(?<![\p{L}\p{N}])(?:wa\.me|api\.whatsapp\.com\/send\?phone=|t\.me\/\+?)\/?(?<v>\+?\d{7,15})(?![\p{N}])/gud;
+// Datum mit Punkten ("01.09.1953") ist keine Telefonnummer.
+const DATE_SHAPE = /^\d{1,2}\.\d{1,2}\.(?:\d{2}|\d{4})$/;
 
 export function detectPhones(text: string): Finding[] {
   const out: Finding[] = [];
-  const consider = (start: number, value: string, kind: "intl" | "national" | "context") => {
+  const consider = (start: number, value: string, kind: "intl" | "national" | "context" | "fest") => {
     const digits = digitsOnly(value);
     if (digits.length < 7 || digits.length > 15) return;
+    if (DATE_SHAPE.test(value)) return;
     if (kind === "intl" && (value.startsWith("00") ? digits.length < 11 : digits.length < 8)) return;
     const verdict = phoneVerdict(text, start);
     if (verdict === "beleg") return;
-    if (verdict !== "telefon") {
+    if (verdict !== "telefon" && kind !== "fest") {
       if (kind === "context") return;
       if (kind === "national") {
         const mobile = /^0(?:6[5-9]\d|1[5-7]\d|7[5-9])/.test(digits);
@@ -346,6 +358,11 @@ export function detectPhones(text: string): Finding[] {
   for (const m of matchAll(text, PHONE_INTL_RE)) consider(m.index, m[0], "intl");
   for (const m of matchAll(text, PHONE_NATIONAL_RE)) consider(m.index, m[0], "national");
   for (const m of matchAll(text, PHONE_CONTEXT_RE)) consider(m.index, m[0], "context");
+  for (const m of matchAll(text, ITALIAN_MOBILE_RE)) consider(m.index, m[0], "fest");
+  for (const m of matchAll(text, MESSENGER_LINK_RE)) {
+    const span = groupSpan(m, "v");
+    if (span) out.push(finding(text, span[0], span[1], "TELEFON", "telefon"));
+  }
   return out;
 }
 
@@ -353,7 +370,7 @@ export function detectPhones(text: string): Finding[] {
 // UID-Nummern (Umsatzsteuer-Identifikationsnummern)
 
 const VAT_RE =
-  /(?<![\p{L}\p{N}])(?:ATU ?\d{8}|DE ?\d{9}|CHE[- ]?\d{3}\.?\d{3}\.?\d{3}(?: ?(?:MWST|TVA|IVA))?|IT ?\d{11}|NL ?\d{9}B\d{2}|FR ?[A-Z0-9]{2}\d{9}|BE ?0?\d{9}|LU ?\d{8}|CZ ?\d{8,10}|PL ?\d{10}|HU ?\d{8}|SI ?\d{8}|SK ?\d{10}|DK ?\d{8})(?![\p{L}\p{N}])/gu;
+  /(?<![\p{L}\p{N}])(?:ATU ?\d{8}|ATU ?\d{4} ?\d{4}|DE ?\d{9}|DE ?\d{3} ?\d{3} ?\d{3}|GB ?\d{3} ?\d{4} ?\d{2}(?: ?\d{3})?|GB ?\d{9}(?:\d{3})?|CHE[- ]?\d{3}\.?\d{3}\.?\d{3}(?: ?(?:MWST|TVA|IVA))?|IT ?\d{11}|NL ?\d{9}B\d{2}|FR ?[A-Z0-9]{2}\d{9}|BE ?0?\d{9}|LU ?\d{8}|CZ ?\d{8,10}|PL ?\d{10}|HU ?\d{8}|SI ?\d{8}|SK ?\d{10}|DK ?\d{8})(?![\p{L}\p{N}])/gu;
 
 export function detectVatIds(text: string): Finding[] {
   const out: Finding[] = [];
@@ -366,7 +383,7 @@ export function detectVatIds(text: string): Finding[] {
 // ---------------------------------------------------------------------------
 // Steuernummern (AT: "12 345/6789", DE: "123/456/78901")
 
-const TAX_RE = /(?<![\p{L}\p{N}])(?:\d{2}[ -]?\d{3}\/\d{4}|\d{2,3}\/\d{3}\/\d{4,5})(?![\p{L}\p{N}])/gu;
+const TAX_RE = /(?<![\p{L}\p{N}])(?:\d{2}[ -]?\d{3}\/\d{4}|\d{2,3}\/\d{3}\/\d{4,5}|[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z])(?![\p{L}\p{N}])/gu;
 
 export function detectTaxNumbers(text: string): Finding[] {
   const out: Finding[] = [];
@@ -387,7 +404,7 @@ const MONTH_ALT = [
   String.raw`Apr\.?`, String.raw`Jun\.?`, String.raw`Jul\.?`, String.raw`Aug\.?`, String.raw`Sept?\.?`,
   String.raw`Okt\.?`, String.raw`Oct\.?`, String.raw`Nov\.?`, String.raw`Dez\.?`, String.raw`Dec\.?`,
 ].join("|");
-const DATE = String.raw`\d{1,2}\.[ \t]?\d{1,2}\.[ \t]?\d{2,4}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}-\d{1,2}-\d{4}|\d{1,2}\.?[ \t]?(?:${MONTH_ALT})[ \t]\d{4}|(?:${MONTH_ALT})[ \t]\d{1,2},?[ \t]\d{4}`;
+const DATE = String.raw`\d{1,2}\.[ \t]?\d{1,2}\.[ \t]?\d{2,4}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}[-/]\d{2}[-/]\d{2}|\d{1,2}-\d{1,2}-\d{4}|\d{1,2}\.?[ \t]?(?:${MONTH_ALT})[ \t]\d{4}|(?:${MONTH_ALT})[ \t]\d{1,2},?[ \t]\d{4}`;
 
 interface ContextRule {
   type: EntityType;
@@ -399,29 +416,60 @@ const CONTEXT_RULES: ContextRule[] = [
   {
     type: "GEBURTSDATUM",
     re: new RegExp(
-      String.raw`(?<![\p{L}])(?:geb\.|geboren|Geburtsdatum|Geburtstag(?=[ \t]{0,20}:)|Geb\.-Datum|Geb\.-Tag|DOB|D\.O\.B\.|date of birth|birthday(?=[ \t]{0,20}:)|born(?: on)?|nato il|nata il|data di nascita|geboortedatum|geboren op|\*)(?:[ \t]{1,20}(?:am|on|il|op))?[ \t]{0,20}:?[ \t]{0,20}(?<v>${DATE})(?![\p{N}])`,
+      String.raw`(?<![\p{L}])(?:geb\.|geboren|Geburtsdatum(?:[ \t]{1,3}laut[ \t]{1,3}\p{L}{2,20})?|Geburtstag(?=[ \t]{0,20}:)|Geb\.-Datum|Geb\.-Tag|DOB|D\.O\.B\.|date of birth|birthday(?=[ \t]{0,20}:)|born(?: on)?|(?:nato|nata)(?:[ \t]{1,3}a[ \t]{1,3}\p{Lu}[\p{L}'-]{1,30}(?:[ \t]\p{Lu}[\p{L}'-]{1,30})?)?[ \t]{1,3}il|data di nascita|geboortedatum|geboren op|\*)(?:[ \t]{1,20}(?:am|on|il|op))?[ \t]{0,20}:?[ \t]{0,20}(?<v>${DATE})(?![\p{N}])`,
+      "giud",
+    ),
+  },
+  {
+    // "bin am 7. Juli 1997 in Tuzla geboren"
+    type: "GEBURTSDATUM",
+    re: new RegExp(
+      String.raw`(?<![\p{L}])(?:am|on)[ \t]{1,3}(?<v>${DATE})[ \t]{1,3}(?:in[ \t]{1,3}\p{Lu}[\p{L}-]{1,30}[ \t]{1,3})?(?:geboren|born)(?![\p{L}])`,
       "giud",
     ),
   },
   {
     type: "AUSWEIS",
-    re: /(?<![\p{L}])(?:Reisepass|Pass|Personalausweis|Ausweis|Passport|Passaporto|Paspoort|ID)(?:-?(?:nummer|nr\.?|number|no\.?))?[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>(?=[A-Z0-9 -]{0,15}\d)[A-Z0-9][A-Z0-9 -]{4,14}[A-Z0-9])(?![\p{L}\p{N}])/gud,
+    re: /(?<![\p{L}])(?:Reisepass|Pass|Personalausweis|Ausweis|Passport|passport|Passaporto|passaporto|Paspoort|paspoort|ID|Reisedokument|Aufenthaltstitel|Aufenthaltskarte|Karten-Nr\.|Führerschein|Führerscheinnummer|[Dd]riving licen[cs]e|[Pp]atente|[Rr]ijbewijs|[Ii]dentiteitskaart|[Cc]arta d'identità|[Cc]arta di identità|[Dd]ocumento|Dokument)(?:[ \t]{1,3}\([^)\n]{1,30}\))?(?:[ \t-]?(?:nummer|Nummer|nr\.?|Nr\.?|number|no\.?|No\.?|n\.|n°|nº))?(?:[ \t]{1,3}(?:is|ist|lautet|è))?[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>(?=[A-Z0-9 -]{0,15}\d)[A-Z0-9][A-Z0-9 -]{4,14}[A-Z0-9])(?![\p{L}\p{N}])/gud,
   },
   {
     type: "KENNZEICHEN",
-    re: /(?<![\p{L}])(?:[Kk]ennzeichen|[Kk]fz-[Kk]ennzeichen|[Aa]utokennzeichen|[Nn]ummernschild|[Ll]icen[cs]e plate|[Tt]arga)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>[A-ZÄÖÜ]{1,3}[ -]?[A-Z0-9]{1,6}(?:[ -][A-Z0-9]{1,4})?)(?![\p{L}\p{N}])/gud,
+    re: /(?<![\p{L}])(?:[Kk]ennzeichen|[Kk]fz-[Kk]ennzeichen|[Aa]utokennzeichen|[Nn]ummernschild|[Nn]ummerntafel|[Ll]icen[cs]e plate|[Tt]arga|[Kk]enteken)(?:[ \t]{1,3}(?:des|der|vom|von|unseres|unserer|meines|meiner|seines|ihres)[ \t]{1,3}\p{L}{2,20})?[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>[A-ZÄÖÜ]{1,3}[ -]?[A-Z0-9]{1,6}(?:[ -][A-Z0-9]{1,4})?)(?![\p{L}\p{N}])/gud,
   },
   {
     type: "KUNDENNR",
-    re: /(?<![\p{L}])(?:Kundennummer|Kunden-Nr\.?|Kundennr\.?|Kd\.?-?Nr\.?|KdNr\.?|Vertragsnummer|Vertrags-Nr\.?|Mitgliedsnummer|Mitglieds-Nr\.?|Polizzennummer|Policennummer|Patientennummer|customer (?:no\.?|number|id)|Kundenkonto)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>(?=[A-Z0-9/.-]{0,21}\d)[A-Z0-9][A-Z0-9/.-]{1,20}[A-Z0-9])/giud,
+    re: /(?<![\p{L}])(?:Kundennummer|Kunden-Nr\.?|Kundennr\.?|Kd\.?-?Nr\.?|KdNr\.?|Vertragsnummer|Vertrags-Nr\.?|Mitgliedsnummer|Mitglieds-Nr\.?|Polizzennummer|Policennummer|Polizze|Police|Polizza|Versicherungsschein(?:nummer)?|Patientennummer|Stammgast-?Nr\.?|Stammgastnummer|customer (?:no\.?|number|id)|Kundenkonto)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>(?=[A-Z0-9/.-]{0,21}\d)[A-Z0-9][A-Z0-9/.-]{1,20}[A-Z0-9])/giud,
   },
   {
     type: "SVNR",
-    re: /(?<![\p{L}])(?:SV-?Nr\.?|SVNR|SV-Nummer|Sozialversicherungsnummer|Versicherungsnummer|Versicherungsnr\.?|Versicherungs-Nr\.?|Sozialversicherungs-Nr\.?)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{4} ?\d{6}|\d{2} ?\d{6} ?[A-Z] ?\d{3})(?![\p{N}])/giud,
+    re: /(?<![\p{L}])(?:SV-?Nr\.?|SVNR|SV-Nummer|Sozialversicherungsnummer|Versicherungsnummer|Versicherungsnr\.?|Versicherungs-Nr\.?|Sozialversicherungs-Nr\.?|Rentenversicherungsnummer|RV-?Nr\.?|RV-Nummer)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{4} ?\d{6}|\d{2} ?\d{6} ?[A-Z] ?\d{3})(?![\p{N}])/giud,
   },
   {
     type: "KREDITKARTE",
     re: /(?<![\p{L}])(?:CVC2?|CVV2?|CID|CSC|Kartenprüfnummer|Prüfnummer|Sicherheitscode|security code|codice di sicurezza)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{3,4})(?![\p{N}])/giud,
+  },
+  {
+    // Ablaufdatum einer Karte ("gültig bis 08/28")
+    type: "SONSTIGES",
+    description: "Ablaufdatum",
+    re: /(?<![\p{L}])(?:gültig bis|Ablaufdatum|Ablauf|valid (?:thru|through|until)|exp(?:iry|\.)?(?: date)?|expires|scadenza|geldig tot)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{2}[/-]\d{2})(?![\p{N}/])/giud,
+  },
+  {
+    // Register- und Kontonummern: Firmenbuch, Handelsregister, KvK, Company No., Kontonummer
+    type: "SONSTIGES",
+    description: "Registernummer",
+    re: /(?<![\p{L}\p{N}])(?<v>FN[ \t]?\d{1,6}[ \t]?[a-z]|HR[AB][ \t]?\d{1,6}(?:[ \t]?[A-Z]{1,2}(?![\p{L}]))?)(?![\p{L}\p{N}])/gud,
+  },
+  {
+    type: "SONSTIGES",
+    description: "Register- oder Kontonummer",
+    re: /(?<![\p{L}])(?:KvK(?:-nummer|-nr\.?)?|Company (?:No\.?|Number|Reg(?:istration)?\.?(?: No\.?)?)|account (?:no\.?|number)|Kontonummer|Konto-Nr\.?|Kto\.?-?Nr\.?|BLZ|Bankleitzahl|rekeningnummer)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{5,12})(?![\p{N}])/giud,
+  },
+  {
+    // Konten in Messengern: "WeChat: wanglei_sh88"
+    type: "SONSTIGES",
+    description: "Messenger-Konto",
+    re: /(?<![\p{L}])(?:WeChat|Wechat|WhatsApp|Telegram|Signal|Skype|Instagram|Insta|Facebook|TikTok|Snapchat|Threema|Line)(?:[ \t]?-?(?:ID|Name|Account|Konto))?[ \t]{0,3}[:：][ \t]{0,3}(?<v>@?[A-Za-z][A-Za-z0-9_.-]{2,39})(?![\p{L}\p{N}])/gud,
   },
 ];
 
@@ -441,8 +489,15 @@ export function detectByContext(text: string): Finding[] {
 // Konten in sozialen Netzwerken: "@bergliebe_tirol"
 const HANDLE_RE = /(?<![\p{L}\p{N}._@-])@[A-Za-z0-9_](?:[A-Za-z0-9_.]{1,28}[A-Za-z0-9_])?(?![\p{L}\p{N}_@])/gu;
 
+// Profil-Links mit Namen: "linkedin.com/in/anna-moosbrugger-4711", "instagram.com/anna.moosbrugger"
+const PROFILE_LINK_RE =
+  /(?<![\p{L}\p{N}.])(?:https?:\/\/)?(?:www\.)?(?:linkedin\.com\/in|instagram\.com|facebook\.com|fb\.com|x\.com|twitter\.com|tiktok\.com|xing\.com\/profile|youtube\.com|threads\.net)\/@?[A-Za-z0-9_.%-]{2,80}\/?/gu;
+
 export function detectHandles(text: string): Finding[] {
   const out: Finding[] = [];
+  for (const m of matchAll(text, PROFILE_LINK_RE)) {
+    out.push(finding(text, m.index, m.index + m[0].length, "SONSTIGES", "kontext:konto", { description: "Profil-Link" }));
+  }
   for (const m of matchAll(text, HANDLE_RE)) {
     out.push(
       finding(text, m.index, m.index + m[0].length, "SONSTIGES", "kontext:konto", { description: "Social-Media-Konto" }),
@@ -458,25 +513,27 @@ export function detectHandles(text: string): Finding[] {
 const STREET_SUFFIXES = [
   "straße", "strasse", "str.", "gasse", "weg", "platz", "allee", "ring", "damm", "ufer", "steig", "zeile", "kai",
   "promenade", "graben", "gürtel", "lände", "park", "siedlung", "winkel", "stiege", "anger", "chaussee", "straat",
-  "laan", "plein", "gracht", "kade", "dijk", "singel", "steeg",
+  "laan", "plein", "gracht", "kade", "dijk", "singel", "steeg", "markt",
 ];
 const SUFFIX_ALT = STREET_SUFFIXES.map((s) => `[${s[0]?.toUpperCase()}${s[0]}]${escapeRegExp(s.slice(1))}`).join("|");
 // Wörter mit Straßen-Endung, die fast nie eine Adresse sind ("Parkplatz 3", "Fußweg 5 Minuten").
 const NOT_A_STREET = new Set(
   `parkplatz stellplatz spielplatz arbeitsplatz sitzplatz campingplatz golfplatz tennisplatz sportplatz abstellplatz
    liegeplatz garagenplatz rückweg hinweg heimweg wanderweg radweg umweg ausweg fußweg gehweg klettersteig seeufer
-   flussufer zahlungsweg lieferweg postweg rechtsweg anfahrtsweg schulweg freizeitpark nationalpark ehering`
+   flussufer zahlungsweg lieferweg postweg rechtsweg anfahrtsweg schulweg freizeitpark nationalpark ehering
+   supermarkt weihnachtsmarkt flohmarkt adventmarkt christkindlmarkt christkindlesmarkt arbeitsmarkt immobilienmarkt
+   wohnungsmarkt biomarkt getränkemarkt baumarkt drogeriemarkt elektromarkt großmarkt markt`
     .split(/\s+/)
     .filter(Boolean),
 );
-const STREET_ADJ = String.raw`(?:Alte|Neue|Obere|Untere|Lange|Kurze|Große|Kleine|Hohe|Innere|Äußere|Hintere|Vordere|Mittlere|Sankt|St\.)`;
-const HOUSE_NO = String.raw`\d{1,4}(?:[ \t]?[a-zA-Z](?![\p{L}]))?(?:[ \t]?[/-][ \t]?\d{1,4}(?:[a-zA-Z](?![\p{L}]))?){0,3}`;
+const STREET_ADJ = String.raw`(?:Alte|Neue|Obere|Untere|Lange|Kurze|Große|Kleine|Hohe|Innere|Äußere|Hintere|Vordere|Mittlere|Sankt|St\.|Kromme|Oude|Nieuwe|Korte|Hoge|Lage|Grote|Kleine|Achter|Binnen|Buiten|Eerste|Tweede|Derde)`;
+const HOUSE_NO = String.raw`\d{1,4}(?:[ \t]?[a-zA-Z](?![\p{L}]))?(?:[ \t]?[/-][ \t]?\d{1,4}(?:[a-zA-Z](?![\p{L}]))?){0,3}(?:-(?:I{1,3}|IV|hs|bis|huis)(?![\p{L}]))?`;
 // Nach einer Hausnummer folgt keine Einheit ("Fußweg 5 Minuten", "Im Jahr 2027").
 const AFTER_NUMBER_UNIT =
   /^[ \t]{0,20}(?:Minuten|Min\.|Stunden|Std\.|km|m|Meter|Personen|Pers\.|Euro|EUR|€|Tage|Nächte|Uhr|%|Prozent|Jahre|Zimmer)(?![\p{L}])/u;
 
 const STREET_RE = new RegExp(
-  String.raw`(?<![\p{L}\p{N}-])(?:${STREET_ADJ}[ \t]{1,20})?(?<w>\p{L}{1,40}(?:-\p{L}{1,40}){0,4}-?(?:${SUFFIX_ALT}))[ \t]{1,20}${HOUSE_NO}(?![\p{L}\p{N}])`,
+  String.raw`(?<![\p{L}\p{N}-])(?:${STREET_ADJ}[ \t]{1,20})?(?<w>\p{L}{1,40}(?:-\p{L}{1,40}){0,4}-?(?:${SUFFIX_ALT}))(?:[ \t]{1,3}(?:Nord|Süd|Ost|West|Mitte))?[ \t]{1,20}${HOUSE_NO}(?![\p{L}\p{N}])`,
   "gud",
 );
 const STREET_TWO_WORDS_RE = new RegExp(
@@ -492,9 +549,26 @@ const STREET_ITALIAN_RE = new RegExp(
   "gu",
 );
 const STREET_ENGLISH_RE = new RegExp(
-  String.raw`(?<![\p{L}\p{N}])\d{1,5}[ \t]{1,20}(?:[NSEW]\.?[ \t]{1,20})?${UP}${LO}{1,30}(?:[ \t]${UP}${LO}{1,30}){0,3}[ \t](?:Street|St\.|Road|Rd\.|Avenue|Ave\.|Lane|Ln\.|Drive|Way|Court|Ct\.|Place|Pl\.|Boulevard|Blvd\.|Terrace|Close|Crescent|Square|Gardens|Grove|Row|Mews|Hill)(?![\p{L}])`,
+  String.raw`(?<![\p{L}\p{N}])(?:(?:Flat|Unit|Apartment|Apt\.?|Suite|Studio)[ \t]{1,3}[A-Za-z0-9]{1,5},[ \t]{1,3}(?:${UP}${LO}{1,30}(?:[ \t]${UP}${LO}{1,30}){0,3},[ \t]{1,3})?)?\d{1,5}[A-Za-z]?[ \t]{1,20}(?:[NSEW]\.?[ \t]{1,20})?${UP}${LO}{1,30}(?:[ \t]${UP}${LO}{1,30}){0,3}[ \t](?:Street|St\.|Road|Rd\.|Avenue|Ave\.|Lane|Ln\.|Drive|Way|Court|Ct\.|Place|Pl\.|Boulevard|Blvd\.|Terrace|Close|Crescent|Square|Gardens|Grove|Row|Mews|Hill|Park)(?:[ \t](?:West|East|North|South))?(?:,[ \t]{0,3}(?:Apt\.?|Apartment|Suite|Ste\.?|Unit|Flat|Fl\.)[ \t]{0,3}[A-Za-z0-9-]{1,6})?(?![\p{L}])`,
   "gu",
 );
+// Britische und irische Postleitzahlen ("Leeds LS12 2PL", "Harrow HA1 4LP", "Dublin 6, D06 K2P7"), mit Ort davor.
+const UK_POSTCODE_RE = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])(?:${UP}${LO}{2,30}(?:[ \t]${UP}${LO}{2,30})?(?:[ \t]\d{1,2}[Ww]?)?,?[ \t]{1,3})?(?:[A-Z]{1,2}\d[A-Z\d]?[ \t]\d[A-Z]{2}|(?:[AC-FHKNPRTV-Y]\d{2}|D6W)[ \t][0-9AC-FHKNPRTV-Y]{4})(?![\p{L}\p{N}])`,
+  "gu",
+);
+// Polnische Adressen: "ul. Długa 17 m. 4"
+const STREET_POLISH_RE = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])(?:ul\.|al\.|pl\.|os\.)[ \t]{1,3}${UP}[\p{L}-]{1,40}(?:[ \t]${UP}[\p{L}-]{1,40}){0,3}[ \t]{1,3}\d{1,4}[A-Za-z]?(?:[ \t]?(?:m\.|lok\.|\/)[ \t]?\d{1,4})?(?![\p{L}\p{N}])`,
+  "gu",
+);
+// Gewerbegebiete als Adresse: "Gewerbezone 12", "Handwerkerzone Nord 4"
+const ZONE_RE = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])(?:Gewerbezone|Industriezone|Handwerkerzone|Gewerbegebiet|Industriegebiet|Gewerbepark|Industriepark)(?:[ \t](?:Nord|Süd|Ost|West|Mitte))?[ \t]{1,3}${HOUSE_NO}(?![\p{L}\p{N}])`,
+  "gu",
+);
+// "Zona artigianale Nord 4", "Zona industriale 12"
+const ZONE_ITALIAN_RE = /(?<![\p{L}\p{N}])Zona[ \t](?:artigianale|industriale|commerciale|produttiva)(?:[ \t]\p{Lu}\p{Ll}{1,20})?[ \t]{1,3}\d{1,4}(?![\p{L}\p{N}])/gu;
 const US_CITY_RE = new RegExp(
   String.raw`(?<![\p{L}\p{N}])${UP}${LO}{1,30}(?:[ \t]${UP}${LO}{1,30}){0,2},[ \t]{0,20}(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)[ \t]{1,20}\d{5}(?:-\d{4})?(?![\p{L}\p{N}])`,
   "gu",
@@ -502,9 +576,9 @@ const US_CITY_RE = new RegExp(
 
 // Postleitzahl + Ort. Der Ort ist ein oder mehrere großgeschriebene Wörter ("Hall in Tirol", "Steinach am Brenner").
 const PLACE_WORD = String.raw`${UP}${LO}{1,30}(?:-${UP}?${LO}{1,30}){0,3}`;
-const PLACE_JOIN = String.raw`(?:[ \t]{1,20}(?:am|an der|an den|im|in|bei|ob der|an|sur|sul|sulla|del|de|di|aan|den)[ \t]{1,20}|[ \t]{0,20}-[ \t]{0,20}|[ \t]{1,20})`;
+const PLACE_JOIN = String.raw`(?:[ \t]{1,20}(?:am|an der|an den|im|in|bei|ob der|an|sur|sul|sulla|del|de|di|aan|den)[ \t]{1,20}|[ \t]{0,20}-[ \t]{0,20}|[ \t]{0,2}\/[ \t]{0,2}|[ \t]{1,20})`;
 const POSTCODE_RE = new RegExp(
-  String.raw`(?<![\p{L}\p{N}])(?:(?:A|AT|D|DE|CH|I|IT|NL|F|FR|B|BE|L|LU)-[ \t]?)?(?<plz>\d{4,5}|\d{4}[ \t]?[A-Z]{2}(?![\p{L}]))[ \t]{1,20}(?<ort>${PLACE_WORD}(?:${PLACE_JOIN}${PLACE_WORD}){0,4}|${LO}{3,30}(?:[ \t]{1,20}${LO}{2,30})?)`,
+  String.raw`(?<![\p{L}\p{N}])(?:(?:A|AT|D|DE|CH|I|IT|NL|F|FR|B|BE|L|LU)-[ \t]?)?(?<plz>\d{4,5}|\d{4}[ \t]?[A-Z]{2}(?![\p{L}])|\d{2}-\d{3}|\d{4}-\d{3})[ \t]{1,20}(?<ort>${PLACE_WORD}(?:${PLACE_JOIN}${PLACE_WORD}){0,4}(?:[ \t]{0,3}\([A-Z]{2}\))?|${LO}{3,30}(?:[ \t]{1,20}${LO}{2,30})?)`,
   "gud",
 );
 const AFTER_POSTCODE_STOP = new Set(
@@ -544,6 +618,10 @@ export function detectAddresses(text: string): Finding[] {
   }
   for (const m of matchAll(text, STREET_ITALIAN_RE)) addStreet(m.index, m.index + m[0].length);
   for (const m of matchAll(text, STREET_ENGLISH_RE)) addStreet(m.index, m.index + m[0].length);
+  for (const m of matchAll(text, STREET_POLISH_RE)) addStreet(m.index, m.index + m[0].length);
+  for (const m of matchAll(text, ZONE_ITALIAN_RE)) addStreet(m.index, m.index + m[0].length);
+  for (const m of matchAll(text, ZONE_RE)) addStreet(m.index, m.index + m[0].length);
+  for (const m of matchAll(text, UK_POSTCODE_RE)) out.push(finding(text, m.index, m.index + m[0].length, "ADRESSE", "adresse:ort"));
   for (const m of matchAll(text, US_CITY_RE)) out.push(finding(text, m.index, m.index + m[0].length, "ADRESSE", "adresse:ort"));
 
   for (const m of matchAll(text, POSTCODE_RE)) {
@@ -588,7 +666,7 @@ export function detectAddresses(text: string): Finding[] {
 // ---------------------------------------------------------------------------
 // Firmen
 
-const LEGAL_FORM = String.raw`(?:GmbH(?:[ \t]*&[ \t]*Co\.?[ \t]*KG)?|GMBH|GesmbH|GesmbH|Ges\.m\.b\.H\.|gGmbH|mbH|AG|KG|OG|OHG|e\.[ \t]?U\.|e\.[ \t]?K\.|e\.[ \t]?V\.|GesbR|GbR|UG(?:[ \t]*\(haftungsbeschränkt\))?|SE|Ltd\.?|Limited|Inc\.?|LLC|LLP|PLC|Plc|Corp\.?|S\.r\.l\.|S\.R\.L\.|Srl|S\.p\.A\.|S\.n\.c\.|S\.a\.s\.|B\.V\.|BV|N\.V\.|S\.A\.|S\.L\.|SAS|Sarl|SARL|s\.r\.o\.|Kft\.|d\.o\.o\.|Sp\.[ \t]?z[ \t]?o\.o\.|A/S|Oy)`;
+const LEGAL_FORM = String.raw`(?:GmbH(?:[ \t]*&[ \t]*Co\.?[ \t]*KG)?|GMBH|GesmbH|GesmbH|Ges\.m\.b\.H\.|gGmbH|mbH|AG|KG|OG|OHG|e\.[ \t]?U\.|e\.[ \t]?K\.|e\.[ \t]?V\.|GesbR|GbR|UG(?:[ \t]*\(haftungsbeschränkt\))?|SE|Ltd\.?|LTD\.?|Limited|LIMITED|Inc\.?|INC\.?|LLC|LLP|PLC|Plc|Corp\.?|S\.r\.l\.|S\.R\.L\.|s\.r\.l\.|Srl|S\.p\.A\.|s\.p\.a\.|S\.n\.c\.|s\.n\.c\.|S\.a\.s\.|s\.a\.s\.|B\.V\.|BV|N\.V\.|S\.A\.|S\.L\.|SAS|Sarl|SARL|s\.r\.o\.|Kft\.|d\.o\.o\.|Sp\.[ \t]?z[ \t]?o\.o\.|A/S|Oy)`;
 const LEGAL_FORM_ONLY = new RegExp(`^${LEGAL_FORM}$`, "u");
 const LEGAL_FORM_ANY = new RegExp(LEGAL_FORM, "u");
 // Kurze Rechtsformen, die auch etwas anderes heißen ("im 2. OG", "AG" als Abkürzung).
@@ -602,11 +680,11 @@ const COMPANY_STOP = new Set(
     .filter(Boolean),
 );
 const COMPANY_RE = new RegExp(
-  String.raw`(?<![\p{L}\p{N}&.'’-])(?:(?:[\p{Lu}\p{N}][\p{L}\p{N}&.'’-]{0,40}|&|\+|und|and|e)[ \t]{1,20}){1,5}${LEGAL_FORM}(?![\p{L}\p{N}])`,
+  String.raw`(?<![\p{L}\p{N}&.'’-])(?:[\p{Lu}\p{N}][\p{L}\p{N}&.'’-]{0,40}[ \t]{1,20})(?:(?:[\p{Lu}\p{N}][\p{L}\p{N}&.'’-]{0,40}|&|\+|und|and|e|di|de|del|della|van|von|der)[ \t]{1,20}){0,6}${LEGAL_FORM}(?![\p{L}\p{N}])`,
   "gu",
 );
 const CUSTOMER_LABEL_RE = new RegExp(
-  String.raw`(?<![\p{L}])(?:Kunde|Kundin|Rechnungsempfänger|Rechnungsempfängerin|Auftraggeber|Auftraggeberin|Cliente|Customer|Client|Klant)[ \t]{0,20}:[ \t]{0,20}(?<v>(?:${[...BUSINESS_WORDS].join("|")})[ \t]{1,20}${UP}[\p{L}'’-]{1,40}(?:[ \t]{1,20}${UP}[\p{L}'’-]{1,40}){0,3})`,
+  String.raw`(?<![\p{L}])(?:Kunde|Kundin|Rechnungsempfänger|Rechnungsempfängerin|Auftraggeber|Auftraggeberin|Cliente|Customer|Client|Klant|An|To|Von|From|Cc|Absender)[ \t]{0,20}:[ \t]{0,20}(?<v>(?:${[...BUSINESS_WORDS].join("|")})[ \t]{1,20}${UP}[\p{L}'’-]{1,40}(?:[ \t]{1,20}${UP}[\p{L}'’-]{1,40}){0,3})`,
   "gud",
 );
 
@@ -976,6 +1054,11 @@ export function detectPersons(text: string): Finding[] {
     if (/@/.test(value) || LEGAL_FORM_ANY.test(value)) continue;
     if (value.split(/\s+/).some((w) => ROLE_WORDS.has(w) || ROLE_WORDS.has(capitalize(w)))) continue;
     if (!/\p{Lu}/u.test(value)) continue;
+    // "An: Kanzlei Kreuzer-Eberharter" ist ein Betrieb.
+    if (BUSINESS_WORDS.has(value.split(/\s+/)[0] ?? "")) {
+      out.push(finding(text, span[0], span[1], "FIRMA", "firma:kopfzeile"));
+      continue;
+    }
     add(span[0], span[1], "person:kopfzeile");
   }
 
@@ -1338,7 +1421,10 @@ const CSV_COLUMNS: Array<{ re: RegExp; type: EntityType }> = [
   },
   { re: /^iban$/iu, type: "IBAN" },
   { re: /^(?:firma|unternehmen|company|ditta|bedrijf)$/iu, type: "FIRMA" },
-  { re: /^(?:pass(?:nummer|nr\.?)?|ausweis(?:nummer)?|passport(?: ?no\.?)?|reisepass)$/iu, type: "AUSWEIS" },
+  {
+    re: /^(?:pass(?:nummer|-?nr\.?)?|ausweis(?:nummer|-?nr\.?)?|passport(?: ?no\.?| number)?|reisepass(?:nummer|-?nr\.?)?|id(?:-?nr\.?)?|dokument(?:nummer|-?nr\.?)?|document(?: no\.?)?|n\. documento|documento)$/iu,
+    type: "AUSWEIS",
+  },
   { re: /^(?:kennzeichen|kfz-kennzeichen|license plate)$/iu, type: "KENNZEICHEN" },
 ];
 
