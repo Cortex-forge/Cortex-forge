@@ -609,6 +609,13 @@ test("Zwei IBANs oder zwei Telefonnummern direkt hintereinander werden beide ers
   assert.equal(ki("IBAN: AT61 1904 3002 3457 3201 DE89 3704 0044 0532 0130 00"), "IBAN: [IBAN_1] [IBAN_2]");
   // Die erste mit Tippfehler: Die zweite wird trotzdem gefunden.
   assertHidden("IBAN: AT61 1904 3002 3457 3202 DE89 3704 0044 0532 0130 00", ["DE89", "0532"]);
+  // Ohne Wortgrenze, wie in Kopien aus PDF: Länge je Land und Prüfziffer entscheiden.
+  assert.equal(ki("IBAN: AT611904300234573201BIC: BKAUATWW"), "IBAN: [IBAN_1]BIC: BKAUATWW");
+  assert.equal(ki("IBANAT611904300234573201"), "IBAN[IBAN_1]");
+  assert.equal(ki("Konto:AT61 1904 3002 3457 3201BIC BKAUATWW"), "Konto:[IBAN_1]BIC BKAUATWW");
+  assert.equal(ki("IBAN AT611904300234573201DE89370400440532013000"), "IBAN [IBAN_1][IBAN_2]");
+  // Gegenprobe: falsche Prüfziffer oder kein Ländercode mit passender Länge bleibt stehen.
+  assert.equal(ki("Artikel AT611904300234573202X und CODE12345678901234567890AB"), "Artikel AT611904300234573202X und CODE12345678901234567890AB");
   assert.equal(ki("Tel.: 0512 123456 / 0512 654321"), "Tel.: [TELEFON_1] / [TELEFON_2]");
   assert.equal(ki("Tel. 0043 512 123456 / 0043 512 654321"), "Tel. [TELEFON_1] / [TELEFON_2]");
   assert.equal(ki("Tel.: +43 512 123456 / +43 664 1234567"), "Tel.: [TELEFON_1] / [TELEFON_2]");

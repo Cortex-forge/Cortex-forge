@@ -203,6 +203,47 @@ const IBAN_RE = new RegExp(
   "gu",
 );
 
+/** Länge der IBAN je Land (ISO 13616; Europa und Nachbarländer). */
+const IBAN_LENGTHS: Record<string, number> = {
+  AD: 24, AL: 28, AT: 20, BA: 20, BE: 16, BG: 22, CH: 21, CY: 28, CZ: 24, DE: 22, DK: 18, EE: 20, ES: 24, FI: 18,
+  FO: 18, FR: 27, GB: 22, GI: 23, GL: 18, GR: 27, HR: 21, HU: 28, IE: 22, IS: 26, IT: 27, LI: 21, LT: 20, LU: 20,
+  LV: 21, MC: 27, MD: 24, ME: 22, MK: 19, MT: 31, NL: 18, NO: 15, PL: 28, PT: 25, RO: 24, RS: 22, SE: 24, SI: 19,
+  SK: 24, SM: 27, TR: 26, UA: 29, VA: 22, XK: 20,
+};
+const IBAN_START_RE = /[A-Z]{2}(?=\d{2})/g;
+
+/**
+ * IBAN ohne Wortgrenze ("IBANAT61…", "…3201BIC", typisch für Kopien aus PDF): ab jedem Ländercode genau so viele
+ * Zeichen, wie eine IBAN dieses Landes hat, dazwischen höchstens kurze Trennzeichen; dann entscheidet die Prüfziffer.
+ */
+function gluedIbans(text: string, found: Finding[]): Finding[] {
+  const out: Finding[] = [];
+  const covered = new Uint8Array(text.length);
+  for (const f of found) covered.fill(1, f.start, f.end);
+  for (const m of matchAll(text, IBAN_START_RE)) {
+    const length = IBAN_LENGTHS[m[0]];
+    if (!length || covered[m.index]) continue;
+    let chars = "";
+    let end = m.index;
+    let gap = 0;
+    for (let i = m.index; i < text.length && chars.length < length; i++) {
+      const ch = text[i] ?? "";
+      if (/[A-Za-z0-9]/.test(ch)) {
+        chars += ch;
+        end = i + 1;
+        gap = 0;
+      } else if (/[ \t–-]/.test(ch) && chars.length >= 4 && gap < 3) {
+        gap++;
+      } else break;
+    }
+    if (chars.length === length && ibanIsValid(chars)) {
+      out.push(finding(text, m.index, end, "IBAN", "iban"));
+      covered.fill(1, m.index, end);
+    }
+  }
+  return out;
+}
+
 export function detectIbans(text: string): Finding[] {
   const out: Finding[] = [];
   for (const m of matchAll(text, IBAN_RE)) {
@@ -222,7 +263,7 @@ export function detectIbans(text: string): Finding[] {
     }
     IBAN_RE.lastIndex = resume;
   }
-  return out;
+  return [...out, ...gluedIbans(text, out)];
 }
 
 // ---------------------------------------------------------------------------

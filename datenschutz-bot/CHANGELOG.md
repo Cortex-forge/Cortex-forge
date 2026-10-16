@@ -9,6 +9,7 @@
 
 ### Erkennung
 - Zwei IBANs oder zwei Telefonnummern direkt hintereinander werden beide ersetzt
+- IBAN ohne Leerzeichen zum nächsten Wort („…3201BIC“, „IBANAT61…“, typisch für Kopien aus PDF): erkannt über die Länge je Land und die Prüfziffer
 - Verschiedene Kennzeichen („B-AB 123“, „BA-B 123“) und Codes („AB12“, „ab12“) bekommen eigene Platzhalter
 - Ein Nachname mehrerer Personen bleibt mehrdeutig, auch wenn danach ein längerer Name kommt
 - HTML: Der sichtbare Kopfbereich (`<header>`) bleibt erhalten
