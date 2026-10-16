@@ -16,11 +16,11 @@ Hier liegt alles außer dem Code: warum wir etwas bauen, wie es aufgebaut ist, w
 
 ## Wo stehen wir?
 
-- **Phase 0 (Prototyp):** gebaut, Version 0.4.0, 85 Tests grün (auch im Browser), Datenschutz-Probe ohne Leck.
-- **Erkennung:** Entwicklungsset 100 %, **unabhängiges Prüfset 72,8 % Trefferquote, 91,7 % Genauigkeit**: Auf neuen Dokumenten rutscht noch gut ein Viertel der Angaben durch. Ziele nicht erreicht ([`03-qualitaet/testkonzept.md`](03-qualitaet/testkonzept.md)).
-- **Reviews:** zwei Runden. Runde 1: Claude 4, Codex 4,2. Runde 2: Codex 5,2, Claude 4,6. Alle Blocker und Befunde bearbeitet (ein Punkt teilweise, Schlüssel unter eigenem Benutzer). Gemini prüft über Peters Abo in Antigravity ([`04-reviews/gemini-anleitung.md`](04-reviews/gemini-anleitung.md)). Übersicht: [`04-reviews/README.md`](04-reviews/README.md).
+- **Phase 0 (Prototyp):** gebaut, Version 0.5.0, 98 Tests grün (auch im Browser), Datenschutz-Probe ohne Leck.
+- **Erkennung:** Entwicklungsset 100 %, **unabhängiges Prüfset 1: 72,8 % Trefferquote, 91,7 % Genauigkeit**: Auf neuen Dokumenten rutscht noch gut ein Viertel der Angaben durch. Ziele nicht erreicht ([`03-qualitaet/testkonzept.md`](03-qualitaet/testkonzept.md)). Entscheidung Peter (2026-10-16): Prüfset 1 wird zum Entwickeln freigegeben, ehrlich gemessen wird danach am neuen, blinden Prüfset 2.
+- **Reviews:** drei Runden. Runde 1: Claude 4, Codex 4,2. Runde 2: Codex 5,2, Claude 4,6. Runde 3: Codex 5,5, alle 14 Befunde behoben; Claude läuft. Gemini ist vorerst nicht dabei: Peter möchte es nur, wenn es automatisch über das Abo läuft. Übersicht: [`04-reviews/README.md`](04-reviews/README.md).
 - **Phase-0-Gate:** offen (siehe [`03-qualitaet/phase-0-gate.md`](03-qualitaet/phase-0-gate.md)).
-- **Nächster Schritt:** dritte Prüfrunde (Codex, Claude, Gemini) auf dem neuen Stand; Entscheidung, wie die Erkennung besser wird (offene Punkte #19).
+- **Nächster Schritt:** Erkennung anhand von Prüfset 1 verbessern, dann blind an Prüfset 2 messen; Befunde der dritten Claude-Runde einarbeiten.
 
 ## Regeln für diesen Ordner
 

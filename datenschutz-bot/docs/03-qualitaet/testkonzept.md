@@ -19,7 +19,8 @@
 Zwei Testsets mit Lösungsblatt, beide aus erfundenen, realistischen Dokumenten (Deutsch, Englisch, Italienisch, Niederländisch):
 
 - **Entwicklungsset** `testset/faelle.json`: Daran wird entwickelt; es enthält auch die Formate aus den Reviews. Gute Werte hier sagen wenig über neue Dokumente.
-- **Prüfset** `testset/pruefset.json`: blind von einem eigenen Agenten erstellt, der weder Code noch Entwicklungsset kannte. Nur messen, nie daran entwickeln. Werden Regeln anhand des Prüfsets geändert, braucht es danach ein neues Prüfset.
+- **Prüfset** `testset/pruefset-2.json` (Prüfset 2): blind von einem eigenen Agenten erstellt, der weder Code noch Testsets kannte. Nur messen, nie hineinschauen, nie daran entwickeln. Werden Regeln anhand des Prüfsets geändert, braucht es danach ein neues Prüfset.
+- **Prüfset 1** `testset/pruefset.json`: ebenso blind erstellt. Am 2026-10-16 hat Peter entschieden, es zum Entwickeln freizugeben, weil die Erkennung nur mit Einblick in ihre Fehler besser wird. Seitdem ist es ein zweites Entwicklungsset, und an seine Stelle tritt Prüfset 2.
 
 `npm run messung` misst je Datenart:
 
@@ -44,6 +45,8 @@ Vorgeschlagene Ziele für den Pilot (mit Peter festlegen):
 | **Prüfset (blind, erste Messung)** | **71,9 % (312/434)** | **91,9 % (284/309)** | [`2026-10-16-messung-pruefset.md`](2026-10-16-messung-pruefset.md) |
 | Entwicklungsset nach der zweiten Prüfrunde | 100 % (211/211) | 100 % (200/200) | [`2026-10-16-messung-entwicklungsset-runde-2.md`](2026-10-16-messung-entwicklungsset-runde-2.md) |
 | **Prüfset nach der zweiten Prüfrunde** | **72,8 % (316/434)** | **91,7 % (286/312)** | [`2026-10-16-messung-pruefset-runde-2.md`](2026-10-16-messung-pruefset-runde-2.md) |
+| Entwicklungsset nach der dritten Prüfrunde | 100 % (211/211) | 100 % (200/200) | [`2026-10-16-messung-entwicklungsset-runde-3.md`](2026-10-16-messung-entwicklungsset-runde-3.md) |
+| **Prüfset 1 nach der dritten Prüfrunde (letzte blinde Messung)** | **72,8 % (316/434)** | **91,7 % (286/312)** | [`2026-10-16-messung-pruefset-runde-3.md`](2026-10-16-messung-pruefset-runde-3.md) |
 
 Die Änderungen der zweiten Runde kamen aus den Szenarien der Reviews, nicht aus dem Prüfset; das Prüfset wurde danach nur gemessen.
 

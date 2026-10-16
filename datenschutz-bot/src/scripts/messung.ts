@@ -3,7 +3,7 @@
 //   Genauigkeit  = Anteil der Ersetzungen, die eine sensible Angabe desselben Typs treffen.
 // Aufruf:
 //   npm run messung                                  Zusammenfassung, Bericht nach messungen/ (nicht im Repo)
-//   npm run messung -- --datei testset/pruefset.json  anderes Testset messen
+//   npm run messung -- --datei testset/pruefset-2.json  anderes Testset messen (hier: das blinde Prüfset)
 //   npm run messung -- --ablegen nach-korrektur       Bericht nach docs/03-qualitaet/ (zum Committen)
 //   npm run messung -- --streng                       Exit-Code 1, wenn ein Ziel verfehlt wird (für den Nachweis)
 import fs from "node:fs";

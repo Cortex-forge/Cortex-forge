@@ -1,5 +1,29 @@
 # Änderungen
 
+## [0.5.0] – 2026-10-16 – Befunde aus der dritten Codex-Prüfung
+
+### Datenschutz
+- Kategorien aus dem Firmenverzeichnis gehen nur zur KI, wenn darin nichts Schützenswertes und kein Original aus dem Dokument steht
+- Zugang zur Oberfläche über einen Schlüssel in der Kopfzeile statt über ein Cookie (Cookies gingen auch an andere Programme auf dem Rechner); Start-Link `/#zugang=…`, Downloads über die Seite
+- Zwischendateien werden bei Fehlern, beim Löschen und beim Abschluss entfernt
+
+### Erkennung
+- CSV mit leeren Spalten am Zeilenende, kürzeren und ungewöhnlichen Zeilen
+- Nachnamen, die auch Hauptwörter sind („Maria Sommer“, „Nachname: Berg“); Felder Surname, Last name, Family name, Achternaam
+- Zwei Personen mit gleichem Nachnamen: kein Raten, wer gemeint ist; freie Kundennummern werden nicht zusammengelegt
+
+### Ablage und Abläufe
+- Dateien werden vollständig geschrieben oder gar nicht ersetzt
+- Rechnungen: Firmendaten wie im geprüften Entwurf, Zahlbetrag mit Steuer je Steuersatz geprüft, beschädigter Zähler bricht ab
+- Oberfläche: verspätete Fehler ersetzen keinen angefangenen Entwurf
+- Rückübersetzung linear auch bei Zehntausenden Platzhaltern
+
+### Qualität
+- Datenschutz-Probe prüft jeden Werkzeugaufruf und verteilt lange Listen auf mehrere Felder
+- 98 Tests; Browser-Test mit zweitem lokalen Dienst
+- Prüfset 1 zum Entwickeln freigegeben (Entscheidung Peter), Nachweis misst zusätzlich das blinde Prüfset 2
+- Gemini vorerst nicht im Review (Entscheidung Peter: nur automatisch über das Abo)
+
 ## [0.4.0] – 2026-10-16 – Befunde aus der zweiten Claude-Prüfung
 
 ### Datenschutz

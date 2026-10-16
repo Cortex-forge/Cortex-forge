@@ -1,5 +1,5 @@
 {
-  "_hinweis": "Unabhängiges Prüfset (blind erstellt, nicht zum Entwickeln benutzen). Nur erfundene Daten. 'sensibel' listet jede Angabe, die die KI nicht sehen darf, so wie sie im Text steht.",
+  "_hinweis": "Prüfset 1, blind erstellt. Seit 2026-10-16 zum Entwickeln freigegeben (Entscheidung Peter); blind gemessen wird an pruefset-2.json. Nur erfundene Daten. 'sensibel' listet jede Angabe, die die KI nicht sehen darf, so wie sie im Text steht.",
   "version": 1,
   "faelle": [
     {

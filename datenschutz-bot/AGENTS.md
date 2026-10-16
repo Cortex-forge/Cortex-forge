@@ -20,7 +20,7 @@ Der Datenschutz-Bot ersetzt personenbezogene Daten durch Platzhalter, bevor eine
 | `npm test` | Build und alle Tests |
 | `npm run demo` | ganzer Ablauf, ein Skript spielt die KI, mit Datenschutz-Probe |
 | `npm run probe` | Datenschutz-Probe mit Lösungsblatt (Beispiele und Testset) über den echten MCP-Server |
-| `npm run messung` | Trefferquote und Genauigkeit am Testset; `-- --datei testset/pruefset.json` für das Prüfset |
+| `npm run messung` | Trefferquote und Genauigkeit am Testset; `-- --datei testset/pruefset-2.json` für das blinde Prüfset |
 | `npm start` | Oberfläche auf http://127.0.0.1:4317 |
 | `npm run nachweis` | Nachweis für den Merge erzeugen (Gesetzbuch G12) |
 
@@ -51,7 +51,7 @@ Der Datenschutz-Bot ersetzt personenbezogene Daten durch Platzhalter, bevor eine
 - Keine echten Kundendaten ins Repo, in Tests, in Beispiele oder in Prompts. Beispiele sind erfunden (Domains `example.com`/`.example`).
 - `data/` nie committen. Dort liegen Schlüssel und verschlüsselte Dokumente.
 - Neuer oder geänderter Erkenner: immer ein Test, dass er greift, und ein Test, dass er keinen Fehlalarm auslöst (`src/test/detectors.test.ts`). Muster mit begrenzten Wiederholungen und Wortanfang-Prüfung schreiben (lineare Laufzeit, siehe Laufzeittest).
-- `testset/pruefset.json` ist das unabhängige Prüfset: nur messen, nie daran entwickeln. Wer Regeln anhand des Prüfsets ändert, braucht danach ein neues Prüfset.
+- `testset/pruefset-2.json` ist das unabhängige, blind erstellte Prüfset: nur messen, nie hineinschauen, nie daran entwickeln. Wer Regeln anhand des Prüfsets ändert, braucht danach ein neues Prüfset. `testset/pruefset.json` (Prüfset 1) ist seit 2026-10-16 zum Entwickeln freigegeben (Entscheidung Peter) und gilt seitdem als Entwicklungsset.
 - KI-Agenten nie im Datenordner arbeiten lassen; `data/` ist für Claude Code in `.claude/settings.json` gesperrt.
 - Beträge, Steuern und Rechnungsnummern berechnet der Bot, nie die KI.
 - Die Oberfläche baut HTML nur mit `textContent`, nie mit `innerHTML` aus Daten.
