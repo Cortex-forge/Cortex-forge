@@ -25,7 +25,7 @@ const LO = String.raw`\p{Ll}`;
  * Trennt unabhängige Teile eines Dokuments (Betreff, Text, Kontenplan). Ein Zeichen aus dem privaten Bereich von
  * Unicode, das beim Ablegen aus Dokumenten entfernt wird. Kein Fund reicht über diese Grenze.
  */
-export const SEGMENT_BREAK = "";
+export const SEGMENT_BREAK = "\uE000";
 
 /** Priorität bei Überschneidungen: höher gewinnt. */
 function priorityOf(f: Finding): number {
@@ -1217,6 +1217,46 @@ export function detectTables(text: string): Finding[] {
 }
 
 // ---------------------------------------------------------------------------
+// Codierte Blöcke: In Base64 oder Quoted-Printable kann die Erkennung nicht hineinsehen, die KI schon. Mails werden
+// beim Ablegen entschlüsselt (core/mail.ts); was trotzdem codiert im Text steht und lesbaren Text enthält, wird
+// als Ganzes geschwärzt.
+
+const BASE64_RUN_RE = /(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/_-]{24,}={0,2}(?![A-Za-z0-9+/=_-])/g;
+const QP_WORD_RE = /(?<![\p{L}\p{N}_=.-])(?:[\p{L}\p{N}_.-]{0,60}=[0-9A-F]{2}){2,40}[\p{L}\p{N}_.-]{0,60}/gu;
+const TEXT_CHAR_RE = /[\p{L}\p{N}\s.,;:!?@'"()+/-]/u;
+
+/** Ist das überwiegend lesbarer Text (und kein Zufall wie ein Schlüssel oder ein Bild)? */
+function mostlyText(text: string): boolean {
+  let good = 0;
+  let total = 0;
+  for (const ch of text) {
+    total++;
+    if (TEXT_CHAR_RE.test(ch)) good++;
+  }
+  return total >= 16 && good / total >= 0.9;
+}
+
+export function detectEncoded(text: string): Finding[] {
+  const out: Finding[] = [];
+  for (const m of matchAll(text, BASE64_RUN_RE)) {
+    const clean = m[0].replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
+    if (clean.length % 4 === 1) continue;
+    const decoded = new TextDecoder("utf-8").decode(Buffer.from(clean, "base64"));
+    if (/[\p{L}\p{N}]{3}/u.test(decoded) && mostlyText(decoded)) {
+      out.push(finding(text, m.index, m.index + m[0].length, "SONSTIGES", "codiert:base64", { description: "codierter Text" }));
+    }
+  }
+  for (const m of matchAll(text, QP_WORD_RE)) {
+    const bytes = Buffer.from(m[0].replace(/=([0-9A-F]{2})/g, (_x, hex: string) => String.fromCharCode(parseInt(hex, 16))), "latin1");
+    const decoded = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    if (/[^\x00-\x7F]/.test(decoded) && !decoded.includes("\uFFFD")) {
+      out.push(finding(text, m.index, m.index + m[0].length, "SONSTIGES", "codiert:qp", { description: "codierter Text" }));
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Manuelle Markierungen aus der Oberfläche
 
 /** Auf ganze Wörter erweitern: Wer "Hubert" in "Hubertus" schwärzt, schwärzt das ganze Wort. */
@@ -1423,6 +1463,7 @@ export function detectAll(text: string, options: DetectOptions = {}): Finding[] 
     ...detectTaxNumbers(text),
     ...detectByContext(text),
     ...detectHandles(text),
+    ...detectEncoded(text),
     ...detectPhones(text),
     ...detectTables(text),
     ...detectCompanies(text, options.companies),

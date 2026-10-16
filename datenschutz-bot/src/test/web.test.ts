@@ -22,6 +22,9 @@ function freePort(): Promise<number> {
   });
 }
 
+/** Zugangs-Cookie der laufenden Oberfläche (über den Start-Link geholt). */
+let cookie = "";
+
 function request(
   port: number,
   method: string,
@@ -38,6 +41,9 @@ function request(
         path: pfad,
         headers: {
           Host: `127.0.0.1:${port}`,
+          // wie ein Browser: Ursprung bei Änderungen, Cookie immer
+          ...(method !== "GET" ? { Origin: `http://127.0.0.1:${port}` } : {}),
+          ...(cookie ? { Cookie: cookie } : {}),
           ...(body ? { "Content-Type": "application/json" } : {}),
           ...options.headers,
         },
@@ -57,13 +63,15 @@ function request(
   });
 }
 
-function start(env: Record<string, string>): { child: ChildProcess; ready: Promise<void>; exit: Promise<number> } {
+function start(env: Record<string, string>): { child: ChildProcess; ready: Promise<string>; exit: Promise<number> } {
   const child = spawn(process.execPath, [SERVER], { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
   let out = "";
-  const ready = new Promise<void>((resolve, reject) => {
+  // fertig, sobald der Start-Link ausgegeben ist
+  const ready = new Promise<string>((resolve, reject) => {
     child.stdout?.on("data", (d) => {
       out += String(d);
-      if (out.includes("läuft")) resolve();
+      const link = /(\/start\?zugang=[A-Za-z0-9_-]+)/.exec(out)?.[1];
+      if (link) resolve(link);
     });
     child.on("exit", () => reject(new Error(`Server beendet: ${out}`)));
   });
@@ -86,7 +94,20 @@ test("Oberfläche: Host- und Ursprungsprüfung, Freigabe nur der geprüften Fass
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "dsb-web-"));
   const { child, ready } = start({ DSB_PORT: String(port), DSB_DATA_DIR: dataDir });
   try {
-    await ready;
+    const startLink = await ready;
+    // Review Claude 2 #2: ohne Zugangs-Cookie keine Daten, auch nicht für andere Prozesse auf dem Rechner.
+    cookie = "";
+    assert.equal((await request(port, "GET", "/api/dokumente")).status, 401);
+    assert.equal((await request(port, "GET", "/start?zugang=falsch")).status, 403);
+    const login = await request(port, "GET", startLink);
+    assert.equal(login.status, 303);
+    const setCookie = String(login.headers["set-cookie"] ?? "");
+    assert.match(setCookie, /HttpOnly/);
+    assert.match(setCookie, /SameSite=Strict/);
+    cookie = setCookie.split(";")[0] ?? "";
+    assert.equal((await request(port, "GET", "/api/dokumente")).status, 200);
+    // Änderungen ohne Ursprung (wie von curl oder einem Skript) werden abgelehnt.
+    assert.equal((await request(port, "POST", "/api/dokumente", { body: { art: "hotel", text: "x" }, headers: { Origin: "" } })).status, 403);
     // Fremder Host (DNS-Rebinding) und fremder Ursprung (CSRF) werden abgelehnt.
     assert.equal((await request(port, "GET", "/api/info", { headers: { Host: `evil.example:${port}` } })).status, 403);
     assert.equal(

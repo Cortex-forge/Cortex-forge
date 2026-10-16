@@ -152,6 +152,21 @@ async function refreshList() {
 // ---------------------------------------------------------------------------
 // Neues Dokument
 
+/**
+ * Datei als Text lesen: UTF-8 (mit oder ohne BOM), UTF-16 mit BOM, sonst Windows-1252 (ältere Windows-Dateien).
+ * Mit dem falschen Zeichensatz würden Umlaute zu "�" und Namen wie "Müller" unkenntlich für die Erkennung.
+ */
+async function readTextFile(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder("utf-16le").decode(bytes);
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder("utf-16be").decode(bytes);
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+
 function renderNew() {
   state.loadSeq++;
   state.current = null;
@@ -160,9 +175,9 @@ function renderNew() {
   const form = h("form", { class: "card", onsubmit: (e) => { e.preventDefault(); submit(); } });
   const textArea = h("textarea", { id: "f-text", required: true, placeholder: "E-Mail, Rechnung oder Notiz hier einfügen …" });
   const betreff = h("input", { id: "f-betreff", type: "text", placeholder: "z. B. Anfrage Februar" });
-  const fileInput = h("input", { type: "file", accept: ".txt,.eml,.md,.csv,text/plain", onchange: async (e) => {
+  const fileInput = h("input", { type: "file", accept: ".txt,.eml,.md,.csv,text/plain,message/rfc822", onchange: async (e) => {
     const file = e.target.files[0];
-    if (file) textArea.value = await file.text();
+    if (file) textArea.value = await readTextFile(file);
   } });
 
   const seg = h("div", { class: "segmented", role: "radiogroup", "aria-label": "Art des Dokuments" },

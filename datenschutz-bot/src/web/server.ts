@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -19,6 +20,27 @@ if (!LOOPBACK.has(HOST)) {
 }
 
 const store = new JobStore();
+
+// Zugangsschutz: 127.0.0.1 erreicht jeder Prozess und jeder Benutzer auf dem Rechner, auch ein KI-Agent mit Shell.
+// Deshalb braucht jede Anfrage an die Daten ein Zugangs-Cookie. Gesetzt wird es nur über den Start-Link, den der
+// Bot beim Start in seinem Konsolenfenster ausgibt. Der Schlüssel gilt bis zum nächsten Start.
+const ACCESS = crypto.randomBytes(32).toString("base64url");
+const COOKIE = "dsb_zugang";
+
+function cookieValue(req: http.IncomingMessage, name: string): string | undefined {
+  for (const part of (req.headers.cookie ?? "").split(";")) {
+    const i = part.indexOf("=");
+    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return undefined;
+}
+
+function sameSecret(given: string | undefined): boolean {
+  if (!given) return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(ACCESS);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 const EXAMPLES = [
   { id: "hotel", titel: "Hotel-Anfrage", art: "hotel", betreff: "", datei: "hotel-anfrage.txt" },
@@ -118,8 +140,8 @@ function checkOrigin(req: http.IncomingMessage) {
   const host = (req.headers.host ?? "").toLowerCase();
   const allowedHosts = [`127.0.0.1:${PORT}`, `localhost:${PORT}`, `[::1]:${PORT}`];
   if (!allowedHosts.includes(host)) throw new HttpError(403, "Zugriff nur über localhost.");
-  const origin = req.headers.origin;
-  if (req.method !== "GET" && origin && origin !== `http://${host}`) throw new HttpError(403, "Fremder Ursprung.");
+  // Änderungen nur von der eigenen Seite: Browser schicken den Ursprung immer mit, Skripte meist nicht.
+  if (req.method !== "GET" && req.headers.origin !== `http://${host}`) throw new HttpError(403, "Fremder oder fehlender Ursprung.");
 }
 
 function listForUi() {
@@ -154,6 +176,19 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   if (req.method === "GET" && staticFile) {
     const file = path.join(PUBLIC_DIR, staticFile);
     return send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] ?? "application/octet-stream");
+  }
+
+  // Start-Link: setzt das Zugangs-Cookie (nur für diese Seite, nicht für Skripte lesbar) und leitet zur Oberfläche.
+  if (req.method === "GET" && p === "/start") {
+    if (!sameSecret(url.searchParams.get("zugang") ?? undefined)) {
+      throw new HttpError(403, "Ungültiger Start-Link. Bitte den Link aus dem Fenster nehmen, in dem der Bot läuft (er ändert sich bei jedem Start).");
+    }
+    res.writeHead(303, { ...SECURITY_HEADERS, Location: "/", "Set-Cookie": `${COOKIE}=${ACCESS}; HttpOnly; SameSite=Strict; Path=/` });
+    return res.end();
+  }
+
+  if (!sameSecret(cookieValue(req, COOKIE))) {
+    throw new HttpError(401, "Kein Zugang. Bitte die Oberfläche über den Start-Link öffnen, den der Bot beim Start im Konsolenfenster ausgibt.");
   }
 
   if (req.method === "GET" && p === "/api/info") {
@@ -252,6 +287,8 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Datenschutz-Bot läuft: http://${HOST === "::1" ? "[::1]" : HOST}:${PORT}`);
+  const base = `http://${HOST === "::1" ? "[::1]" : HOST}:${PORT}`;
+  console.log(`Datenschutz-Bot läuft: ${base}`);
+  console.log(`Zum Öffnen diesen Link verwenden (gilt bis zum nächsten Start, nicht weitergeben): ${base}/start?zugang=${ACCESS}`);
   console.log(`Daten liegen verschlüsselt in: ${store.dataDir}`);
 });

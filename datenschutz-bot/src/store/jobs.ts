@@ -20,6 +20,7 @@ import {
   type RechnungsSummen,
 } from "../core/invoice.js";
 import { nachkommastellen } from "../core/money.js";
+import { normalizeChars, prepareDocument } from "../core/normalize.js";
 import { placeholderRegex } from "../core/placeholders.js";
 import { placeholderLegend, pseudonymize } from "../core/pseudonymize.js";
 import { reidentify, type InventedData } from "../core/reidentify.js";
@@ -202,7 +203,6 @@ export class JobError extends Error {}
 /** Trennt Betreff und Text intern. Gleich lang wie die Anzeige ("\n\n"), damit die Positionen stimmen. */
 const SEP_INTERN = SEGMENT_BREAK + "\n";
 const SEP_ANZEIGE = "\n\n";
-const SEGMENT_BREAK_RE = new RegExp(SEGMENT_BREAK, "g");
 const MAX_TEXT = 200_000;
 const MAX_BETREFF = 500;
 const MAX_ERGEBNIS = 200_000;
@@ -599,7 +599,7 @@ export class JobStore {
     const doc = combine(secret.betreff, secret.text, SEP_INTERN);
     const konten =
       job.art === "buchhaltung"
-        ? loadAccounts(this.configDir).map((k) => ({ nummer: k.nummer, name: k.name.replace(/[\r\n]+/g, " ").replace(SEGMENT_BREAK_RE, "") }))
+        ? loadAccounts(this.configDir).map((k) => ({ nummer: k.nummer, name: normalizeChars(k.name).replace(/\n+/g, " ") }))
         : [];
     return { text: doc + konten.map((k) => SEP_INTERN + k.name).join(""), docLength: doc.length, konten };
   }
@@ -675,8 +675,15 @@ export class JobStore {
 
   create(input: { art: string; betreff?: string; text: string }, quelle: Quelle = "oberflaeche"): JobInfo {
     if (!(ARTEN as readonly string[]).includes(input.art)) throw new JobError(`Unbekannte Art: ${input.art}`);
-    const text = input.text.replace(/\r\n?/g, "\n").replace(SEGMENT_BREAK_RE, "");
-    const betreff = (input.betreff ?? "").replace(/\s*\n\s*/g, " ").replace(SEGMENT_BREAK_RE, "").trim();
+    // Mail entschlüsseln, HTML in Text, Zeichen vereinheitlichen: erkannt und geprüft wird derselbe Text.
+    const prepared = prepareDocument(input.text);
+    if (prepared.unlesbar) {
+      throw new JobError(
+        "Der Text enthält unlesbare Zeichen (�), vermutlich ein falscher Zeichensatz. Namen wären so nicht erkennbar. Bitte die Datei als UTF-8 speichern oder den Text direkt einfügen.",
+      );
+    }
+    const text = prepared.text;
+    const betreff = normalizeChars(input.betreff ?? "").replace(/\s*\n\s*/g, " ").trim();
     if (!text.trim()) throw new JobError("Das Dokument ist leer.");
     if (text.length > MAX_TEXT) throw new JobError("Das Dokument ist zu groß (höchstens 200.000 Zeichen).");
     if (betreff.length > MAX_BETREFF) throw new JobError("Der Betreff ist zu lang (höchstens 500 Zeichen).");
@@ -708,7 +715,13 @@ export class JobStore {
       this.pseudonymizeInto(job, secret);
       // Nie ein bestehendes Dokument überschreiben: exklusiv anlegen, bei Kollision neue ID.
       if (!createFileExclusive(this.file(id), JSON.stringify(job, null, 2))) continue;
-      this.log(id, `Dokument abgelegt, ${secret.mapping.length} Angaben durch Platzhalter ersetzt`, quelle);
+      const herkunft =
+        prepared.quelle === "mail"
+          ? ` (E-Mail entschlüsselt${prepared.weggelassen ? `, ${prepared.weggelassen} Anhang/Teil weggelassen` : ""})`
+          : prepared.quelle === "html"
+            ? " (HTML in Text umgewandelt)"
+            : "";
+      this.log(id, `Dokument abgelegt${herkunft}, ${secret.mapping.length} Angaben durch Platzhalter ersetzt`, quelle);
       return this.info(job);
     }
     throw new JobError("Das Dokument konnte nicht angelegt werden. Bitte noch einmal versuchen.");
@@ -749,7 +762,7 @@ export class JobStore {
     return this.mutate(id, (job) => {
       this.requireStatus(job, ["neu"], "Markieren");
       const secret = this.open<Geheim>(job, "geheim");
-      const value = mark.value.replace(SEGMENT_BREAK_RE, "").trim();
+      const value = normalizeChars(mark.value).trim();
       if (!value) throw new JobError("Leere Markierung.");
       const { text: intern, docLength } = this.internText(job, secret);
       if (stelle) {
@@ -779,7 +792,7 @@ export class JobStore {
     return this.mutate(id, (job) => {
       this.requireStatus(job, ["neu"], "Ausnehmen");
       const secret = this.open<Geheim>(job, "geheim");
-      const v = value.trim();
+      const v = normalizeChars(value).trim();
       if (!v) throw new JobError("Leerer Wert.");
       secret.manuell = secret.manuell.filter((m) => m.value.toLowerCase() !== v.toLowerCase());
       if (!secret.ausgeschlossen.some((a) => a.toLowerCase() === v.toLowerCase())) secret.ausgeschlossen.push(v);
@@ -965,7 +978,7 @@ export class JobStore {
       };
     }
     if (result.art === "buchungen") {
-      return { dateiname: `${base}-buchungen.csv`, typ: "text/csv; charset=utf-8", inhalt: "﻿" + bookingsToCsv(result.buchungen) };
+      return { dateiname: `${base}-buchungen.csv`, typ: "text/csv; charset=utf-8", inhalt: "\uFEFF" + bookingsToCsv(result.buchungen) };
     }
     return { dateiname: `${base}-rechnung.html`, typ: "text/html; charset=utf-8", inhalt: result.html };
   }

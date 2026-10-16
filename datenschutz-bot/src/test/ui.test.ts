@@ -119,7 +119,7 @@ test("Oberfläche im Browser: überholte Antworten werden verworfen, Auswahl und
   );
   let cdp: Cdp | undefined;
   try {
-    await waitForOutput(server, "stdout", /läuft/);
+    const [, startLink] = await waitForOutput(server, "stdout", /(\/start\?zugang=[A-Za-z0-9_-]+)/);
     const [, wsUrl] = await waitForOutput(browser, "stderr", /DevTools listening on (ws:\/\/\S+)/);
     cdp = await Cdp.connect(wsUrl ?? "");
     const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank" });
@@ -152,8 +152,9 @@ test("Oberfläche im Browser: überholte Antworten werden verworfen, Auswahl und
     });
     await send("Fetch.enable", { patterns: [{ urlPattern: "*/api/dokumente/D-*", requestStage: "Request" }] });
     await send("Page.enable");
-    await send("Page.navigate", { url: `http://127.0.0.1:${port}/#neu` });
-    await waitFor(`!!document.querySelector("#f-text")`, "Seite geladen");
+    // Über den Start-Link (setzt das Zugangs-Cookie), dann zur Seite für neue Dokumente.
+    await send("Page.navigate", { url: `http://127.0.0.1:${port}${startLink}` });
+    await waitFor(`location.pathname === "/" && !!document.querySelector("#f-text")`, "Seite geladen");
 
     // 1) A anfragen, zu B wechseln; B antwortet zuerst, A zuletzt: sichtbar bleibt B.
     hold = true;
