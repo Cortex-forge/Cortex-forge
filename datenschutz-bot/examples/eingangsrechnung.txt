@@ -1,0 +1,29 @@
+RECHNUNG
+
+Alpenblick Elektrotechnik GmbH
+Industriestraße 5, 6060 Hall in Tirol
+UID: ATU12345678
+Tel.: +43 5223 12345
+E-Mail: office@alpenblick-elektro.example
+
+An:
+Hotel Alpenrose Huber KG
+z. Hd. Frau Maria Gruber
+Dorfstraße 1, 6094 Axams
+
+Rechnungsnummer: 2026-0815
+Rechnungsdatum: 30.09.2026
+Leistungszeitraum: September 2026
+Kundennummer: K-4711
+
+Pos.  Beschreibung                  Menge   Einzelpreis   Gesamt
+1     Wartung Notbeleuchtung        1       420,00 €      420,00 €
+2     LED-Tausch Seminarraum        12      18,50 €       222,00 €
+3     Anfahrt                       1       45,00 €       45,00 €
+
+Summe netto                                               687,00 €
+USt 20 %                                                  137,40 €
+Gesamtbetrag                                              824,40 €
+
+Zahlbar innerhalb von 14 Tagen auf AT61 1904 3002 3457 3201 (BIC: BKAUATWW).
+Sachbearbeiter: Ing. Markus Leitner

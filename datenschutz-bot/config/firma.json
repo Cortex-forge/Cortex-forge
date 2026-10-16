@@ -1,0 +1,11 @@
+{
+  "_hinweis": "Daten des eigenen Betriebs. Die setzt der Bot selbst in Rechnungen ein, die KI sieht sie nie. Beispieldaten, bitte ersetzen.",
+  "name": "Hotel Alpenrose Huber KG",
+  "adresse": "Dorfstraße 1, 6094 Axams, Österreich",
+  "uid": "ATU99999999",
+  "firmenbuch": "FN 000000a, Landesgericht Innsbruck",
+  "iban": "AT61 1904 3002 3457 3201",
+  "bic": "BKAUATWW",
+  "telefon": "+43 5234 00000",
+  "email": "rezeption@hotel-alpenrose.example"
+}

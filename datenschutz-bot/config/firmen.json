@@ -1,0 +1,7 @@
+{
+  "_hinweis": "Bekannte Geschäftspartner. Die KI sieht statt des Namens nur die Kategorie, z. B. [FIRMA_1: Elektroinstallateur]. So kann sie das richtige Konto wählen, ohne den Namen zu kennen.",
+  "firmen": [
+    { "name": "Alpenblick Elektrotechnik GmbH", "kategorie": "Elektroinstallateur", "aliases": ["Alpenblick Elektrotechnik"] },
+    { "name": "Hotel Alpenrose Huber KG", "kategorie": "eigener Betrieb (Hotel)", "aliases": [] }
+  ]
+}

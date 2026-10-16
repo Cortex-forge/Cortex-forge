@@ -1,0 +1,15 @@
+{
+  "_hinweis": "Beispiel-Auszug, angelehnt an den österreichischen Einheitskontenrahmen. Bitte mit dem Kontenplan des Betriebs bzw. der Steuerberatung abgleichen.",
+  "konten": [
+    { "nummer": "2500", "name": "Vorsteuer" },
+    { "nummer": "3300", "name": "Lieferverbindlichkeiten (Kreditoren)" },
+    { "nummer": "3500", "name": "Umsatzsteuer" },
+    { "nummer": "4000", "name": "Umsatzerlöse" },
+    { "nummer": "5000", "name": "Wareneinsatz" },
+    { "nummer": "7200", "name": "Instandhaltung durch Dritte" },
+    { "nummer": "7380", "name": "Telefon und Internet" },
+    { "nummer": "7400", "name": "Miet- und Pachtaufwand" },
+    { "nummer": "7600", "name": "Büromaterial" },
+    { "nummer": "7700", "name": "Versicherungen" }
+  ]
+}
