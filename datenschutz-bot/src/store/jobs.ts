@@ -142,6 +142,8 @@ interface Geheim {
   konten?: KontoGeprueft[];
   /** Platzhalter, die schon im Original standen. */
   literal: string[];
+  /** Alle je vergebenen Platzhalter (Angabe → Nummer): Nummern bleiben stabil und werden nie neu belegt. */
+  vergeben?: Record<string, string>;
   ergebnis?: ErgebnisFertig;
 }
 
@@ -481,7 +483,14 @@ export class JobStore {
     return job;
   }
 
+  /**
+   * Speichern mit Gegenprobe: Die Datei muss noch genau den Stand haben, der geladen wurde (Compare-and-Swap). Unter der
+   * Sperre ist das immer so; die Probe fängt den Fall ab, dass eine Sperre doch einmal verloren ging.
+   */
   private persist(job: StoredJob): void {
+    if (this.readStored(job.id).rev !== job.rev) {
+      throw new JobError("Das Dokument wurde gleichzeitig geändert. Bitte die Seite neu laden und noch einmal versuchen.");
+    }
     job.rev += 1;
     job.aktualisiert = now();
     writeFileAtomic(this.file(job.id), JSON.stringify(job, null, 2));
@@ -610,6 +619,7 @@ export class JobStore {
       manual: secret.manuell,
       excluded: secret.ausgeschlossen,
       companies: loadCompanies(this.configDir),
+      assigned: secret.vergeben ?? {},
     });
     const parts = result.text.split(SEP_INTERN);
     const docParts = secret.betreff ? 2 : 1;
@@ -621,6 +631,7 @@ export class JobStore {
     const marks: Markierung[] = result.findings.map(({ start, end, type, id, source }) => ({ start, end, type, id, source }));
     secret.mapping = result.mapping;
     secret.literal = result.literal;
+    secret.vergeben = result.assigned;
     secret.markierungen = marks.filter((m) => m.end <= docLength);
     let pos = docLength;
     const geprueft = konten.map((k) => {

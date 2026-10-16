@@ -97,10 +97,20 @@ export interface CompanyEntry {
   aliases?: string[];
 }
 
+export interface PseudonymizeOptions extends DetectOptions {
+  /**
+   * Schon vergebene Platzhalter dieses Dokuments (Schlüssel der Angabe → Platzhalter). Dieselbe Angabe behält ihre
+   * Nummer, und keine einmal vergebene Nummer bezeichnet je eine andere Angabe.
+   */
+  assigned?: Record<string, string>;
+}
+
 export interface PseudonymizeResult {
   text: string;
   mapping: MappingEntry[];
   findings: Array<Finding & { id: string }>;
   /** Platzhalter, die schon im Original standen (z. B. "[PERSON_1]" in einer Vorlage). Sie bleiben unverändert. */
   literal: string[];
+  /** Alle vergebenen Platzhalter, die bisherigen und die neuen (für den nächsten Durchgang). */
+  assigned: Record<string, string>;
 }

@@ -7,6 +7,7 @@ import type {
   Finding,
   MappingEntry,
   PlaceholderInfo,
+  PseudonymizeOptions,
   PseudonymizeResult,
 } from "./types.js";
 
@@ -26,7 +27,9 @@ function titleCase(word: string): string {
 /** Teile eines Namens, die auch allein auf die Person verweisen ("Huber" aus "Anna Huber" oder "ANNA HUBER"). */
 function nameParts(name: string): string[] {
   return name.split(/[\s,]+/).filter((t) => {
-    if (t.length < 3 || PARTICLES.has(t.toLowerCase())) return false;
+    if (t.length < 2 || PARTICLES.has(t.toLowerCase())) return false;
+    // Kurze Nachnamen ("Herr Wu"): nur in der Form "Wu", nie als Allerweltswort ("Am", "In", "So").
+    if (t.length === 2) return /^\p{Lu}\p{Ll}$/u.test(t) && !NOT_SURNAME.has(t) && !LOWERCASE_STOPWORDS.has(t.toLowerCase());
     if (/^\p{Lu}/u.test(t)) return !NOT_SURNAME.has(t) && !NOT_SURNAME.has(titleCase(t));
     // Kleingeschriebene Namen aus lockeren Texten ("steffi", "lechner")
     return t.length >= 4 && /^\p{Ll}+$/u.test(t) && !LOWERCASE_STOPWORDS.has(t);
@@ -39,6 +42,11 @@ interface Owner {
   ambiguous?: boolean;
   /** Der Name stand selbst kleingeschrieben im Text ("steffi lechner"). */
   lowercase?: boolean;
+}
+
+/** Der Nachname eines vollen Namens: gespeichert bei der Erkennung, sonst der letzte Teil. */
+function surnameKey(owner: Owner): string {
+  return (owner.nachname ?? owner.full.split(/[\s,]+/).filter(Boolean).pop() ?? owner.full).toLowerCase();
 }
 
 /**
@@ -79,9 +87,13 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
     }
   }
 
+  // Nur der Nachname verweist sicher auf den vollen Namen ("Frau Huber" = "Anna Huber"). Ein Vorname allein kann
+  // eine andere Person sein ("unser Sohn Thomas" und "Thomas Müller" an der Rezeption): eigener Platzhalter.
   const canonicalFor = (value: string): Owner | undefined => {
-    const owner = owners.get(value.toLowerCase());
-    return owner && !owner.ambiguous && owner.full.toLowerCase() !== value.toLowerCase() ? owner : undefined;
+    const key = value.toLowerCase();
+    const owner = owners.get(key);
+    if (!owner || owner.ambiguous || owner.full.toLowerCase() === key) return undefined;
+    return surnameKey(owner).split(/[\s-]+/).includes(key) || surnameKey(owner) === key ? owner : undefined;
   };
 
   const withCanonical = findings.map((f) => {
@@ -124,7 +136,7 @@ function keyFor(f: Finding): string {
   return `${f.type}:${normalizeValue(f.type, f.canonical ?? f.value)}`;
 }
 
-export function pseudonymize(text: string, options: DetectOptions = {}): PseudonymizeResult {
+export function pseudonymize(text: string, options: PseudonymizeOptions = {}): PseudonymizeResult {
   const findings = propagatePersons(text, detectAll(text, options), options);
 
   // Platzhalter, die schon im Original sichtbar stehen ("Vorlage [PERSON_1]"), werden nicht neu vergeben.
@@ -138,12 +150,24 @@ export function pseudonymize(text: string, options: DetectOptions = {}): Pseudon
 
   const byKey = new Map<string, MappingEntry>();
   const counters = new Map<EntityType, number>();
+  // Stabile Nummern: Was schon eine Nummer hatte, behält sie. Neue Angaben bekommen eine Nummer, die in diesem
+  // Dokument noch nie vergeben war (auch nicht an eine inzwischen verworfene Angabe).
+  const assigned: Record<string, string> = { ...(options.assigned ?? {}) };
+  const taken = new Set<string>([...literal, ...Object.values(assigned)]);
   const nextId = (type: EntityType): string => {
     let n = counters.get(type) ?? 0;
     do n++;
-    while (literal.has(`${type}_${n}`));
+    while (taken.has(`${type}_${n}`));
     counters.set(type, n);
+    taken.add(`${type}_${n}`);
     return `${type}_${n}`;
+  };
+  const idFor = (key: string, type: EntityType): string => {
+    const known = assigned[key];
+    if (known && known.startsWith(`${type}_`) && !literal.has(known)) return known;
+    const id = nextId(type);
+    assigned[key] = id;
+    return id;
   };
   const mapping: MappingEntry[] = [];
 
@@ -151,7 +175,7 @@ export function pseudonymize(text: string, options: DetectOptions = {}): Pseudon
     const key = keyFor(f);
     let entry = byKey.get(key);
     if (!entry) {
-      entry = { id: nextId(f.type), type: f.type, original: (f.canonical ?? f.value).trim(), variants: [] };
+      entry = { id: idFor(key, f.type), type: f.type, original: (f.canonical ?? f.value).trim(), variants: [] };
       if (f.description) entry.description = f.description;
       byKey.set(key, entry);
       mapping.push(entry);
@@ -174,5 +198,5 @@ export function pseudonymize(text: string, options: DetectOptions = {}): Pseudon
   }
   pieces.push(text.slice(pos));
 
-  return { text: pieces.join(""), mapping, findings: withIds, literal: [...literal] };
+  return { text: pieces.join(""), mapping, findings: withIds, literal: [...literal], assigned };
 }

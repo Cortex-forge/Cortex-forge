@@ -5,7 +5,7 @@ import {
   detectPhones,
   detectVatIds,
 } from "./detectors.js";
-import { formatPlaceholder, leftoverRegex, placeholderId, placeholderRegex } from "./placeholders.js";
+import { formatPlaceholder, isLeftover, leftoverRegex, placeholderId, placeholderRegex } from "./placeholders.js";
 import { SALUTATION_BEFORE } from "./salutations.js";
 import { ENTITY_LABELS, type EntityType, type MappingEntry } from "./types.js";
 
@@ -107,7 +107,7 @@ export function reidentify(
   for (const m of aiText.matchAll(leftoverRegex())) {
     const s = m.index;
     const e = s + m[0].length;
-    if (spans.some(([a, b]) => s < b && a < e)) continue;
+    if (spans.some(([a, b]) => s < b && a < e) || !isLeftover(m)) continue;
     leftovers.add(m[0]);
   }
 

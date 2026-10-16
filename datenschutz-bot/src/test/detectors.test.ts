@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ibanIsValid, manualMatches, manualSpans } from "../core/detectors.js";
 import { pseudonymize } from "../core/pseudonymize.js";
+import { reidentify } from "../core/reidentify.js";
 
 const ki = (text: string, options = {}) => pseudonymize(text, options).text;
 const companies = [{ name: "Alpenblick Elektrotechnik GmbH", kategorie: "Elektroinstallateur" }];
@@ -137,12 +138,19 @@ test("Überschneidungen geben keine Zeichen frei", () => {
   );
 });
 
-test("Gleiche Person bekommt überall denselben Platzhalter", () => {
-  assert.equal(
-    ki("Anna Huber schreibt. Später: Frau Huber und Anna."),
-    "[PERSON_1] schreibt. Später: Frau [PERSON_1] und [PERSON_1].",
-  );
+test("Gleiche Person bekommt überall denselben Platzhalter; ein Vorname allein bekommt einen eigenen", () => {
   assert.equal(ki("Bitte an Herrn Gruber. Gruber ruft zurück."), "Bitte an Herrn [PERSON_1]. [PERSON_1] ruft zurück.");
+  // Review Claude 2 #9: Ein Vorname allein kann eine andere Person sein. Er bekommt einen eigenen Platzhalter, und
+  // zurückübersetzt wird genau dieser Vorname, nie der volle Name einer anderen Person.
+  const r = pseudonymize("Anna Huber schreibt. Später: Frau Huber und Anna.");
+  assert.equal(r.text, "[PERSON_1] schreibt. Später: Frau [PERSON_1] und [PERSON_2].");
+  assert.deepEqual(r.mapping.map((m) => m.original), ["Anna Huber", "Anna"]);
+  const t = pseudonymize("Unser Sohn Thomas (8) kommt mit. Ihr Ansprechpartner im Hotel ist Thomas Müller.");
+  assert.equal(t.text, "Unser Sohn [PERSON_1] (8) kommt mit. Ihr Ansprechpartner im Hotel ist [PERSON_2].");
+  assert.equal(reidentify("Für [PERSON_1] stellen wir ein Kinderbett bereit.", t.mapping).text, "Für Thomas stellen wir ein Kinderbett bereit.");
+  // Kurze Nachnamen werden nachgezogen, kurze Allerweltswörter nicht.
+  assert.equal(ki("Herr Wu reist an. Wu möchte ein ruhiges Zimmer."), "Herr [PERSON_1] reist an. [PERSON_1] möchte ein ruhiges Zimmer.");
+  assert.equal(ki("Frau So kommt am Montag. So wird es gemacht."), "Frau [PERSON_1] kommt am Montag. So wird es gemacht.");
 });
 
 // Review Claude #15
@@ -338,4 +346,57 @@ test("Manuelle Markierung: ausgewählte Stelle wird immer geschwärzt; Suche in 
     assert.deepEqual(manualMatches("q".repeat(n), "qq"), [[0, n]]);
     assert.ok(performance.now() - t0 < 500, `manualMatches bei ${n} Zeichen zu langsam`);
   }
+});
+
+// Review Claude 2 #4: häufige Schreibweisen außerhalb des Entwicklungssets
+test("Telefon, IBAN, Geburtsdatum, SV-Nummer und Namen in weiteren üblichen Schreibweisen", () => {
+  assert.equal(ki("Meine Nummer ist 0512 123456, bitte zurückrufen."), "Meine Nummer ist [TELEFON_1], bitte zurückrufen.");
+  assert.equal(ki("Wir sind tagsüber im Büro: 089/12345678"), "Wir sind tagsüber im Büro: [TELEFON_1]");
+  assert.equal(ki("Il mio numero è 333 4567890."), "Il mio numero è [TELEFON_1].");
+  assert.equal(ki("Konto: de89 3704 0044 0532 0130 00"), "Konto: [IBAN_1]");
+  assert.equal(ki("IBAN: AT61 1904 3002\n3457 3201"), "IBAN: [IBAN_1]");
+  assert.equal(ki("IBAN AT61-1904-3002-3457-3201"), "IBAN [IBAN_1]");
+  assert.equal(ki("Geburtstag: 12.03.1985"), "Geburtstag: [GEBURTSDATUM_1]");
+  assert.equal(ki("Anna Huber, *12.03.1985"), "[PERSON_1], *[GEBURTSDATUM_1]");
+  assert.equal(ki("Versicherungsnr 1234 010180"), "Versicherungsnr [SVNR_1]");
+  assert.equal(ki("Reservierung: HUBER, 2 Personen"), "Reservierung: [PERSON_1], 2 Personen");
+  assert.equal(ki("Gast: Anna Huber. Später: huber hat angerufen."), "Gast: [PERSON_1]. Später: [PERSON_1] hat angerufen.");
+  assert.equal(ki("Mühlau 12, 6020 Innsbruck"), "[ADRESSE_1]");
+  // Gegenproben
+  for (const text of [
+    "Rechnung Nr. 0815 4711 vom 3.4.",
+    "Zimmer Nr. 012 3456",
+    "Bestellnummer 0123 456789",
+    "Telefonrechnung 0512 123456 bezahlt",
+    "Wir feiern den 50. Geburtstag am 12.03.2027.",
+    "Reservierung: Doppelzimmer für 2",
+    "Zimmer 12, Lift 2, ISO 9001",
+  ]) {
+    assert.equal(ki(text), text);
+  }
+  assert.equal(ki("St.-Nr. 81 234/5678"), "St.-Nr. [STEUERNR_1]");
+});
+
+// Review Claude 2 #8: Namenszusätze
+test("Nach „vom“, „von der“ oder „von“ folgt nicht immer ein Nachname", () => {
+  assert.equal(ki("i bin der Ferdinand vom Skiclub"), "i bin der [PERSON_1] vom Skiclub");
+  assert.equal(ki("Maria von Booking.com hat geschrieben"), "[PERSON_1] von Booking.com hat geschrieben");
+  assert.equal(ki("Thomas von der Rezeption ruft zurück"), "[PERSON_1] von der Rezeption ruft zurück");
+  assert.equal(ki("Sehr geehrte Frau von der Leyen,"), "Sehr geehrte Frau [PERSON_1],");
+  assert.equal(ki("Ursula von der Leyen kommt."), "[PERSON_1] kommt.");
+  assert.equal(ki("Grüße, Jan van den Berg"), "Grüße, [PERSON_1]");
+});
+
+// Review Claude 2 #6 und #16
+test("Platzhalter-Muster bleibt linear; Abkürzungen mit Zahl gelten nicht als Platzhalter-Rest", () => {
+  const mapping = [{ id: "PERSON_1", type: "PERSON" as const, original: "Anna Huber", variants: ["Anna Huber"] }];
+  const t = "[PERSON" + " ".repeat(199_990) + "x";
+  const t0 = performance.now();
+  pseudonymize(t);
+  reidentify(t, mapping);
+  assert.ok(performance.now() - t0 < 1000, "Platzhalter-Muster zu langsam");
+  assert.deepEqual(
+    reidentify("Preis EUR 450, ISO 9001, COVID-19, LIFT 2, IMG_1234, [NAME_1], PERSON 1, PERSN_1, [KUNDE 2], [PERSON_1 fehlt", mapping).leftovers,
+    ["[NAME_1]", "PERSON 1", "PERSN_1", "[KUNDE 2]", "[PERSON_1"],
+  );
 });

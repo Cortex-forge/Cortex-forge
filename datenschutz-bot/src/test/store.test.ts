@@ -439,10 +439,11 @@ test("Ergebnisse zu einer überholten Fassung werden abgelehnt", () => {
   release(store, job.id);
   const neu = store.readForAi(job.id);
   assert.equal(neu.fassung, 2);
-  assert.equal(neu.text, "[SONSTIGES_1] reist mit [PERSON_1].");
+  // Stabile Nummern (Review Claude 2 #5): Lisa behält [PERSON_2], [PERSON_1] wird nie neu vergeben.
+  assert.equal(neu.text, "[SONSTIGES_1] reist mit [PERSON_2].");
   assert.throws(() => store.saveResult(job.id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" }, alt.fassung), /seit dem Lesen geändert/);
   assert.equal(store.detail(job.id).ergebnis, undefined);
-  store.saveResult(job.id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" }, neu.fassung);
+  store.saveResult(job.id, { art: "text", text: "Sehr geehrte Frau [PERSON_2]" }, neu.fassung);
   const r = store.detail(job.id).ergebnis;
   assert.equal(r?.art === "text" ? r.text : "", "Sehr geehrte Frau Gruber");
 });
@@ -625,4 +626,49 @@ test("Markieren: die ausgewählte Stelle wird geschwärzt, auch wenn der Text an
   assert.equal(store.mark(job.id, { value: "ZORWIN", type: "SONSTIGES" }, [at, at + 6]).treffer, 2);
   assert.equal(store.detail(job.id).job.textKi, "Code [SONSTIGES_1] und [SONSTIGES_2].");
   assert.throws(() => store.mark(job.id, { value: "ZORWIN", type: "SONSTIGES" }, [1, 7]), /passt nicht zum Dokument/);
+});
+
+// Review Claude 2 #5
+test("Platzhalter-Nummern bleiben stabil: Nachschwärzen verschiebt nichts, verworfene Nummern kommen nicht wieder", () => {
+  const store = tempStore();
+  const job = store.create({ art: "allgemein", text: "Hallo, hier schreibt Gstrein im Auftrag von Frau Anna Huber. Sie reist mit Thomas an." });
+  const vorher = store.detail(job.id).zuordnung.map((e) => `${e.id}=${e.original}`);
+  assert.deepEqual(vorher, ["PERSON_1=Anna Huber", "PERSON_2=Thomas"]);
+  store.mark(job.id, { value: "Gstrein", type: "PERSON" });
+  assert.equal(store.detail(job.id).job.textKi, "Hallo, hier schreibt [PERSON_3] im Auftrag von Frau [PERSON_1]. Sie reist mit [PERSON_2] an.");
+  store.exclude(job.id, "Thomas");
+  assert.equal(store.detail(job.id).job.textKi, "Hallo, hier schreibt [PERSON_3] im Auftrag von Frau [PERSON_1]. Sie reist mit Thomas an.");
+  store.mark(job.id, { value: "Auftrag", type: "SONSTIGES" });
+  store.undoMark(job.id, "Thomas");
+  assert.equal(
+    store.detail(job.id).job.textKi,
+    "Hallo, hier schreibt [PERSON_3] im [SONSTIGES_1] von Frau [PERSON_1]. Sie reist mit [PERSON_2] an.",
+    "Thomas bekommt seine alte Nummer zurück",
+  );
+});
+
+// Review Claude 2 #7: Gegenprobe beim Speichern
+test("Speichern prüft, dass die Datei noch den geladenen Stand hat", () => {
+  const store = tempStore();
+  const job = store.create({ art: "allgemein", text: "Anna Huber fragt an." });
+  const file = docFile(store, job.id);
+  // Nach dem Laden schreibt jemand an der Sperre vorbei (als wäre sie verloren gegangen).
+  const original = fs.readFileSync;
+  let geladen = false;
+  fs.readFileSync = ((pfad: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+    const out = (original as (...a: unknown[]) => unknown)(pfad, ...rest);
+    if (!geladen && String(pfad) === file) {
+      geladen = true;
+      const fremd = JSON.parse(String(out)) as { rev: number };
+      fremd.rev += 1;
+      fs.writeFileSync(file, JSON.stringify(fremd));
+    }
+    return out;
+  }) as typeof fs.readFileSync;
+  try {
+    assert.throws(() => store.mark(job.id, { value: "fragt", type: "SONSTIGES" }), /gleichzeitig geändert/);
+  } finally {
+    fs.readFileSync = original;
+  }
+  assert.equal(store.detail(job.id).manuell.length, 0, "nichts überschrieben");
 });

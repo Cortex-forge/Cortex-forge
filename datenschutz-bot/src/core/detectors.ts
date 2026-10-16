@@ -1,6 +1,7 @@
 import {
   BUSINESS_WORDS,
   FIRST_NAMES,
+  NOUN_SURNAMES,
   LOWERCASE_STOPWORDS,
   LOWERCASE_UNSAFE_NAMES,
   MONTHS,
@@ -167,7 +168,7 @@ export function detectEmails(text: string): Finding[] {
 // IBAN (mit Prüfziffer nach ISO 13616)
 
 export function ibanIsValid(raw: string): boolean {
-  const iban = raw.replace(/\s+/g, "").toUpperCase();
+  const iban = raw.replace(/[\s-]+/g, "").toUpperCase();
   if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
   const rearranged = iban.slice(4) + iban.slice(0, 4);
   let remainder = 0;
@@ -178,7 +179,13 @@ export function ibanIsValid(raw: string): boolean {
   return remainder === 1;
 }
 
-const IBAN_RE = /(?<![\p{L}\p{N}])[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?(?![\p{L}\p{N}])/gu;
+// Gruppen getrennt durch Leerzeichen, Bindestrich oder einen Zeilenumbruch; Groß- oder Kleinschreibung.
+// Ob es wirklich eine IBAN ist, entscheidet die Prüfziffer.
+const IBAN_SEP = String.raw`(?:[ \t]{0,2}-?[ \t]{0,2}|[ \t]{0,2}\n[ \t]{0,2})`;
+const IBAN_RE = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])[A-Za-z]{2}\d{2}(?:${IBAN_SEP}[A-Za-z0-9]{4}){2,7}(?:${IBAN_SEP}[A-Za-z0-9]{1,4})?(?![\p{L}\p{N}])`,
+  "gu",
+);
 
 export function detectIbans(text: string): Finding[] {
   const out: Finding[] = [];
@@ -190,9 +197,9 @@ export function detectIbans(text: string): Finding[] {
         out.push(finding(text, m.index, m.index + candidate.length, "IBAN", "iban"));
         break;
       }
-      const cut = candidate.lastIndexOf(" ");
+      const cut = Math.max(candidate.lastIndexOf(" "), candidate.lastIndexOf("-"), candidate.lastIndexOf("\n"));
       if (cut <= 4) break;
-      candidate = candidate.slice(0, cut);
+      candidate = candidate.slice(0, cut).replace(/[\s-]+$/u, "");
     }
   }
   return out;
@@ -270,15 +277,30 @@ function classifyWord(word: string): "telefon" | "beleg" | null {
   return kind;
 }
 
+/** "Nummer", "numero" allein meinen meist die Telefonnummer ("meine Nummer ist …"), außer davor steht ein Beleg. */
+const NUMBER_WORDS = new Set(["nummer", "number", "numero", "número"]);
+/** "Nr.", "No." nennen jede Art Nummer ("St.-Nr.", "Zimmer Nr."): entscheidet das Wort davor. */
+const NUMBER_ABBREVIATIONS = new Set(["nr", "no", "num"]);
+
 function phoneVerdict(text: string, start: number): "telefon" | "beleg" | null {
   const from = lineStartWithin(text, start, 48);
   const words = text.slice(from, start).toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
   for (let i = words.length - 1, n = 0; i >= 0 && n < 4; i--, n++) {
-    const kind = classifyWord(words[i] ?? "");
+    const word = words[i] ?? "";
+    const before = classifyWord(words[i - 1] ?? "");
+    if (NUMBER_WORDS.has(word)) return before === "beleg" ? "beleg" : "telefon";
+    if (NUMBER_ABBREVIATIONS.has(word)) {
+      if (before) return before;
+      continue;
+    }
+    const kind = classifyWord(word);
     if (kind) return kind;
   }
   return null;
 }
+
+/** Festnetz in üblicher Schreibweise: Vorwahl, Trennzeichen, Rufnummer ("0512 123456", "089/12345678"). */
+const LANDLINE_SHAPE = /^0[1-9]\d{0,4}[ \t/-]{1,2}\d{3,9}(?:[ \t-]\d{1,6})?$/;
 
 const PHONE_INTL_RE =
   /(?<![\p{L}\p{N}+])(?:\+|00)\d{1,3}(?:[ \t/.-]{0,3}(?:\(\d{1,4}\))?[ \t/.-]{0,3}\d{1,5}){2,7}(?![\p{L}\p{N}])/gu;
@@ -300,7 +322,8 @@ export function detectPhones(text: string): Finding[] {
       if (kind === "context") return;
       if (kind === "national") {
         const mobile = /^0(?:6[5-9]\d|1[5-7]\d|7[5-9])/.test(digits);
-        if (!atLineStart(text, start) && !mobile) return;
+        const landline = digits.length >= 9 && LANDLINE_SHAPE.test(value);
+        if (!atLineStart(text, start) && !mobile && !landline) return;
       }
     }
     out.push(finding(text, start, start + value.length, "TELEFON", "telefon"));
@@ -361,7 +384,7 @@ const CONTEXT_RULES: ContextRule[] = [
   {
     type: "GEBURTSDATUM",
     re: new RegExp(
-      String.raw`(?<![\p{L}])(?:geb\.|geboren|Geburtsdatum|Geb\.-Datum|DOB|D\.O\.B\.|date of birth|born(?: on)?|nato il|nata il|data di nascita|geboortedatum|geboren op)(?:[ \t]{1,20}(?:am|on|il|op))?[ \t]{0,20}:?[ \t]{0,20}(?<v>${DATE})(?![\p{N}])`,
+      String.raw`(?<![\p{L}])(?:geb\.|geboren|Geburtsdatum|Geburtstag(?=[ \t]{0,20}:)|Geb\.-Datum|Geb\.-Tag|DOB|D\.O\.B\.|date of birth|birthday(?=[ \t]{0,20}:)|born(?: on)?|nato il|nata il|data di nascita|geboortedatum|geboren op|\*)(?:[ \t]{1,20}(?:am|on|il|op))?[ \t]{0,20}:?[ \t]{0,20}(?<v>${DATE})(?![\p{N}])`,
       "giud",
     ),
   },
@@ -379,7 +402,7 @@ const CONTEXT_RULES: ContextRule[] = [
   },
   {
     type: "SVNR",
-    re: /(?<![\p{L}])(?:SV-?Nr\.?|SVNR|Sozialversicherungsnummer|Versicherungsnummer|Sozialversicherungs-Nr\.?)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{4} ?\d{6}|\d{2} ?\d{6} ?[A-Z] ?\d{3})(?![\p{N}])/giud,
+    re: /(?<![\p{L}])(?:SV-?Nr\.?|SVNR|SV-Nummer|Sozialversicherungsnummer|Versicherungsnummer|Versicherungsnr\.?|Versicherungs-Nr\.?|Sozialversicherungs-Nr\.?)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{4} ?\d{6}|\d{2} ?\d{6} ?[A-Z] ?\d{3})(?![\p{N}])/giud,
   },
   {
     type: "KREDITKARTE",
@@ -482,6 +505,11 @@ function isPostcodeStop(word: string): boolean {
   return AFTER_POSTCODE_STOP.has(word) || MONTHS.has(word) || NOT_SURNAME.has(word);
 }
 
+const STREET_BEFORE_POSTCODE_RE = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])(?<w>${UP}${LO}{2,30})[ \t]{1,3}${HOUSE_NO}[ \t]{0,20}[,·|][ \t]{0,20}$`,
+  "u",
+);
+
 export function detectAddresses(text: string): Finding[] {
   const out: Finding[] = [];
   const addStreet = (start: number, end: number) => {
@@ -517,6 +545,14 @@ export function detectAddresses(text: string): Finding[] {
       /(?:^|[ \t])(?:in|aus|nach|from|to)[ \t]{1,20}$/u.test(before) ||
       /(?:PLZ|Ort|Wohnort|Postleitzahl|Stadt|City|Anschrift|Adresse|Address)[ \t]{0,20}:?[ \t]{0,20}$/iu.test(before);
     if (!okContext) continue;
+    // Davor "Wort Hausnummer," ohne Straßen-Endung (Ortsteile, Weiler: "Mühlau 12, 6020 Innsbruck").
+    const plain = STREET_BEFORE_POSTCODE_RE.exec(before);
+    if (plain?.groups?.w && !isNotSurname(plain.groups.w) && !BUSINESS_WORDS.has(plain.groups.w)) {
+      const s0 = start - before.length + plain.index;
+      const e0 = s0 + plain[0].replace(/[ \t]{0,20}[,·|]?[ \t]{0,20}$/u, "").length;
+      // Nur, wenn dort nicht schon eine Straße erkannt ist ("Anna Huber Bergweg 12, …" bleibt Person + Straße).
+      if (!out.some((f) => f.start < e0 && s0 < f.end)) out.push(finding(text, s0, e0, "ADRESSE", "adresse:strasse"));
+    }
     // Kleingeschriebene Orte nur direkt nach einer Straße ("sportplatzweg 3, 6370 kitzbühel").
     if (/^\p{Ll}/u.test(ort) && !/\d[a-zA-Z]?[ \t]{0,20},[ \t]{0,20}$/u.test(before)) continue;
     // Großgeschriebene Folgewörter, die keine Ortsteile sind, abschneiden ("6020 Innsbruck Telefon").
@@ -646,6 +682,15 @@ interface NameSpan {
 }
 
 /** Liest bis zu maxTokens Namensteile ab start. */
+const ORGANISATION_ENDINGS = /(?:club|klub|verein|verband|team|amt|büro|buero|hotel|gasthof|schule|gemeinde|firma|abteilung|rezeption|empfang|service|bank|kasse|versicherung|praxis|klinik|spital|krankenhaus|polizei|feuerwehr|kirche|pfarre|gruppe|zentrale|agentur|portal|verwaltung|direktion|leitung|vorstand)$/iu;
+
+/** Ist das Wort nach einem Namenszusatz ein Nachname (und keine Organisation oder Domain)? */
+function particleLeadsToName(text: string, token: string, end: number): boolean {
+  if (ROLE_WORDS.has(token) || BUSINESS_WORDS.has(token) || ORGANISATION_ENDINGS.test(token)) return false;
+  if (/^\.[a-z]{2,6}(?![\p{L}])/u.test(text.slice(end, end + 8))) return false;
+  return !isNotSurname(token) || NOUN_SURNAMES.has(token);
+}
+
 function nameAt(
   text: string,
   start: number,
@@ -678,7 +723,9 @@ function nameAt(
     }
     if (!m) break;
     const token = m[0];
-    // Nach einem Zusatz ist auch ein Allerweltswort ein Nachname ("van der Berg").
+    // Nach einem Zusatz ist auch ein Allerweltswort ein Nachname ("van der Berg"), aber keine Abteilung, kein
+    // Betrieb, kein Verein und keine Domain ("Ferdinand vom Skiclub", "Thomas von der Rezeption", "von Booking.com").
+    if (particle && !particleLeadsToName(text, token, p + token.length)) break;
     if (tokens.length > 0 && !particle && isNotSurname(token)) break;
     if (tokens.length === 0) firstParticle = particle;
     tokens.push(token);
@@ -715,9 +762,11 @@ const CLOSING_RE =
   /^[ \t]{0,20}(?:(?:liebe|viele|beste|herzliche|freundliche|schöne|sonnige|sportliche|liebste)[ \t]{1,20}grüße|mit freundlichen grüßen|freundliche grüße|grüß gott|grüße|gruß|mfg|lg|glg|vg|servus|ciao|tschüss|best regards|kind regards|warm regards|regards|best|cheers|thanks|thank you|cordiali saluti|distinti saluti|saluti|grazie mille|grazie|met vriendelijke groet(?:en)?|groetjes|groeten|danke und liebe grüße|danke)(?=[\s,.!]|$)/gimu;
 const HEADER_RE = /^[ \t>]*(?:Von|From|An|To|Cc|Absender|Da|Van|Aan)[ \t]{0,20}:[ \t]{0,20}(?<name>[^<\n\s][^<\n]{0,119}?)[ \t]{0,20}</gmud;
 const LABEL_RE =
-  /(?<![\p{L}])(?<label>Name|Vorname|Nachname|Familienname|Gast|Gastname|Gäste|Guest|Guest name|Name of guest|Teilnehmer|Teilnehmerin|Teilnehmende|Anwesend|Anwesende|Fahrer|Fahrerin|Dienstnehmer|Dienstnehmerin|Mitarbeiter|Mitarbeiterin|Karteninhaber|Karteninhaberin|Kontoinhaber|Kontoinhaberin|Inhaber|Inhaberin|Ansprechpartner|Ansprechpartnerin|Ansprechperson|Kontaktperson|Referente|Referent|Sachbearbeiter|Sachbearbeiterin|Geschäftsführer|Geschäftsführerin|Obmann|Obfrau|Brautpaar|Bewerber|Bewerberin|Patient|Patientin|Mieter|Mieterin|Antragsteller|Antragstellerin|Besteller|Bestellerin|Gebucht von|Booked by|Contact person|Nome|Cognome|Naam|Organisator|Organisatorin|Verantwortlich|Trainer|Trainerin|Notfallkontakt|Kunde|Kundin|Empfänger|Empfängerin)[ \t]{0,20}:[ \t]{0,20}/gu;
+  /(?<![\p{L}])(?<label>Name|Vorname|Nachname|Familienname|Gast|Gastname|Gäste|Guest|Guest name|Name of guest|Teilnehmer|Teilnehmerin|Teilnehmende|Anwesend|Anwesende|Fahrer|Fahrerin|Dienstnehmer|Dienstnehmerin|Mitarbeiter|Mitarbeiterin|Karteninhaber|Karteninhaberin|Kontoinhaber|Kontoinhaberin|Inhaber|Inhaberin|Ansprechpartner|Ansprechpartnerin|Ansprechperson|Kontaktperson|Referente|Referent|Sachbearbeiter|Sachbearbeiterin|Geschäftsführer|Geschäftsführerin|Obmann|Obfrau|Brautpaar|Bewerber|Bewerberin|Patient|Patientin|Mieter|Mieterin|Antragsteller|Antragstellerin|Besteller|Bestellerin|Gebucht von|Booked by|Contact person|Nome|Cognome|Naam|Organisator|Organisatorin|Verantwortlich|Trainer|Trainerin|Notfallkontakt|Kunde|Kundin|Empfänger|Empfängerin|Reservierung|Reserviert auf|Reserviert für|Buchung|Gebucht auf|Reservation|Booking|Prenotazione|Reservering)[ \t]{0,20}:[ \t]{0,20}/gu;
 const LIST_LABELS = new Set(["Gäste", "Teilnehmer", "Teilnehmerin", "Teilnehmende", "Anwesend", "Anwesende", "Brautpaar"]);
 const WEAK_LABELS = new Set(["Kunde", "Kundin", "Empfänger", "Empfängerin", "Verantwortlich"]);
+// Nach "Reservierung:" steht oft etwas anderes ("Reservierung: Doppelzimmer"): nur Vornamen oder GROSS geschriebene Namen.
+const BOOKING_LABELS = new Set(["Reservierung", "Reserviert auf", "Reserviert für", "Buchung", "Gebucht auf", "Reservation", "Booking", "Prenotazione", "Reservering"]);
 const FAMILY_AFTER_RE = new RegExp(String.raw`(?<![\p{L}])[Tt]he[ \t]{1,20}(?<n>${NAME_WORD})[ \t]{1,20}family(?![\p{L}])`, "gud");
 const FAMILY_BEFORE_RE = /(?<![\p{L}])(?:familie|famiglia|famille|family)[ \t]{1,20}/gu;
 const BIRTH_NAME_RE = /(?<![\p{L}])(?:geb\.|geborene|geborener|née|nee|nata|nato)[ \t]{1,20}(?=\p{Lu})/gu;
@@ -914,6 +963,7 @@ function labelValueIsName(span: NameSpan, label: string): boolean {
   if (span.firstParticle) return true;
   if (isNotSurname(first) || BUSINESS_WORDS.has(first) || ROLE_WORDS.has(first) || MONTHS.has(first)) return false;
   if (isFirstName(first)) return true;
+  if (BOOKING_LABELS.has(label)) return span.tokens.every((t) => isCaps(t) && t.length >= 2 && !ACRONYMS.has(t));
   // Nach "Kunde:" oder "Empfänger:" steht oft eine Firma: dort nur mit bekanntem Vornamen.
   // Nach eindeutigen Feldern ("Fahrer: Novak", "Anwesend: Gstrein") reicht auch ein einzelnes Wort.
   return !WEAK_LABELS.has(label);
