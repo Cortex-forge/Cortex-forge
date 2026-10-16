@@ -11,7 +11,7 @@ Vor dem Start von Phase 1 (Pilot) müssen alle Prüfungen erfüllt sein.
 | 3 | Datenschutzkonzept und DSFA-Entwurf vorhanden | `docs/02-datenschutz/` | erfüllt (Entwurf, Jurist offen) |
 | 4 | Alle Tests grün inkl. Datenschutz-Probe, Nachweis erzeugt | `docs/05-nachweise/` | Tests grün, Nachweis-Datei folgt |
 | 5 | Erkennung gemessen: Testset mit Lösungsblatt, Ziele erreicht (siehe Testkonzept) | `docs/03-qualitaet/2026-10-16-messung-ausgangslage.md` | gemessen, Ziele noch nicht erreicht |
-| 6 | Triple-Review mit Einzelnote ≥ 7,5 und Schnitt ≥ 8,0 | `docs/04-reviews/README.md` | nicht erfüllt: Claude 4/10 (1 Blocker, Befunde in Arbeit), Codex läuft, Gemini offen |
+| 6 | Triple-Review mit Einzelnote ≥ 7,5 und Schnitt ≥ 8,0 | `docs/04-reviews/README.md` | nicht erfüllt: Claude 4/10 (1 Blocker), Codex 4,2/10 (2 Blocker), Befunde in Arbeit, Gemini offen |
 | 7 | Go von Peter | Eintrag hier mit Datum | offen |
 
 ## Go-Entscheidung

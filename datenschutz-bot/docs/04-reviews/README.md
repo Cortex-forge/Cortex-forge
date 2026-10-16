@@ -9,7 +9,7 @@ Jeder Stand, der gemergt werden soll, wird von drei unabhängigen Prüfern bewer
 | Datum | Reviewer | Modell | Geprüfter Stand | Gesamtnote | Offene Blocker | Bericht |
 |---|---|---|---|---|---|---|
 | 2026-10-16 | Claude (unabhängiger Prüf-Agent) | Claude | `ff0aeb0` | **4** | 1 | [`2026-10-16-claude.md`](2026-10-16-claude.md), Befunde in Arbeit |
-| 2026-10-16 | Codex (ChatGPT-Abo) | GPT-6-Astra, Denkstufe „ultra“ (Peters „Codex Astra 6.0 Ultra“) | `e0437a0` | läuft | | folgt: `2026-10-16-codex.md` |
+| 2026-10-16 | Codex (ChatGPT-Abo) | GPT-6-Astra, Denkstufe „ultra“ (Peters „Codex Astra 6.0 Ultra“) | `e0437a0` | **4,2** | 2 | [`2026-10-16-codex.md`](2026-10-16-codex.md), Befunde in Arbeit |
 | offen | Gemini | | | | | |
 
 ## So läuft ein Codex-Review
