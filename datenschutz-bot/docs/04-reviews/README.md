@@ -8,8 +8,8 @@ Jeder Stand, der gemergt werden soll, wird von drei unabhängigen Prüfern bewer
 
 | Datum | Reviewer | Modell | Geprüfter Stand | Gesamtnote | Offene Blocker | Bericht |
 |---|---|---|---|---|---|---|
-| 2026-10-16 | Claude (unabhängiger Prüf-Agent) | Claude | `ff0aeb0` | läuft | | folgt: `2026-10-16-claude.md` |
-| offen | Codex | von Peter gewünscht: „Codex Astra 6.0 Ultra“ | | | | |
+| 2026-10-16 | Claude (unabhängiger Prüf-Agent) | Claude | `ff0aeb0` | **4** | 1 | [`2026-10-16-claude.md`](2026-10-16-claude.md), Befunde in Arbeit |
+| 2026-10-16 | Codex (ChatGPT-Abo) | GPT-6-Astra, Denkstufe „ultra“ (Peters „Codex Astra 6.0 Ultra“) | `e0437a0` | läuft | | folgt: `2026-10-16-codex.md` |
 | offen | Gemini | | | | | |
 
 ## So läuft ein Codex-Review
@@ -31,6 +31,22 @@ Dann prüfen lassen:
 Das Modell stellt ihr in der Codex-Konfiguration ein (`~/.codex/config.toml`, Eintrag `model = "…"`). Details und aktuelle Optionen: README des Plugins.
 
 **Hinweis:** Der früher oft beschriebene Befehl `codex mcp-server` (Codex als MCP-Server) ist laut OpenAI-Dokumentation entfernt worden (Codex 0.154.0, September 2026). Für Claude Code ist das Plugin der vorgesehene Weg.
+
+**In einer Cloud-Sitzung von Claude Code, über das ChatGPT-Abo statt API-Schlüssel** (so lief das Review am 2026-10-16):
+
+1. ChatGPT → Einstellungen → Sicherheit und Anmeldung: „Anmeldung per Gerätecode für Codex“ einschalten.
+2. Claude Code → Titel der Sitzung → Pfeil ⌄ → „Cloud-Umgebung bearbeiten“ → Netzwerkzugriff „Benutzerdefiniert“, erlaubte Domains `chatgpt.com`, `auth.openai.com`, `api.openai.com`, Häkchen bei der Standardliste der Paketmanager lassen, speichern. Wirkt nach etwa einer Minute.
+3. In der Sitzung: `npm i -g @openai/codex`, dann `codex login --device-auth`. Link und Code öffnet Peter selbst bei OpenAI; der Code gilt 15 Minuten, die Anmeldung danach bleibt bestehen, solange die Cloud-Umgebung lebt. Die Anmeldedaten (`~/.codex/auth.json`) kommen nie ins Repo.
+4. Verfügbare Modelle prüfen: `codex debug models`. „Codex Astra 6.0 Ultra“ ist `gpt-6-astra` mit `model_reasoning_effort = "ultra"`.
+5. Codex prüft eine abgetrennte Kopie (eigener `git clone` des geprüften Commits, `node_modules` hineinkopiert), damit Build und Tests laufen können, ohne das echte Projekt zu berühren:
+   ```bash
+   codex exec -m gpt-6-astra -c model_reasoning_effort='"ultra"' -c approval_policy='"never"' \
+     --sandbox workspace-write -c 'sandbox_workspace_write.network_access=true' \
+     -o bericht.md "$(cat prompt.md)" < /dev/null
+   ```
+   `network_access=true` ist nötig, weil die Sandbox sonst die Pipes zu Kindprozessen sperrt und der MCP-Test fälschlich scheitert. Schreibzugriff auf das echte Projekt bleibt gesperrt (geprüft). `prompt.md` = kurzer technischer Hinweis zur Kopie + unveränderter Text aus `pruefauftrag.md`.
+
+Den Lauf sieht man nicht in der Codex-App, weil er weder auf dem eigenen Rechner noch in Codex Cloud läuft.
 
 **Ohne Claude, direkt mit der Codex-CLI** (Optionen je nach Version, siehe `codex exec --help`):
 

@@ -17,8 +17,9 @@ Hier liegt alles außer dem Code: warum wir etwas bauen, wie es aufgebaut ist, w
 ## Wo stehen wir?
 
 - **Phase 0 (Prototyp):** gebaut, Tests grün. Erste Messung der Erkennung: 75,5 % Trefferquote, 98,4 % Genauigkeit (`03-qualitaet/2026-10-16-messung-ausgangslage.md`).
-- **Phase-0-Gate:** offen. Es fehlen die Reviews von Codex und Gemini und Peters OK (siehe [`03-qualitaet/phase-0-gate.md`](03-qualitaet/phase-0-gate.md)).
-- **Nächster Schritt:** Erkennung anhand der Messung verbessern, danach Test mit echten Dokumenten vor Ort (siehe [`07-roadmap/roadmap.md`](07-roadmap/roadmap.md)).
+- **Reviews:** Claude 4 von 10 mit 1 Blocker und 5 hohen Befunden ([`04-reviews/2026-10-16-claude.md`](04-reviews/2026-10-16-claude.md)), die Befunde werden behoben. Codex (GPT-6-Astra, „ultra“) prüft gerade, Gemini ist offen.
+- **Phase-0-Gate:** offen (siehe [`03-qualitaet/phase-0-gate.md`](03-qualitaet/phase-0-gate.md)).
+- **Nächster Schritt:** Befunde beheben und neu messen, danach Test mit echten Dokumenten vor Ort (siehe [`07-roadmap/roadmap.md`](07-roadmap/roadmap.md)).
 
 ## Regeln für diesen Ordner
 
