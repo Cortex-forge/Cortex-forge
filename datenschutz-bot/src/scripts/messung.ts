@@ -6,6 +6,7 @@
 //   npm run messung -- --datei testset/pruefset-2.json  anderes Testset messen (hier: das blinde Prüfset)
 //   npm run messung -- --ablegen nach-korrektur       Bericht nach docs/03-qualitaet/ (zum Committen)
 //   npm run messung -- --streng                       Exit-Code 1, wenn ein Ziel verfehlt wird (für den Nachweis)
+//   npm run messung -- --nur-zahlen                   nur Zahlen, keine Werte aus dem Testset (für blinde Prüfsets)
 import fs from "node:fs";
 import path from "node:path";
 import { CONFIG_DIR, PROJECT_ROOT } from "../config.js";
@@ -34,6 +35,8 @@ const arg = (name: string) => {
 };
 const datei = path.resolve(PROJECT_ROOT, arg("--datei") ?? path.join("testset", "faelle.json"));
 const ablegen = arg("--ablegen");
+// Bei blinden Prüfsets dürfen keine Werte im Bericht stehen, sonst sieht man beim Lesen, was fehlt.
+const nurZahlen = process.argv.includes("--nur-zahlen");
 const faelle = loadTestset(datei);
 const companies = loadCompanies(CONFIG_DIR);
 
@@ -134,18 +137,27 @@ const report = [
   "",
   `**${zielZeile}**`,
   "",
-  `## Übersehen (${verpasst.length})`,
-  "",
-  ...(verpasst.length ? verpasst.map((v) => `- ${v}`) : ["Nichts übersehen."]),
-  "",
-  `## Fehlalarme (${fehlalarme.length})`,
-  "",
-  ...(fehlalarme.length ? fehlalarme.map((v) => `- ${v}`) : ["Keine Fehlalarme."]),
-  "",
-  `## Geschützt, aber mit falschem Typ (${falscherTyp.length})`,
-  "",
-  ...(falscherTyp.length ? falscherTyp.map((v) => `- ${v}`) : ["Keine."]),
-  "",
+  ...(nurZahlen
+    ? [
+        `Übersehen: ${verpasst.length}, Fehlalarme: ${fehlalarme.length}, mit falschem Typ: ${falscherTyp.length}.`,
+        "",
+        "Blindes Prüfset: Werte aus dem Testset stehen bewusst nicht in diesem Bericht.",
+        "",
+      ]
+    : [
+        `## Übersehen (${verpasst.length})`,
+        "",
+        ...(verpasst.length ? verpasst.map((v) => `- ${v}`) : ["Nichts übersehen."]),
+        "",
+        `## Fehlalarme (${fehlalarme.length})`,
+        "",
+        ...(fehlalarme.length ? fehlalarme.map((v) => `- ${v}`) : ["Keine Fehlalarme."]),
+        "",
+        `## Geschützt, aber mit falschem Typ (${falscherTyp.length})`,
+        "",
+        ...(falscherTyp.length ? falscherTyp.map((v) => `- ${v}`) : ["Keine."]),
+        "",
+      ]),
 ].join("\n");
 
 const outDir = ablegen ? path.join(PROJECT_ROOT, "docs", "03-qualitaet") : path.join(PROJECT_ROOT, "messungen");

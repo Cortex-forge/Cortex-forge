@@ -1,5 +1,30 @@
 # Änderungen
 
+## [0.6.0] – 2026-10-16 – Erkennung nach Prüfset 1, Befunde aus der dritten Claude-Prüfung
+
+### Erkennung
+- Namen: Doppelvornamen, Initialen („M. Leitgeb“, „S. van Dijk“), häufige Nachnamen, die auch Hauptwörter sind („Thomas Keller“), Titel wie „Professor“, Anreden klein und auf Italienisch und Niederländisch, Verwandte („unser Sohn Lukas“), Chat-Absender, chinesische Namen, „Huber Anna“ wie „Anna Huber“; 449 weitere Vornamen
+- Ehepaare: „Frau Gruber“ wird nicht mehr automatisch dem Mann zugeordnet
+- Gesundheit: Körperteil + Beschwerde als Wortbildung, Krebsarten, Fachrichtungen, Umschreibungen im Dialekt und in anderen Sprachen; Ernährung nur mit Personenbezug
+- Religion: Sakramente, Feste, Gebete
+- Kennungen: Ausweise nach mehr Signalwörtern und in Tabellen, Führerschein, Codice fiscale, UID mit Leerzeichen, Firmenbuch, Handelsregister, Konto- und Registernummern, Kartenablauf, Messenger-Konten, Profil-Links, verschleierte E-Mails
+- Telefon: eindeutige Zifferngruppen (lange Ziffernfolgen 0,1 s statt 12,6 s), Schrägstrich, Punkte, Ziffernpaare, italienische Handys, wa.me-Links
+- Adressen aus Großbritannien, Irland, Niederlanden, Polen und Italien, Gewerbegebiete; Firmen mit „LTD“, „s.n.c.“, Branchenwort + Name
+- Tabellen mit senkrechten Strichen, Leerzeilen und nummerierten Spaltenköpfen
+
+### Eingaben
+- Ligaturen, volle Breite und Bindestrich-Varianten vereinheitlicht, unsichtbare Formatzeichen entfernt
+- Mails mit mbox-Zeile und freien Kopfnamen; Base64 über mehrere Zeilen wird dekodiert und geschwärzt
+
+### Ablage und Oberfläche
+- Prüfsumme über jedes Dokument: ohne Schlüssel lässt sich kein Dokument von Hand für die KI freischalten
+- Ändert sich ein Dokument vor der KI-Freigabe im Hintergrund, ist Freigeben gesperrt, bis die neue Fassung angezeigt ist
+
+### Qualität
+- Neues, blind erstelltes Prüfset 2 (50 Fälle, 640 Angaben): **82,0 % Trefferquote, 90,7 % Genauigkeit** (vorher Prüfset 1 blind: 72,8 % / 91,7 %); Ziele nicht erreicht. Prüfset 1 nach der Arbeit daran: 99,1 % / 95,6 % (kein unabhängiger Wert mehr)
+- Messberichte für blinde Prüfsets nur mit Zahlen (`--nur-zahlen`)
+- 112 Tests; Nachweis scheitert, wenn ein Test übersprungen wird; Wortlisten ohne doppelte Einträge
+
 ## [0.5.0] – 2026-10-16 – Befunde aus der dritten Codex-Prüfung
 
 ### Datenschutz

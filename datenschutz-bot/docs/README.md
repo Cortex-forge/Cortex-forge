@@ -16,11 +16,11 @@ Hier liegt alles außer dem Code: warum wir etwas bauen, wie es aufgebaut ist, w
 
 ## Wo stehen wir?
 
-- **Phase 0 (Prototyp):** gebaut, Version 0.5.0, 98 Tests grün (auch im Browser), Datenschutz-Probe ohne Leck.
-- **Erkennung:** Entwicklungsset 100 %, **unabhängiges Prüfset 1: 72,8 % Trefferquote, 91,7 % Genauigkeit**: Auf neuen Dokumenten rutscht noch gut ein Viertel der Angaben durch. Ziele nicht erreicht ([`03-qualitaet/testkonzept.md`](03-qualitaet/testkonzept.md)). Entscheidung Peter (2026-10-16): Prüfset 1 wird zum Entwickeln freigegeben, ehrlich gemessen wird danach am neuen, blinden Prüfset 2.
-- **Reviews:** drei Runden. Runde 1: Claude 4, Codex 4,2. Runde 2: Codex 5,2, Claude 4,6. Runde 3: Codex 5,5, alle 14 Befunde behoben; Claude läuft. Gemini ist vorerst nicht dabei: Peter möchte es nur, wenn es automatisch über das Abo läuft. Übersicht: [`04-reviews/README.md`](04-reviews/README.md).
+- **Phase 0 (Prototyp):** gebaut, Version 0.6.0, 112 Tests grün (auch im Browser), Datenschutz-Probe ohne Leck.
+- **Erkennung:** **blindes Prüfset 2: 82,0 % Trefferquote, 90,7 % Genauigkeit** (vorher am damals blinden Prüfset 1: 72,8 % / 91,7 %). Auf neuen Dokumenten rutscht noch knapp jede fünfte Angabe durch, vor allem Firmen ohne Rechtsform, Gesundheit, Religion und Adressen. Ziele nicht erreicht ([`03-qualitaet/testkonzept.md`](03-qualitaet/testkonzept.md)).
+- **Reviews:** drei Runden. Runde 1: Claude 4, Codex 4,2. Runde 2: Codex 5,2, Claude 4,6. Runde 3: Codex 5,5 (alle 14 Befunde behoben), Claude 5,2 (18 behoben, 2 teilweise, 2 offen). Gemini ist vorerst nicht dabei: Peter möchte es nur, wenn es automatisch über das Abo läuft. Übersicht: [`04-reviews/README.md`](04-reviews/README.md).
 - **Phase-0-Gate:** offen (siehe [`03-qualitaet/phase-0-gate.md`](03-qualitaet/phase-0-gate.md)).
-- **Nächster Schritt:** Erkennung anhand von Prüfset 1 verbessern, dann blind an Prüfset 2 messen; Befunde der dritten Claude-Runde einarbeiten.
+- **Nächster Schritt:** Entscheidung über die zweite Erkennungsstufe mit einem lokalen Modell (offene Punkte #2); vierte Prüfrunde auf dem neuen Stand.
 
 ## Regeln für diesen Ordner
 

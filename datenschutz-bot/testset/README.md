@@ -14,7 +14,7 @@ Messen: `npm run build && npm run messung` (Bericht in `messungen/`, nicht im Re
 |---|---|---|
 | `faelle.json` | Entwicklungsset (T01 ff.) | Daran wird entwickelt; neue Fälle unten anhängen |
 | `pruefset.json` | Prüfset 1 (P01–P40), blind von einem eigenen Agenten erstellt | Seit 2026-10-16 zum Entwickeln freigegeben (Entscheidung Peter). Letzte blinde Messung vorher: 72,8 % Trefferquote, 91,7 % Genauigkeit |
-| `pruefset-2.json` | Prüfset 2 (Q01–Q50), blind erstellt von einem Agenten, der weder Code noch Testsets kannte | Nur messen, nie hineinschauen, nie daran entwickeln |
+| `pruefset-2.json` | Prüfset 2 (Q01–Q50, 640 Angaben, 8 Fälle ohne), am 2026-10-16 blind erstellt von einem Agenten, der weder Code noch Testsets kannte | Nur messen (`npm run messung -- --datei testset/pruefset-2.json --nur-zahlen`), nie hineinschauen, nie daran entwickeln. Berichte nur mit Zahlen ablegen |
 
 ## Regeln
 - Nur erfundene Daten. Domains `example.com`/`.example`, IBANs mit gültiger Prüfziffer aber erfundenen Konten.

@@ -19,7 +19,7 @@
 Zwei Testsets mit Lösungsblatt, beide aus erfundenen, realistischen Dokumenten (Deutsch, Englisch, Italienisch, Niederländisch):
 
 - **Entwicklungsset** `testset/faelle.json`: Daran wird entwickelt; es enthält auch die Formate aus den Reviews. Gute Werte hier sagen wenig über neue Dokumente.
-- **Prüfset** `testset/pruefset-2.json` (Prüfset 2): blind von einem eigenen Agenten erstellt, der weder Code noch Testsets kannte. Nur messen, nie hineinschauen, nie daran entwickeln. Werden Regeln anhand des Prüfsets geändert, braucht es danach ein neues Prüfset.
+- **Prüfset** `testset/pruefset-2.json` (Prüfset 2): blind von einem eigenen Agenten erstellt, der weder Code noch Testsets kannte. Nur messen, nie hineinschauen, nie daran entwickeln. Berichte dazu enthalten nur Zahlen (`--nur-zahlen`), damit niemand beim Lesen sieht, was fehlt. Werden Regeln anhand des Prüfsets geändert, braucht es danach ein neues Prüfset.
 - **Prüfset 1** `testset/pruefset.json`: ebenso blind erstellt. Am 2026-10-16 hat Peter entschieden, es zum Entwickeln freizugeben, weil die Erkennung nur mit Einblick in ihre Fehler besser wird. Seitdem ist es ein zweites Entwicklungsset, und an seine Stelle tritt Prüfset 2.
 
 `npm run messung` misst je Datenart:
@@ -47,6 +47,11 @@ Vorgeschlagene Ziele für den Pilot (mit Peter festlegen):
 | **Prüfset nach der zweiten Prüfrunde** | **72,8 % (316/434)** | **91,7 % (286/312)** | [`2026-10-16-messung-pruefset-runde-2.md`](2026-10-16-messung-pruefset-runde-2.md) |
 | Entwicklungsset nach der dritten Prüfrunde | 100 % (211/211) | 100 % (200/200) | [`2026-10-16-messung-entwicklungsset-runde-3.md`](2026-10-16-messung-entwicklungsset-runde-3.md) |
 | **Prüfset 1 nach der dritten Prüfrunde (letzte blinde Messung)** | **72,8 % (316/434)** | **91,7 % (286/312)** | [`2026-10-16-messung-pruefset-runde-3.md`](2026-10-16-messung-pruefset-runde-3.md) |
+| Entwicklungsset nach der Arbeit an der Erkennung | 100 % (213/213) | 100 % (202/202) | [`2026-10-16-messung-entwicklungsset-runde-3-erkennung.md`](2026-10-16-messung-entwicklungsset-runde-3-erkennung.md) |
+| Prüfset 1 nach der Arbeit an der Erkennung (daran entwickelt, kein unabhängiger Wert) | 99,1 % (430/434) | 95,6 % (372/389) | [`2026-10-16-messung-pruefset-1-nach-entwicklung.md`](2026-10-16-messung-pruefset-1-nach-entwicklung.md) |
+| **Prüfset 2 (blind, erste Messung)** | **82,0 % (634/773)** | **90,7 % (548/604)** | [`2026-10-16-messung-pruefset-2-blind.md`](2026-10-16-messung-pruefset-2-blind.md) |
+
+**Einordnung der Arbeit an Prüfset 1:** Auf unbekannten Dokumenten stieg die Trefferquote von 72,8 % (Prüfset 1, blind) auf 82,0 % (Prüfset 2, blind); die Genauigkeit blieb bei rund 91 %. Am Prüfset, an dem entwickelt wurde, stehen 99 %: Ein Teil der Regeln passt genau auf dessen Fälle und überträgt sich nicht. Gut sind jetzt E-Mail, IBAN, Steuer- und SV-Nummern (100 %), Telefon (97,9 %) und Personen (90,5 %). Schwach bleiben Firmen ohne Rechtsform (52 %), Gesundheit (67 %), Religion (60 %), Adressen (79 %) und freie Kennungen (Kunden-, Ausweis-, Kennzeichen-Nummern). Mit Regeln allein werden die Ziele kaum erreicht; der nächste Schritt ist die zweite Erkennungsstufe mit einem lokalen Modell (offene Punkte #2).
 
 Die Änderungen der zweiten Runde kamen aus den Szenarien der Reviews, nicht aus dem Prüfset; das Prüfset wurde danach nur gemessen.
 
