@@ -225,7 +225,20 @@ function writeFileAtomic(file: string, content: string): void {
   } finally {
     fs.closeSync(fd);
   }
-  fs.renameSync(tmp, file);
+  // Unter Windows schlägt das Ersetzen kurz fehl, wenn ein anderer Prozess die Datei gerade liest.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      fs.renameSync(tmp, file);
+      return;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (attempt >= 20 || (code !== "EPERM" && code !== "EBUSY" && code !== "EACCES")) {
+        fs.rmSync(tmp, { force: true });
+        throw err;
+      }
+      sleep(10);
+    }
+  }
 }
 
 /** Legt eine Datei nur an, wenn es sie noch nicht gibt. Gibt false zurück, wenn sie schon existiert. */

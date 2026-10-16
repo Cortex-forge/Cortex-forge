@@ -20,5 +20,5 @@ Bekannte Grenzen und Aufgaben. Neue Punkte unten ergänzen, erledigte mit Datum 
 | 14 | Storno bzw. Gutschrift für freigegebene Rechnungen (heute: nicht löschbar, Archiv beim Abschluss) | mittel | Review Claude #18 | offen |
 | 15 | Erkennung zusätzlich in einem Worker mit Zeitlimit (heute linear, 200.000 Zeichen < 0,3 s) | niedrig | Review Claude #16 | offen |
 | 16 | Zweite Review-Runde (Claude, Codex, Gemini) auf dem korrigierten Stand | hoch | G8 | offen |
-| 17 | Gemini-Anmeldung: API-Schlüssel als Netzwerk-Secret der Cloud-Umgebung oder Prüfung lokal mit Abo | hoch | G8 | wartet auf Peter |
+| 17 | Gemini-Anmeldung: API-Schlüssel als Netzwerk-Secret der Cloud-Umgebung oder Prüfung lokal mit Abo | hoch | G8 | auf später verschoben (Peter, 2026-10-16) |
 | 18 | Ablage älterer Testdaten (Format 0.1) wird nicht übernommen; vor dem ersten Echtbetrieb `data/` leeren | niedrig | Umbau Ablage | dokumentiert |
