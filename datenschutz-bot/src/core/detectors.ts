@@ -804,6 +804,10 @@ const TRADE_RE = new RegExp(
   "gud",
 );
 
+const COMMON_NOUN_END =
+  /(?:ung|ungen|heit|keit|schaft|tion|tionen|sion|tät|nis|ment|ismus|zeiten|wäsche|abschluss|arbeiten|kosten|gebühr|gebühren|pauschale|material|leistung|leistungen|reparatur|bericht|vertrag|auftrag|rechnung|angebot)$/u;
+const TITLE_ABBREVIATIONS = new Set(["Mag", "MMag", "Dr", "DDr", "DI", "Dipl", "Ing", "Prof", "Dkfm", "Prim"]);
+
 export function detectCompanies(text: string, companies: CompanyEntry[] = []): Finding[] {
   const out: Finding[] = [];
   for (const m of matchAll(text, TRADE_RE)) {
@@ -812,6 +816,9 @@ export function detectCompanies(text: string, companies: CompanyEntry[] = []): F
     // "Elektro Installationen", "Praxis Montag": nach dem Branchenwort ein Allerweltswort, kein Name
     if (isNotSurname(first) || ROLE_WORDS.has(first) || BUSINESS_WORDS.has(first) || MONTHS.has(first) || PLACE_PREFIXES.has(first)) continue;
     if (new RegExp(`^(?:${TRADE_WORDS})$`, "u").test(first)) continue;
+    // Ein gewöhnliches Hauptwort ("Steuerberatung Jahresabschluss", "Elektro Überprüfung", "Reinigung Bettwäsche") oder
+    // ein Titel ("Steuerberatung Mag. Leitgeb": gemeint ist die Person) ist kein Firmenname (Review Claude 4 #6).
+    if ((first.length >= 7 && COMMON_NOUN_END.test(first.toLowerCase())) || (TITLE_ABBREVIATIONS.has(first) && text[m.index + m[0].length] === ".")) continue;
     out.push(finding(text, m.index, m.index + m[0].length, "FIRMA", "firma:branche"));
   }
 
@@ -1374,9 +1381,18 @@ const HEALTH_ANYWHERE = [
   "hospitaliz", "intervento chirurgico", "lungenkrebs", "brustkrebs", "darmkrebs", "hautkrebs", "prostatakrebs",
   "blutkrebs", "magenkrebs", "leberkrebs", "bauchspeicheldrüsenkrebs", "gebärmutterhalskrebs", "eierstockkrebs",
   "leukämie", "leukemia", "lymphom", "metasta", "rheumatoid",
+  // Review Claude 4 #4: Diagnosen, Süchte, Störungen
+  "neurodermitis", "psoriasis", "schuppenflechte", "colitis", "magersucht", "bulimi", "anorexi", "alkoholsucht",
+  "drogensucht", "spielsucht", "nikotinsucht", "alkoholkrank", "drogenabhängig", "angststörung", "essstörung",
+  "schlafstörung", "zwangsstörung", "panikstörung", "persönlichkeitsstörung", "belastungsstörung",
+  "durchblutungsstörung", "rhythmusstörung", "sprachstörung", "sehstörung", "hörstörung", "gleichgewichtsstörung",
+  "entwicklungsstörung", "stoffwechselstörung", "aufmerksamkeitsstörung", "lernbehinder", "behindertenausweis",
+  "behindertenpass", "behinderungsgrad", "grad der behinderung",
+  "long-covid", "post-covid",
 ];
-// "Krebs" allein nur nach "hat", "an" oder einem Possessiv ("Meine Mutter hat Krebs"), nicht "Flusskrebs" auf der Karte.
-const CANCER_RE = /(?<![\p{L}])(?:hat|habe|hatte|haben|an|gegen|mit|wegen|seinem|seinen|ihrem|ihren|meinem|meinen|unserem)[ \t]{1,3}(?:(?:einen|einem|den|dem|schweren?|bösartigen?)[ \t]{1,3})?(?<v>Krebs)(?![\p{L}])/gud;
+// "Krebs" allein nur nach "hat", "an" oder einem Possessiv ("Meine Mutter hat Krebs"), nicht "Flusskrebs" auf der Karte
+// und nicht "Risotto mit Krebs" (Review Claude 4 #6).
+const CANCER_RE = /(?<![\p{L}])(?:hat|habe|hatte|haben|an|wegen|seinem|seinen|ihrem|ihren|meinem|meinen|unserem)[ \t]{1,3}(?:(?:einen|einem|den|dem|schweren?|bösartigen?)[ \t]{1,3})?(?<v>Krebs)(?![\p{L}])/gud;
 // Ernährung ("glutenfrei") verrät nur zusammen mit einer Person etwas über die Gesundheit: in einem Satz mit einer
 // Gesundheitsangabe oder einem Bedarf ("wir bräuchten glutenfreies Frühstück"), nicht auf der Speisekarte.
 const DIET_RE =
@@ -1404,7 +1420,9 @@ const BODY_OP_RE = new RegExp(String.raw`(?<![\p{L}])(?:${BODY_PARTS})[ \t]{1,3}
 // Umschreibungen ("unsicher auf den Beinen", "nicht gut stiegen steigen kann", "er hot's mitn rücken").
 const HEALTH_PARAPHRASE_RES = [
   /(?<![\p{L}])(?:unsicher|wackelig|schwach)[ \t]{1,3}auf[ \t]{1,3}den[ \t]{1,3}Beinen(?![\p{L}])/giu,
-  /(?<![\p{L}])(?:nicht|kaum|schlecht)[ \t]{1,3}(?:mehr[ \t]{1,3})?(?:gut[ \t]{1,3})?(?:(?:stiegen|treppen|stufen|weit)[ \t]{1,3})?(?:steigen|gehen|laufen|stehen)[ \t]{1,3}(?:kann|können|konnte|könnte)(?![\p{L}])/giu,
+  // "nicht gehen können" allein kann auch am Zug liegen; nach "nicht" braucht es "mehr", "gut", "weit", "lange" oder
+  // Treppen (Review Claude 4 #6).
+  /(?<![\p{L}])(?:(?:kaum|schlecht)[ \t]{1,3}(?:mehr[ \t]{1,3})?(?:gut[ \t]{1,3})?|nicht[ \t]{1,3}(?:(?:mehr|gut|weit|lange|stiegen|treppen|stufen)[ \t]{1,3}){1,3})(?:(?:stiegen|treppen|stufen|weit)[ \t]{1,3})?(?:steigen|gehen|laufen|stehen)[ \t]{1,3}(?:kann|können|konnte|könnte)(?![\p{L}])/giu,
   /(?<![\p{L}])(?:schlecht|nicht[ \t]{1,3}gut|kaum)[ \t]{1,3}zu[ \t]{1,3}Fu(?:ß|ss)(?![\p{L}])/giu,
   /(?<![\p{L}])(?:can(?:no|')t|cannot)[ \t]{1,3}(?:walk[ \t]{1,3}far|climb[ \t]{1,3}stairs|use[ \t]{1,3}stairs)(?![\p{L}])/giu,
   /(?<![\p{L}])(?:intervento|operazione|operata|operato)[ \t]{1,3}(?:al|alla|allo|all'|ai|agli|alle)[ \t]?(?:cuore|ginocchio|anca|schiena|spalla|piede|mano|braccio|gamba|occhio|occhi|polmone|rene|fegato|testa)(?![\p{L}])/giu,
@@ -1414,25 +1432,47 @@ const MIT_BODY_RE = new RegExp(
   "giud",
 );
 // Wortteile nur am Wortanfang: sonst "Kooperation", "Archiv", "Verkehrsbehinderung", "dementsprechend".
+// "behindert" und "Behinderung" nur in Wortbildungen ("gehbehindert", oben) oder mit Personenbezug (HEALTH_PHRASES):
+// "Verkehrsbehinderung", "die Baustelle behindert die Zufahrt" sind keine Gesundheitsangaben (Review Claude 4 #6).
 const HEALTH_WORD_START = [
   "krank", "erkrank", "fieber", "infekt", "verletz", "chemo", "patient", "patiënt", "operiert", "operation",
-  "surgery", "reha", "behindert", "behinderung", "invalide", "deaf", "stoma", "cancer", "malat", "fracture",
-  "sprain", "seizure",
+  "surgery", "reha", "invalide", "deaf", "stoma", "cancer", "malat", "fracture", "sprain", "seizure",
+  "autist", "alkoholiker", "hiv-", "aids-", "morbus",
 ];
 // Ganze Wörter: Abkürzungen, die sonst in anderen Wörtern stecken ("Archiv").
-const HEALTH_WHOLE = ["hiv", "copd", "adhs", "adhd", "ms-patient"];
+const HEALTH_WHOLE = ["hiv", "copd", "adhs", "adhd", "ms-patient", "aids", "crohn", "blindheit", "taubheit"];
+// Mehrere Wörter: Behinderung und Sinne nur mit Personenbezug ("ist blind", "mit einer Behinderung").
+const HEALTH_PHRASES = [
+  "ist blind", "bin blind", "sind blind", "fast blind", "ist taub", "bin taub", "sind taub", "fast taub", "is blind",
+  "is deaf", "ist behindert", "bin behindert", "sind behindert", "geistig behindert", "körperlich behindert",
+  "mit behinderung", "mit einer behinderung", "eine behinderung", "meine behinderung", "seine behinderung",
+  "ihre behinderung", "long covid", "positiv getestet", "tested positive",
+];
+// Wörter, die wie Gesundheitswörter beginnen oder enden, aber keine sind ("Head of Operations", "Spülmaschinentabletten").
+const HEALTH_NOT =
+  /^(?:operations|operational|operationally)$|(?:spülmaschinen|geschirrspül|spül|reinigungs|chlor|entkalker|entkalkungs|wc|toiletten|desinfektions|wasch)tabletten?$/u;
+// Redewendung: "Hals- und Beinbruch" heißt "viel Glück".
+const HEALTH_IDIOM_RE = /(?<![\p{L}])Hals-[ \t]?und[ \t]{1,3}Beinbruch(?![\p{L}])/giu;
 const RELIGION_ANYWHERE = [
   "erstkommunion", "kommunion", "firmung", "konfirmation", "bar mitzwa", "bat mitzwa", "bar mitzvah", "bat mitzvah",
-  "zuckerfest", "opferfest", "kurban", "taufe", "taufpate", "taufpatin", "baptism", "christening", "comunione",
+  "zuckerfest", "opferfest", "kurban", "kindstaufe", "kindertaufe", "taufpate", "taufpatin", "baptism", "christening", "comunione",
   "cresima", "battesimo", "halal", "koscher", "kosher", "gebetsraum", "gebetszeit", "gebetsteppich", "gebetsrichtung", "prayer", "qibla",
-  "kibla", "mecca", "mekka", "ramadan", "yom kippur", "rosh hashanah", "rosch haschana", "religiöser feiertag",
-  "fastenbrechen", "iftar", "sabbat", "schabbat", "shabbat", "muslim", "moslem", "islam", "moschee", "mosque",
+  "kibla", "nach mekka", "richtung mekka", "to mecca", "towards mecca", "ramadan", "yom kippur", "rosh hashanah", "rosch haschana", "religiöser feiertag",
+  "fastenbrechen", "iftar", "schabbat", "shabbat", "muslim", "moslem", "islam", "moschee", "mosque",
   "moschea", "moskee", "jüdisch", "jüdin", "jewish", "synagoge", "synagogue", "sinagoga", "christlich", "katholisch",
   "catholic", "cattolic", "evangelisch", "protestant", "buddhist", "zeugen jehovas", "jehovas", "konfession",
   "religiös", "religious", "gottesdienst", "pessach", "chanukka", "hanukkah",
 ];
-const RELIGION_WORD_START = ["orthodox", "hindu", "jainis"];
-const RELIGION_WHOLE = ["sikh", "sikhs", "jain", "jains", "jaina", "eid", "losar", "vesak", "diwali", "holi", "purim", "sukkot", "navratri", "bayram"];
+// Review Claude 4 #6: "hindurch", "Sabbatical", "Taufers", "Staufen", "ein Mekka für Mountainbiker" und "Eid" (Schwur)
+// sind keine Religionsangaben; "Eid" nur als Fest.
+const RELIGION_WORD_START = ["orthodox", "hinduis", "jainis", "tauffeier", "taufessen", "taufgottesdienst", "taufkerze"];
+const RELIGION_WHOLE = [
+  "sikh", "sikhs", "jain", "jains", "jaina", "losar", "vesak", "diwali", "holi", "purim", "sukkot", "navratri", "bayram",
+  "hindu", "hindus", "sabbat", "sabbath", "taufe", "hadsch", "hajj", "umrah", "eid al-fitr", "eid al-adha", "eid mubarak",
+  // Review Claude 4 #4: Zugehörigkeit
+  "jude", "juden", "christ", "christen", "christin", "christinnen", "atheist", "atheistin", "atheisten", "agnostiker",
+  "muslime", "muslima", "buddhisten",
+];
 // Gebete ("Freitagsgebet", "Abendgebet"), aber nicht "gebeten".
 const PRAYER_RE = /(?:^|\p{Ll})gebete?$/u;
 
@@ -1462,7 +1502,7 @@ function keywordSet(anywhere: string[], wordStart: string[], whole: string[]): K
   };
 }
 
-const HEALTH = keywordSet(HEALTH_ANYWHERE, HEALTH_WORD_START, HEALTH_WHOLE);
+const HEALTH = keywordSet(HEALTH_ANYWHERE, HEALTH_WORD_START, [...HEALTH_WHOLE, ...HEALTH_PHRASES]);
 const RELIGION = keywordSet(RELIGION_ANYWHERE, RELIGION_WORD_START, RELIGION_WHOLE);
 // Ein Wort, auch mit Bindestrich ("Zöliakie-Patient", "Krebs-OP").
 const WORD_RE = /[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu;
@@ -1484,12 +1524,21 @@ function detectKeywords(
   set: KeywordSet,
   type: EntityType,
   source: string,
-  options: { extraWord?: (word: string, start: number) => boolean; extraSpans?: Array<[number, number]>; after?: RegExp } = {},
+  options: {
+    extraWord?: (word: string, start: number) => boolean;
+    extraSpans?: Array<[number, number]>;
+    after?: RegExp;
+    not?: RegExp;
+  } = {},
 ): Finding[] {
   const spans: Array<[number, number]> = [...(options.extraSpans ?? [])];
+  const hit = (w: string) => set.anywhere?.test(w) || set.wordStart?.test(w) || set.whole?.test(w);
   for (const m of matchAll(text, WORD_RE)) {
     const w = m[0].toLowerCase();
-    if (set.anywhere?.test(w) || set.wordStart?.test(w) || set.whole?.test(w) || options.extraWord?.(m[0], m.index)) {
+    if (options.not?.test(w)) continue;
+    // Auch ohne Akzente: "diabétique" wie "diabet" (Review Claude 4 #4).
+    const plain = w.normalize("NFD").replace(/\p{M}/gu, "");
+    if (hit(w) || (plain !== w && hit(plain)) || options.extraWord?.(m[0], m.index)) {
       spans.push([m.index, m.index + m[0].length]);
     }
   }
@@ -1516,7 +1565,10 @@ export function detectHealth(text: string): Finding[] {
       if (span) extraSpans.push(span);
     }
   }
-  const found = detectKeywords(text, HEALTH, "GESUNDHEIT", "gesundheit", { extraWord, extraSpans });
+  const idioms = [...matchAll(text, HEALTH_IDIOM_RE)].map((m): [number, number] => [m.index, m.index + m[0].length]);
+  const found = detectKeywords(text, HEALTH, "GESUNDHEIT", "gesundheit", { extraWord, extraSpans, not: HEALTH_NOT }).filter(
+    (f) => !idioms.some(([s, e]) => f.start < e && s < f.end),
+  );
   for (const m of matchAll(text, DIET_RE)) {
     const [s, e] = sentenceAround(text, m.index, m.index + m[0].length);
     if (found.some((f) => f.start < e && s < f.end) || NEED_RE.test(text.slice(s, e))) {

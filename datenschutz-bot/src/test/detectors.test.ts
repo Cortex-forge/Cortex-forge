@@ -687,3 +687,37 @@ test("Datum, Artikelnummer und Raumangaben sind keine Telefonnummer, Adresse ode
   assert.equal(ki("London SW1A 1AA. Dublin D02 X285."), "[ADRESSE_1]. [ADRESSE_2].");
   assert.equal(ki("CVC 123, Kartenprüfnummer 456"), "CVC [KREDITKARTE_1], Kartenprüfnummer [KREDITKARTE_2]");
 });
+
+// Review Claude 4 #6: Allerweltswörter sind keine besonderen Kategorien und keine Firmen
+test("Allerweltswörter werden nicht Religion, Gesundheit oder Firma", () => {
+  for (const text of [
+    "die ganze Nacht hindurch", "im Sabbatical", "ein Mekka für Mountainbiker", "Sand in Taufers", "Bahnhof Staufen",
+    "Die Baustelle vor dem Haus behindert leider die Zufahrt", "zu Behinderungen bei der Anreise", "Head of Operations",
+    "Spülmaschinentabletten", "nicht gehen können, weil der Zug ausfällt", "Risotto mit Krebs", "Hals- und Beinbruch!",
+    "Steuerberatung Jahresabschluss 2025 1.200,00 € netto", "Reinigung Bettwäsche 120 kg", "Elektro Überprüfung",
+    "Praxis Öffnungszeiten", "Er sagte unter Eid aus.",
+  ]) {
+    assert.equal(ki(text), text);
+  }
+  // Gegenproben
+  assert.equal(ki("Die Taufe ist am Sonntag, Eid al-Fitr feiern wir zuhause."), "Die [RELIGION_1] ist am Sonntag, [RELIGION_2] feiern wir zuhause.");
+  assert.equal(ki("Mein Sohn ist gehbehindert, ich habe einen Behindertenpass."), "Mein Sohn ist [GESUNDHEIT_1], ich habe [GESUNDHEIT_2].");
+  assert.equal(ki("Wartung durch Tischlerei Moosbrugger."), "Wartung durch [FIRMA_1].");
+});
+
+// Review Claude 4 #4
+test("Gesundheit und Religion: Personenbezeichnungen, Diagnosen, Sinne, Zugehörigkeit, Akzente", () => {
+  assertHidden("Unser Sohn ist Autist", ["Autist"]);
+  assertHidden("Mein Vater ist blind, meine Mutter ist fast taub", ["blind", "taub"]);
+  assertHidden("Ich bin HIV-positiv", ["HIV"]);
+  assertHidden("Meine Frau hat Morbus Crohn", ["Morbus", "Crohn"]);
+  assertHidden("Unsere Tochter hat Neurodermitis", ["Neurodermitis"]);
+  assertHidden("mein Mann ist trockener Alkoholiker", ["Alkoholiker"]);
+  assertHidden("Mein Mann hat Long Covid", ["Long Covid"]);
+  assertHidden("Ich habe eine Angststörung", ["Angststörung"]);
+  assertHidden("wegen Magersucht in Behandlung", ["Magersucht"]);
+  assertHidden("Mon mari est diabétique", ["diabétique"]);
+  assertHidden("Wir sind Juden, gläubige Christen, ich bin Atheist", ["Juden", "Christen", "Atheist"]);
+  // Gegenproben: "blind" ohne Personenbezug, Gläubiger in der Buchhaltung
+  assert.equal(ki("Ein Blind Date im Restaurant, Gläubiger laut Liste."), "Ein Blind Date im Restaurant, Gläubiger laut Liste.");
+});
