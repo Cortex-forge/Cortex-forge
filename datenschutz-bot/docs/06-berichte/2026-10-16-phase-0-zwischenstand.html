@@ -48,19 +48,19 @@
   <header>
     <div class="kicker">Cortex Forge · Zwischenbericht (Gesetzbuch G9)</div>
     <h1>Datenschutz-Bot – Phase 0: Zwischenstand</h1>
-    <div class="meta">Stand 16.10.2026 · Version 0.6.1 · Branch <code>ccr-80b4aca8-cfz53v</code> · Code-Stand <code>1f9acd7</code> · erstellt von Claude · ersetzt den Stand im <a href="2026-10-16-phase-0-prototyp.html">Bericht zum Prototyp</a></div>
+    <div class="meta">Stand 16.10.2026 · Version 0.6.1 · Branch <code>ccr-80b4aca8-cfz53v</code> · Code-Stand <code>5f225d8</code> · erstellt von Claude · ersetzt den Stand im <a href="2026-10-16-phase-0-prototyp.html">Bericht zum Prototyp</a></div>
   </header>
 
   <section>
     <h2>Ergebnis</h2>
     <div class="summary">
-      <p><strong>Der Bot schützt zuverlässig, was er erkennt, aber er erkennt noch nicht genug.</strong> In allen Proben hat kein Originalwert den Bot verlassen, auch nicht über die KI-Schnittstelle oder unverschlüsselt auf der Festplatte. Vier Prüfrunden mit Codex und Claude haben Fehler in Ablage, Oberfläche und Erkennung gefunden; alle Befunde von Codex sind behoben.</p>
+      <p><strong>Der Bot schützt zuverlässig, was er erkennt, aber er erkennt noch nicht genug.</strong> In allen Proben hat kein Originalwert den Bot verlassen, auch nicht über die KI-Schnittstelle oder unverschlüsselt auf der Festplatte. Vier Prüfrunden mit Codex und Claude haben Fehler in Ablage, Oberfläche und Erkennung gefunden; alle Befunde von Codex sind behoben, von Claude 12 von 16.</p>
       <p>Auf Dokumenten, die bei der Entwicklung niemand gesehen hat, erkennt der Bot <strong>82 %</strong> der persönlichen Angaben. Für den Pilot sind 95 bis 98 % das Ziel. Mit Regeln allein ist das kaum zu schaffen. Bis dahin bleibt der Prüfschritt vor der Freigabe Pflicht: Ein Mensch sieht vor der Freigabe, was die KI sehen wird, und schwärzt nach.</p>
     </div>
     <div class="kpis">
-      <div class="kpi"><b>117 / 117</b><span>Tests bestanden, auch im echten Browser</span></div>
+      <div class="kpi"><b>127 / 127</b><span>Tests bestanden, auch im echten Browser</span></div>
       <div class="kpi"><b>0</b><span>Originalwerte bei der KI (Probe: 53 Dokumente, 266 Antworten)</span></div>
-      <div class="kpi"><b>82,0 %</b><span>Trefferquote am blinden Prüfset 2 (Ziel 95 %)</span></div>
+      <div class="kpi"><b>82,1 %</b><span>Trefferquote am blinden Prüfset 2 (Ziel 95 %)</span></div>
       <div class="kpi"><b>3 / 7</b><span>Prüfungen des Phase-0-Gates erfüllt</span></div>
     </div>
   </section>
@@ -79,19 +79,19 @@
       <tr><th>Testset</th><th>Rolle</th><th class="num">Trefferquote</th><th class="num">Genauigkeit</th></tr>
       <tr><td>Entwicklungsset (50 Fälle, mit Mails und PDF-Kopie)</td><td>daran wird entwickelt</td><td class="num">100 %</td><td class="num">100 %</td></tr>
       <tr><td>Prüfset 1 (40 Fälle)</td><td>zuerst blind: 72,8 % / 91,7 %; seit 16.10. zum Entwickeln freigegeben</td><td class="num">99,1 %</td><td class="num">95,6 %</td></tr>
-      <tr><td><strong>Prüfset 2 (50 Fälle, blind)</strong></td><td>von einem eigenen Agenten erstellt, nur gemessen</td><td class="num"><strong>82,0 %</strong></td><td class="num"><strong>90,7 %</strong></td></tr>
+      <tr><td><strong>Prüfset 2 (50 Fälle, blind)</strong></td><td>von einem eigenen Agenten erstellt, nur gemessen</td><td class="num"><strong>82,1 %</strong></td><td class="num"><strong>90,9 %</strong></td></tr>
     </table>
     <p><strong>Trefferquote:</strong> Anteil der persönlichen Angaben, die vollständig ersetzt wurden. <strong>Genauigkeit:</strong> Anteil der Ersetzungen, die wirklich eine solche Angabe treffen. Der Abstand zwischen Prüfset 1 und Prüfset 2 zeigt, wie stark Regeln an den Fällen hängen, aus denen sie entstanden sind.</p>
     <table>
       <tr><th>Am blinden Prüfset 2</th><th class="num">Trefferquote</th><th>Einschätzung</th></tr>
       <tr><td>E-Mail, IBAN, Steuernummer, Sozialversicherung, Kreditkarte</td><td class="num">100 %</td><td><span class="tag ok">sicher</span></td></tr>
       <tr><td>Telefon</td><td class="num">97,9 %</td><td><span class="tag ok">fast am Ziel (98 %)</span></td></tr>
-      <tr><td>Personen</td><td class="num">90,5 %</td><td><span class="tag open">Ziel 95 %</span></td></tr>
+      <tr><td>Personen</td><td class="num">91,1 %</td><td><span class="tag open">Ziel 95 %</span></td></tr>
       <tr><td>Adressen</td><td class="num">79,3 %</td><td><span class="tag open">Ziel 98 %</span></td></tr>
       <tr><td>UID-Nummern</td><td class="num">73,3 %</td><td><span class="tag open">Ziel 100 %</span></td></tr>
       <tr><td>Gesundheit</td><td class="num">66,7 %</td><td><span class="tag bad">Ziel 95 %</span></td></tr>
       <tr><td>Religion</td><td class="num">60 %</td><td><span class="tag bad">Ziel 95 %</span></td></tr>
-      <tr><td>Firmen, Kennzeichen, Kunden- und Ausweisnummern</td><td class="num">20–52 %</td><td><span class="tag bad">schwach</span></td></tr>
+      <tr><td>Firmen, Kennzeichen, Kunden- und Ausweisnummern</td><td class="num">20–51 %</td><td><span class="tag bad">schwach</span></td></tr>
     </table>
   </section>
 
@@ -102,7 +102,7 @@
       <tr><td>1</td><td class="num">4,2</td><td class="num">4</td><td>Blocker behoben, Erkennung, Rückübersetzung, Geld und Ablage überarbeitet</td></tr>
       <tr><td>2</td><td class="num">5,2</td><td class="num">4,6</td><td>Mails entschlüsseln, Zugangsschutz, geprüfte Fassung bei der Freigabe</td></tr>
       <tr><td>3</td><td class="num">5,5</td><td class="num">5,2</td><td>Zugang ohne Cookie, Prüfsumme je Dokument, blindes Prüfset 2</td></tr>
-      <tr><td>4</td><td class="num">6,0</td><td class="num">läuft</td><td>Codex: alle 9 Befunde behoben, u. a. kein Originaltext mehr im Browserprofil</td></tr>
+      <tr><td>4</td><td class="num">6,0</td><td class="num">5,4</td><td>kein Originaltext mehr im Browserprofil, Prüfsumme nicht mehr umgehbar, weniger Fehlalarme, Kopien aus PDF</td></tr>
     </table>
     <p>Hürde: jede Note mindestens 7,5, Schnitt mindestens 8,0. <strong>Noch nicht erreicht.</strong> Die Noten steigen, aber die Erkennungsgrenze drückt jede Runde die Note für Datenschutz. Gemini ist nicht dabei, solange es nicht automatisch über das Abo läuft (Entscheidung Peter, 16.10.).</p>
   </section>
@@ -138,8 +138,8 @@
       <tr><td>Architektur und Entscheidungen</td><td><span class="tag ok">erfüllt</span></td></tr>
       <tr><td>Datenschutzkonzept und DSFA-Entwurf</td><td><span class="tag ok">erfüllt</span> (Entwurf, Jurist offen)</td></tr>
       <tr><td>Tests und Datenschutz-Probe, Nachweis bestanden</td><td><span class="tag open">nicht erfüllt</span> Tests und Probe grün, Nachweis scheitert an den Zielen am Prüfset 2</td></tr>
-      <tr><td>Erkennung gemessen, Ziele erreicht</td><td><span class="tag open">nicht erfüllt</span> 82,0 % / 90,7 %</td></tr>
-      <tr><td>Triple-Review mit Mindestnoten</td><td><span class="tag open">nicht erfüllt</span> Codex 6,0; Gemini nicht dabei</td></tr>
+      <tr><td>Erkennung gemessen, Ziele erreicht</td><td><span class="tag open">nicht erfüllt</span> 82,1 % / 90,9 %</td></tr>
+      <tr><td>Triple-Review mit Mindestnoten</td><td><span class="tag open">nicht erfüllt</span> Codex 6,0, Claude 5,4; Gemini nicht dabei</td></tr>
       <tr><td>Go von Peter</td><td><span class="tag open">offen</span></td></tr>
     </table>
   </section>

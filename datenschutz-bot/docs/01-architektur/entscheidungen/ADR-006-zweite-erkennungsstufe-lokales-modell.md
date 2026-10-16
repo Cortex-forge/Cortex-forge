@@ -3,7 +3,7 @@
 Status: **Vorschlag, Entscheidung von Peter offen** · 2026-10-16
 
 ## Kontext
-Die Erkennung arbeitet bisher nur mit Regeln (ADR-004). Am blind erstellten Prüfset 2 erkennt sie 82,0 % der sensiblen Angaben bei 90,7 % Genauigkeit. Vor der Arbeit an Prüfset 1 waren es 72,8 %. Am Prüfset, an dem entwickelt wurde, stehen 99 %: Neue Regeln helfen vor allem bei den Fällen, aus denen sie entstanden sind. Schwach bleiben Firmen ohne Rechtsform, Gesundheitsangaben in eigenen Worten, Religion, Adressen und freie Kennungen. Die Ziele für den Pilot (Personen 95 %, Telefon und Adressen 98 %, Gesundheit 95 %) erreichen Regeln allein kaum.
+Die Erkennung arbeitet bisher nur mit Regeln (ADR-004). Am blind erstellten Prüfset 2 erkennt sie 82,0 % der sensiblen Angaben bei 90,7 % Genauigkeit. Vor der Arbeit an Prüfset 1 waren es 72,8 %; nach der vierten Prüfrunde (0.6.1) sind es 82,1 % bei 90,9 % Genauigkeit, obwohl dafür viele weitere Regeln dazukamen. Am Prüfset, an dem entwickelt wurde, stehen 99 %: Neue Regeln helfen vor allem bei den Fällen, aus denen sie entstanden sind. Schwach bleiben Firmen ohne Rechtsform, Gesundheitsangaben in eigenen Worten, Religion, Adressen und freie Kennungen. Die Ziele für den Pilot (Personen 95 %, Telefon und Adressen 98 %, Gesundheit 95 %) erreichen Regeln allein kaum.
 
 Eine Cloud-KI scheidet für die Erkennung aus, weil sie dafür die Originale sehen müsste (ADR-002). Ein zweites Verfahren muss deshalb auf dem eigenen Rechner laufen.
 

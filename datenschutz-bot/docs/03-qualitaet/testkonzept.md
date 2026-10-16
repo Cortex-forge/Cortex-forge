@@ -50,10 +50,13 @@ Vorgeschlagene Ziele für den Pilot (mit Peter festlegen):
 | Entwicklungsset nach der Arbeit an der Erkennung | 100 % (213/213) | 100 % (202/202) | [`2026-10-16-messung-entwicklungsset-runde-3-erkennung.md`](2026-10-16-messung-entwicklungsset-runde-3-erkennung.md) |
 | Prüfset 1 nach der Arbeit an der Erkennung (daran entwickelt, kein unabhängiger Wert) | 99,1 % (430/434) | 95,6 % (372/389) | [`2026-10-16-messung-pruefset-1-nach-entwicklung.md`](2026-10-16-messung-pruefset-1-nach-entwicklung.md) |
 | **Prüfset 2 (blind, erste Messung)** | **82,0 % (634/773)** | **90,7 % (548/604)** | [`2026-10-16-messung-pruefset-2-blind.md`](2026-10-16-messung-pruefset-2-blind.md) |
+| **Prüfset 2 (blind) nach der vierten Prüfrunde, Stand 0.6.1** | **82,1 % (635/773)** | **90,9 % (550/605)** | [`2026-10-16-messung-pruefset-2-blind-0-6-1.md`](2026-10-16-messung-pruefset-2-blind-0-6-1.md) |
 
 **Einordnung der Arbeit an Prüfset 1:** Auf unbekannten Dokumenten stieg die Trefferquote von 72,8 % (Prüfset 1, blind) auf 82,0 % (Prüfset 2, blind); die Genauigkeit blieb bei rund 91 %. Am Prüfset, an dem entwickelt wurde, stehen 99 %: Ein Teil der Regeln passt genau auf dessen Fälle und überträgt sich nicht. Gut sind jetzt E-Mail, IBAN, Steuer- und SV-Nummern (100 %), Telefon (97,9 %) und Personen (90,5 %). Schwach bleiben Firmen ohne Rechtsform (52 %), Gesundheit (67 %), Religion (60 %), Adressen (79 %) und freie Kennungen (Kunden-, Ausweis-, Kennzeichen-Nummern). Mit Regeln allein werden die Ziele kaum erreicht; der nächste Schritt ist die zweite Erkennungsstufe mit einem lokalen Modell (offene Punkte #2).
 
 Die Änderungen der zweiten Runde kamen aus den Szenarien der Reviews, nicht aus dem Prüfset; das Prüfset wurde danach nur gemessen.
+
+**Vierte Prüfrunde (0.6.1):** Die Behebungen kamen aus den Sätzen der Prüfberichte und aus eigenen Gegenproben (Kopien aus PDF: IBAN ohne Leerzeichen, Bezeichnung an der Nummer, Zeilenumbruch mitten in einer Angabe). Prüfset 2 blieb ungeöffnet und wurde nur mit Zahlen gemessen: 82,1 % statt 82,0 %. Regeln verbessern vor allem die Fälle, aus denen sie entstehen.
 
 Einordnung: Am Entwicklungsset sind die Regeln auf die bekannten Fälle zugeschnitten. Das Prüfset zeigt, wie gut sie auf neue Dokumente übertragen: deutlich schlechter. Gut sind E-Mail, IBAN und Kreditkarte (je 100 %). Personen kommen auf 84 %, Telefon auf 81 %, Adressen auf 65 %, Gesundheit auf 48 %, Ausweisnummern auf 6 %. Die Ziele sind damit nicht erreicht. Das Prüfset wurde nur gemessen; an den Regeln wurde danach nichts geändert. Werden sie anhand dieser Ergebnisse verbessert, wird das Prüfset zum Entwicklungsset und es braucht ein neues, ebenfalls blind erstelltes Prüfset.
 

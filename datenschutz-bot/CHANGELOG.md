@@ -1,6 +1,6 @@
 # Änderungen
 
-## [0.6.1] – 2026-10-16 – Befunde aus der vierten Codex-Prüfung
+## [0.6.1] – 2026-10-16 – Befunde aus der vierten Prüfrunde (Codex und Claude)
 
 ### Datenschutz
 - Der Browser legt eingefügten Originaltext nicht mehr im Profil ab (Wiederherstellen des Formulars und Eingabevorschläge aus)
@@ -16,11 +16,22 @@
 - Ein Nachname mehrerer Personen bleibt mehrdeutig, auch wenn danach ein längerer Name kommt
 - HTML: Der sichtbare Kopfbereich (`<header>`) bleibt erhalten
 
+- Gebeugte Nachnamen („die Moosbruggers“, „Whitcombe's“) und Teile von Doppelnamen werden nachgezogen
+- Nachnamen nach Titel ohne Anrede („Mag. Leitgeb“), nach „i. A.“, „gez.“, „Ehepaar“ und allein unter dem Gruß
+- Gesundheit und Religion: Autist, Alkoholiker, HIV-positiv, Morbus Crohn, Neurodermitis, Süchte und Störungen, „ist blind“, Behinderung mit Personenbezug, Juden, Christen, Atheist; Wörter mit Akzent
+- Tabellen mit Spaltenköpfen wie „Teilnehmer/in“, „Name des Gastes“, „Tel.-Nr.“, „Kontaktperson“; Telefon mit spanischem und polnischem Signalwort
+- Weniger Fehlalarme: keine Zeitwörter als Nachname nach Vornamen („Lena Freitag Abend“), keine Satzanfänge („Ob Anna“), kein Gegenstand nach „meiner Frau“, keine Ablaufpläne als Chat; „hindurch“, „Sabbatical“, „Taufers“, „Eid“, „Verkehrsbehinderung“, „Risotto mit Krebs“, „Hals- und Beinbruch“ sind keine besonderen Kategorien; Branchenwort + Hauptwort ist keine Firma; ein Datum mit „/“ oder „-“ und kurze Artikelnummern sind keine Telefonnummer
+
 ### Ablage
 - Die Wartezeit einer Sperre gilt auch, wenn ein anderer Vorgang gerade aufräumt
+- Steuerzeichen und UTF-16 ohne BOM werden abgelehnt; Seitenumbrüche aus PDF-Kopien werden Zeilenumbrüche
+- Eine lange Kette von Vornamen macht das Ersetzen nicht mehr langsam (200.000 Zeichen: 0,23 s statt 9,4 s)
 
 ### Qualität
-- 117 Tests; der Browser-Test durchsucht nach dem Schließen das ganze Profil nach dem eingefügten Text
+- 127 Tests; der Browser-Test durchsucht nach dem Schließen das ganze Profil nach dem eingefügten Text
+- Die Datenschutz-Probe zählt auch gebeugte Formen und Teile von Doppelnamen als Leck
+- Blindes Prüfset 2: 82,1 % Trefferquote, 90,9 % Genauigkeit (vorher 82,0 % / 90,7 %)
+- Berichtigung zu 0.6.0: Die Zusage „ohne Schlüssel lässt sich kein Dokument von Hand für die KI freischalten“ galt erst mit 0.6.1; vorher ließ sich die Prüfsumme durch Löschen umgehen (Codex 4 #1, Claude 4 #9)
 
 ## [0.6.0] – 2026-10-16 – Erkennung nach Prüfset 1, Befunde aus der dritten Claude-Prüfung
 

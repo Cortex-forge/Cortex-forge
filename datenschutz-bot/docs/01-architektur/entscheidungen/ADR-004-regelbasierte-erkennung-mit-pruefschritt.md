@@ -15,4 +15,4 @@ Im Prototyp nutzen wir Regeln ohne zusätzliche Abhängigkeiten. Vor der Freigab
 ## Folgen
 - Namen ohne Anrede, die nicht in der Namensliste stehen, können durchrutschen. Der Prüfschritt fängt das ab.
 - Für den Pilot kommt ein lokales Modell als zweite Stufe dazu (siehe Roadmap). Vorher messen wir die Erkennung mit einem Testset mit Lösungsblatt.
-- Stand 2026-10-16: am blinden Prüfset 2 82,0 % Trefferquote; Vorschlag für die zweite Stufe in ADR-006.
+- Stand 2026-10-16: am blinden Prüfset 2 82,0 % Trefferquote, nach der vierten Prüfrunde 82,1 %; Vorschlag für die zweite Stufe in ADR-006.
