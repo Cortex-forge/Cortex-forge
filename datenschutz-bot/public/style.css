@@ -253,3 +253,7 @@ pre.snippet { background: var(--surface-2); border: 1px solid var(--border); bor
   .topbar { padding: 0 12px; }
   .doc-item .t { white-space: normal; overflow-wrap: anywhere; }
 }
+
+/* Kontenplan unter dem Dokument (Buchhaltung) */
+.accounts { margin-top: 14px; }
+.accounts .label { color: var(--muted, #5b6577); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }

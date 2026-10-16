@@ -107,13 +107,27 @@ test("Oberfläche: Host- und Ursprungsprüfung, Freigabe nur der geprüften Fass
     assert.match(String(notFound.json().fehler), /nicht im Dokument gefunden/);
     const marked = await request(port, "POST", `/api/dokumente/${id}/markieren`, { body: { wert: "anfrage", typ: "SONSTIGES" } });
     assert.equal(marked.json().treffer, 2);
+    // Mit Auswahl: Die Stelle muss genau zum Original passen (Review Codex 2 #7).
+    const original = String((await request(port, "GET", `/api/dokumente/${id}`)).json().original);
+    const at = original.indexOf("Tel.");
+    const withPos = await request(port, "POST", `/api/dokumente/${id}/markieren`, { body: { wert: "Tel", typ: "SONSTIGES", stelle: { start: at, end: at + 3 } } });
+    assert.equal(withPos.status, 200);
+    const wrongPos = await request(port, "POST", `/api/dokumente/${id}/markieren`, { body: { wert: "Tel", typ: "SONSTIGES", stelle: { start: 0, end: 3 } } });
+    assert.equal(wrongPos.status, 400);
+    assert.equal((await request(port, "POST", `/api/dokumente/${id}/markieren`, { body: { wert: "Tel", typ: "SONSTIGES", stelle: "0-3" } })).status, 400);
 
-    assert.equal((await request(port, "POST", `/api/dokumente/${id}/ki-freigeben`, { body: {} })).status, 200);
+    const reviewed = (await request(port, "GET", `/api/dokumente/${id}`)).json().job as { rev: number };
+    assert.equal((await request(port, "POST", `/api/dokumente/${id}/ki-freigeben`, { body: {} })).status, 400, "ohne geprüfte Fassung");
+    // Review Codex 2 #2: Ein altes Fenster gibt eine inzwischen geänderte Fassung nicht frei.
+    const stalePreview = await request(port, "POST", `/api/dokumente/${id}/ki-freigeben`, { body: { rev: reviewed.rev - 1 } });
+    assert.equal(stalePreview.status, 400);
+    assert.match(String(stalePreview.json().fehler), /inzwischen geändert/);
+    assert.equal((await request(port, "POST", `/api/dokumente/${id}/ki-freigeben`, { body: { rev: reviewed.rev } })).status, 200);
     // Die "KI" arbeitet in einem anderen Prozess mit demselben Datenordner.
     const ki = new JobStore(dataDir, CONFIG_DIR);
-    ki.saveResult(id, { art: "text", text: "Version A für Frau [PERSON_1]" });
+    ki.saveResult(id, { art: "text", text: "Version A für Frau [PERSON_1]" }, 1);
     const shownRev = (await request(port, "GET", `/api/dokumente/${id}`)).json().job as { ergebnisRev: number };
-    ki.saveResult(id, { art: "text", text: "Version B für Frau [PERSON_1]" });
+    ki.saveResult(id, { art: "text", text: "Version B für Frau [PERSON_1]" }, 1);
 
     assert.equal((await request(port, "GET", `/api/dokumente/${id}/export`)).status, 400, "kein Export vor der Freigabe");
     const stale = await request(port, "POST", `/api/dokumente/${id}/freigeben`, { body: { ergebnisRev: shownRev.ergebnisRev } });

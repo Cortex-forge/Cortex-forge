@@ -148,6 +148,20 @@ export const NOUN_SURNAMES: ReadonlySet<string> = new Set(
    Sonne Rose Busch Wald Feld Hof Haus Baum Brand Hirsch Bär Löwe Falke Pfarrer Herzog Ritter Wächter Schreiber`),
 );
 
+// Kleingeschrieben gewöhnliche Wörter, die auch Namen sind ("Peter Klein" – "ein klein wenig", "Grace Park" –
+// "in the park"). Kleingeschrieben werden sie nicht als Wiederholung eines Namens ersetzt.
+export const COMMON_LOWERCASE_WORDS: ReadonlySet<string> = new Set(
+  words(`klein lang lange kurz groß gross jung alt neu braun schwarz weiß weiss rot roth grün frank frei fromm froh
+   stark wild mild hart fest bald gut ernst still voll warm kühn weise gerade rasch treu lieb hell scharf fein schmal
+   breit hoch tief nett rein reich arm kalt süß sauer bitter edel kraft krause kraus koch busch fuchs wolf stock
+   will may mark bill rose grant hope young long short white black brown green gray grey little small strong rich
+   noble bright sharp swift wise wells park king bell cook baker walker turner hunter fisher carter cooper ward hall
+   gates rivers banks moore lane street field west east north south page case bush fox hart day march price stone
+   love joy faith grace dawn summer winter spring storm snow frost rain glass steel iron gold silver cash wood hill
+   bianco bianca bianchi rosso rossi nero neri bello bella santo santi conte forte grande piccolo
+   groot jong smit visser bakker de`),
+);
+
 // Artikel, Possessiv- und Demonstrativwörter vor Hauptwörtern.
 export const DETERMINERS: ReadonlySet<string> = new Set(
   words(`der die das den dem des ein eine einen einem einer eines kein keine keinen keinem keiner mein meine meinen

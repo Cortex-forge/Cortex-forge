@@ -16,8 +16,9 @@ Regeln:
 1. Übernimm Platzhalter exakt so in dein Ergebnis, z. B. "Sehr geehrte Frau [PERSON_1]". Der Bot setzt danach die echten Daten ein.
 2. Erfinde keine Namen, Adressen, Telefonnummern, E-Mail-Adressen oder Bankdaten.
 3. Versuche nicht, Platzhalter zu erraten oder aufzulösen.
-4. Speichere jedes Ergebnis mit ergebnis_speichern, buchungen_vorschlagen oder rechnung_erstellen. Ein Mitarbeiter prüft es in der Oberfläche, bevor es verschickt oder gebucht wird. Speicherst du ein Ergebnis neu, muss der Mitarbeiter die neue Fassung prüfen.
-5. Rechne Steuern und Summen nicht selbst aus. Das macht der Bot.`;
+4. Speichere jedes Ergebnis mit ergebnis_speichern, buchungen_vorschlagen oder rechnung_erstellen und gib dabei die Fassung an, die dokument_lesen nennt. Ein Mitarbeiter prüft das Ergebnis in der Oberfläche, bevor es verschickt oder gebucht wird. Speicherst du ein Ergebnis neu, muss der Mitarbeiter die neue Fassung prüfen.
+5. Lehnt der Bot ein Ergebnis ab, weil sich das Dokument geändert hat, lies es mit dokument_lesen neu: Die Platzhalter können sich geändert haben.
+6. Rechne Steuern und Summen nicht selbst aus. Das macht der Bot.`;
 
 const NEXT_STEPS: Record<JobArt, string> = {
   hotel:
@@ -28,6 +29,8 @@ const NEXT_STEPS: Record<JobArt, string> = {
 };
 
 const store = new JobStore();
+
+const fassung = z.number().int().min(1).describe("Fassung des Dokuments, wie dokument_lesen sie nennt");
 
 function text(value: string, isError = false) {
   return { content: [{ type: "text" as const, text: value }], ...(isError ? { isError: true } : {}) };
@@ -113,7 +116,7 @@ server.registerTool(
     const legend = doc.platzhalter.length
       ? doc.platzhalter.map((p) => `- ${formatPlaceholder(p)} = ${ENTITY_LABELS[p.type]}`).join("\n")
       : "(keine)";
-    const parts = [`Dokument ${doc.id} · ${ART_LABELS[doc.art]}`];
+    const parts = [`Dokument ${doc.id} · ${ART_LABELS[doc.art]} · Fassung ${doc.fassung} (beim Speichern als fassung angeben)`];
     if (doc.betreff) parts.push(`Betreff: ${doc.betreff}`);
     parts.push("", "-----", doc.text, "-----", "", "Platzhalter in diesem Dokument:", legend);
     if (doc.kontenplan?.length) {
@@ -132,14 +135,15 @@ server.registerTool(
       "Speichert ein Text-Ergebnis (z. B. Antwort-E-Mail, Bericht, Zusammenfassung) mit Platzhaltern. Der Bot setzt die echten Daten ein; ein Mitarbeiter prüft vor dem Versand.",
     inputSchema: {
       id: z.string().max(40).describe("Dokument-ID"),
+      fassung,
       text: z.string().min(1).max(200_000).describe("Das Ergebnis mit Platzhaltern, z. B. 'Sehr geehrte Frau [PERSON_1], ...'"),
       titel: z.string().max(500).optional().describe("Optional: Betreff oder Titel des Ergebnisses"),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   },
-  guard(({ id, text: body, titel }: { id: string; text: string; titel?: string }) => {
+  guard(({ id, fassung: f, text: body, titel }: { id: string; fassung: number; text: string; titel?: string }) => {
     const ergebnis: ErgebnisKi = titel ? { art: "text", titel, text: body } : { art: "text", text: body };
-    const { pruefung } = store.saveResult(id, ergebnis);
+    const { pruefung } = store.saveResult(id, ergebnis, f);
     return describeCheck(pruefung);
   }),
 );
@@ -164,22 +168,26 @@ server.registerTool(
       "Speichert Buchungsvorschläge zu einem Beleg. Gib Nettobetrag und Steuersatz an; der Bot berechnet Steuer und Brutto selbst und vergleicht mit dem Beleg. Ein Mitarbeiter prüft, bevor gebucht wird.",
     inputSchema: {
       id: z.string().max(40).describe("Dokument-ID"),
+      fassung,
       buchungen: z.array(buchungSchema).min(1).max(500),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   },
-  guard(({ id, buchungen }: { id: string; buchungen: z.infer<typeof buchungSchema>[] }) => {
-    const { pruefung, summen } = store.saveResult(id, { art: "buchungen", buchungen });
+  guard(({ id, fassung: f, buchungen }: { id: string; fassung: number; buchungen: z.infer<typeof buchungSchema>[] }) => {
+    const { pruefung, summen } = store.saveResult(id, { art: "buchungen", buchungen }, f);
     return describeCheck(pruefung, summen);
   }),
 );
 
 const positionSchema = z.object({
   beschreibung: z.string().max(2000).describe("Leistung, Platzhalter erlaubt"),
-  menge: z.number().positive().max(1e6),
+  menge: z.number().positive().max(1e6).describe("Menge, höchstens 3 Nachkommastellen"),
   einheit: z.string().max(40).optional().describe("z. B. Nächte, Stück, Stunden"),
-  einzelpreis: betrag.describe("Preis pro Einheit in Euro"),
-  preis_ist_brutto: z.boolean().optional().describe("true, wenn der Einzelpreis die USt schon enthält (z. B. Preise für Privatgäste)"),
+  einzelpreis: betrag.describe("Preis pro Einheit in Euro, höchstens 4 Nachkommastellen"),
+  preis_ist_brutto: z
+    .boolean()
+    .optional()
+    .describe("true, wenn der Einzelpreis die USt schon enthält (z. B. Preise für Privatgäste); bei allen Positionen gleich"),
   ust_satz: z.number().min(0).max(100).describe("Umsatzsteuersatz in Prozent, z. B. 10 für Beherbergung in Österreich"),
 });
 
@@ -191,6 +199,7 @@ server.registerTool(
       "Erstellt einen Rechnungsentwurf. Empfänger und Adresse als Platzhalter angeben (z. B. [PERSON_1], [ADRESSE_1]). Der Bot setzt die echten Daten und die eigenen Firmendaten ein, rechnet Steuern und Summen und vergibt die Rechnungsnummer erst bei der Freigabe durch einen Mitarbeiter.",
     inputSchema: {
       id: z.string().max(40).describe("Dokument-ID"),
+      fassung,
       empfaenger: z.string().max(500).describe("Platzhalter des Empfängers, z. B. [PERSON_1] oder [FIRMA_1]"),
       empfaenger_adresse: z.string().max(500).optional().describe("Platzhalter der Adresse, z. B. [ADRESSE_1]"),
       empfaenger_uid: z.string().max(200).optional().describe("Platzhalter der UID-Nummer des Empfängers, falls vorhanden"),
@@ -201,8 +210,8 @@ server.registerTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   },
-  guard(({ id, ...rechnung }: { id: string } & RechnungInhalt) => {
-    const { pruefung, summen } = store.saveResult(id, { art: "rechnung", rechnung });
+  guard(({ id, fassung: f, ...rechnung }: { id: string; fassung: number } & RechnungInhalt) => {
+    const { pruefung, summen } = store.saveResult(id, { art: "rechnung", rechnung }, f);
     return describeCheck(pruefung, summen);
   }),
 );

@@ -1,5 +1,5 @@
-import { detectAll, escapeRegExp, normalizeValue } from "./detectors.js";
-import { DETERMINERS, LOWERCASE_STOPWORDS, NOT_SURNAME, NOUN_SURNAMES } from "./names.js";
+import { detectAll, normalizeValue } from "./detectors.js";
+import { COMMON_LOWERCASE_WORDS, DETERMINERS, LOWERCASE_STOPWORDS, NOT_SURNAME, NOUN_SURNAMES } from "./names.js";
 import { formatPlaceholder, placeholderId, placeholderRegex } from "./placeholders.js";
 import type {
   DetectOptions,
@@ -19,11 +19,15 @@ export function placeholderLegend(mapping: MappingEntry[]): PlaceholderInfo[] {
 
 const PARTICLES = new Set(["von", "van", "vom", "der", "den", "dem", "de", "la", "di", "da", "del", "della", "degli", "dos", "du", "ten", "ter", "zu", "und"]);
 
-/** Teile eines Namens, die auch allein auf die Person verweisen ("Huber" aus "Anna Huber"). */
+function titleCase(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+/** Teile eines Namens, die auch allein auf die Person verweisen ("Huber" aus "Anna Huber" oder "ANNA HUBER"). */
 function nameParts(name: string): string[] {
   return name.split(/[\s,]+/).filter((t) => {
     if (t.length < 3 || PARTICLES.has(t.toLowerCase())) return false;
-    if (/^\p{Lu}/u.test(t)) return !NOT_SURNAME.has(t);
+    if (/^\p{Lu}/u.test(t)) return !NOT_SURNAME.has(t) && !NOT_SURNAME.has(titleCase(t));
     // Kleingeschriebene Namen aus lockeren Texten ("steffi", "lechner")
     return t.length >= 4 && /^\p{Ll}+$/u.test(t) && !LOWERCASE_STOPWORDS.has(t);
   });
@@ -33,38 +37,50 @@ interface Owner {
   full: string;
   nachname?: string;
   ambiguous?: boolean;
+  /** Der Name stand selbst kleingeschrieben im Text ("steffi lechner"). */
+  lowercase?: boolean;
 }
 
 /**
- * Personen sollen überall denselben Platzhalter bekommen: "Anna Huber", später "Frau Huber" und "Anna" werden alle
- * zu [PERSON_1]. Dazu werden einzelne Namensteile den vollen Namen zugeordnet und weitere Vorkommen im Text
- * nachgezogen. Ausnahmen ("nicht sensibel") gelten auch hier. Nach einem Artikel bleiben Namen, die auch
- * Hauptwörter sind, stehen ("an euren Koch", "auf den Berg").
+ * Personen sollen überall denselben Platzhalter bekommen: "Anna Huber", später "Frau Huber", "HUBER" und "Anna"
+ * werden alle zu [PERSON_1]. Dazu werden einzelne Namensteile den vollen Namen zugeordnet und weitere Vorkommen im
+ * Text nachgezogen, unabhängig von Groß- und Kleinschreibung. Ausnahmen ("nicht sensibel") gelten auch hier.
+ * Stehen bleiben: Namen, die auch Hauptwörter sind, nach einem Artikel ("an euren Koch", "auf den Berg"), und
+ * kleingeschriebene Alltagswörter ("Peter Klein" – "ein klein wenig").
  */
 function propagatePersons(text: string, findings: Finding[], options: DetectOptions): Finding[] {
   const excluded = new Set((options.excluded ?? []).map((v) => v.trim().toLowerCase()));
+  // Schlüssel: Namensteil in Kleinbuchstaben
   const owners = new Map<string, Owner>();
   for (const p of findings) {
     if (p.type !== "PERSON") continue;
     const full = (p.canonical ?? p.value).trim().replace(/\s+/g, " ");
     for (const part of nameParts(full)) {
-      if (excluded.has(part.toLowerCase())) continue;
-      const prev = owners.get(part);
+      const key = part.toLowerCase();
+      if (excluded.has(key)) continue;
+      const lowercase = part === key;
+      const prev = owners.get(key);
       if (!prev) {
-        owners.set(part, p.nachname ? { full, nachname: p.nachname } : { full });
+        owners.set(key, { full, ...(p.nachname ? { nachname: p.nachname } : {}), ...(lowercase ? { lowercase } : {}) });
         continue;
       }
+      if (lowercase) prev.lowercase = true;
       const a = prev.full.toLowerCase();
       const b = full.toLowerCase();
       if (a === b) continue;
       // "Huber" und später "Anna Huber": der längere Name gewinnt. Zwei verschiedene Namen: nicht eindeutig.
-      if (b.includes(a)) owners.set(part, { full, ...(p.nachname || prev.nachname ? { nachname: p.nachname ?? prev.nachname } : {}) });
-      else if (!a.includes(b)) prev.ambiguous = true;
+      if (b.includes(a)) {
+        owners.set(key, {
+          full,
+          ...(p.nachname || prev.nachname ? { nachname: p.nachname ?? prev.nachname } : {}),
+          ...(prev.lowercase ? { lowercase: true } : {}),
+        });
+      } else if (!a.includes(b)) prev.ambiguous = true;
     }
   }
 
   const canonicalFor = (value: string): Owner | undefined => {
-    const owner = owners.get(value);
+    const owner = owners.get(value.toLowerCase());
     return owner && !owner.ambiguous && owner.full.toLowerCase() !== value.toLowerCase() ? owner : undefined;
   };
 
@@ -79,29 +95,25 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
   const covered = new Uint8Array(text.length);
   for (const f of withCanonical) covered.fill(1, f.start, f.end);
 
-  const variants = new Map<string, string>();
-  for (const part of owners.keys()) {
-    variants.set(part, part);
-    if (/^\p{Lu}/u.test(part)) variants.set(part.toUpperCase(), part);
-  }
-  const alt = [...variants.keys()].sort((a, b) => b.length - a.length).map(escapeRegExp).join("|");
-  const re = new RegExp(String.raw`(?<![\p{L}\p{N}_'’-])(?:${alt})(?![\p{L}\p{N}_'’-])`, "gu");
-
+  // Ein Durchgang über alle Wörter, jedes wird nachgeschlagen (lineare Laufzeit, auch bei vielen Namen).
   const extra: Finding[] = [];
-  for (const m of text.matchAll(re)) {
+  for (const m of text.matchAll(/[\p{L}\p{N}_'’-]+/gu)) {
+    const key = m[0].toLowerCase();
+    const owner = owners.get(key);
+    if (!owner) continue;
     const start = m.index;
     const end = start + m[0].length;
     if (covered.subarray(start, end).some((c) => c === 1)) continue;
-    const part = variants.get(m[0]) ?? m[0];
-    if (NOUN_SURNAMES.has(part)) {
+    // Kleingeschrieben: nur, wenn der Name auch so im Text stand oder kein Alltagswort ist.
+    if (m[0] === key && !owner.lowercase && (key.length < 4 || LOWERCASE_STOPWORDS.has(key) || COMMON_LOWERCASE_WORDS.has(key))) continue;
+    if (NOUN_SURNAMES.has(titleCase(key))) {
       const prevWord = /(\p{L}+)[ \t]+$/u.exec(text.slice(Math.max(0, start - 30), start))?.[1]?.toLowerCase();
       if (prevWord && DETERMINERS.has(prevWord)) continue;
     }
-    const owner = owners.get(part);
     const f: Finding = { start, end, type: "PERSON", value: m[0], source: "person:wiederholung" };
-    const canon = canonicalFor(part);
+    const canon = canonicalFor(key);
     if (canon) f.canonical = canon.full;
-    const nachname = canon?.nachname ?? owner?.nachname;
+    const nachname = canon?.nachname ?? owner.nachname;
     if (nachname) f.nachname = nachname;
     extra.push(f);
   }

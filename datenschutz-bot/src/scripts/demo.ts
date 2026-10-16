@@ -20,7 +20,7 @@ const store = new JobStore();
 const hotel = store.create({ art: "hotel", text: example("hotel-anfrage.txt") });
 const beleg = store.create({ art: "buchhaltung", betreff: "Eingangsrechnung Elektriker", text: example("eingangsrechnung.txt") });
 const auftrag = store.create({ art: "hotel", betreff: "Rechnung Aufenthalt", text: example("rechnungsauftrag.txt") });
-for (const job of [hotel, beleg, auftrag]) store.releaseForAi(job.id);
+for (const job of [hotel, beleg, auftrag]) store.releaseForAi(job.id, job.rev);
 
 // 2) Die "KI" verbindet sich per MCP.
 const client = new Client({ name: "demo-ki", version: "1.0.0" });
@@ -34,6 +34,8 @@ await client.connect(
 );
 
 const responses: string[] = [];
+/** Die Fassung, die dokument_lesen nennt; die KI gibt sie beim Speichern an. */
+const fassungOf = (view: string) => Number(/Fassung (\d+)/.exec(view)?.[1]);
 async function call(name: string, args: Record<string, unknown> = {}): Promise<string> {
   const result = await client.callTool({ name, arguments: args });
   const content = result.content as Array<{ type: string; text?: string }>;
@@ -57,6 +59,7 @@ say();
 say(
   await call("ergebnis_speichern", {
     id: hotel.id,
+    fassung: fassungOf(hotelView),
     titel: "Ihre Anfrage für Februar 2027",
     text: `Sehr geehrte Frau [PERSON_1],
 
@@ -79,6 +82,7 @@ say();
 say(
   await call("buchungen_vorschlagen", {
     id: beleg.id,
+    fassung: fassungOf(belegView),
     buchungen: [
       {
         datum: "30.09.2026",
@@ -95,10 +99,11 @@ say(
 );
 say();
 
-await call("dokument_lesen", { id: auftrag.id });
+const auftragView = await call("dokument_lesen", { id: auftrag.id });
 say(
   await call("rechnung_erstellen", {
     id: auftrag.id,
+    fassung: fassungOf(auftragView),
     empfaenger: "[PERSON_1]",
     empfaenger_adresse: "[ADRESSE_1]",
     leistungszeitraum: "12.02.2027 bis 15.02.2027",

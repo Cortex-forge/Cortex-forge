@@ -81,6 +81,8 @@ export interface PlaceholderInfo {
 export interface ManualMark {
   value: string;
   type: EntityType;
+  /** Ausgewählte Stellen im Dokument (Anfang, Ende). Sie werden immer geschwärzt, auch mitten in einem Wort. */
+  stellen?: Array<[number, number]>;
 }
 
 export interface DetectOptions {

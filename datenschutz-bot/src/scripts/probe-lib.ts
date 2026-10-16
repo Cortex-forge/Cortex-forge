@@ -73,7 +73,7 @@ export async function runProbe(faelle: Fall[]): Promise<{ antworten: number; lec
     const jobs = faelle.map((f) => {
       const art = ["hotel", "buchhaltung", "allgemein"].includes(f.art) ? f.art : "allgemein";
       const job = store.create({ art, ...(f.betreff ? { betreff: f.betreff } : {}), text: f.text }, "system");
-      store.releaseForAi(job.id);
+      store.releaseForAi(job.id, job.rev);
       return { fall: f, id: job.id };
     });
 
@@ -100,7 +100,8 @@ export async function runProbe(faelle: Fall[]): Promise<{ antworten: number; lec
         const gelesen = await call("dokument_lesen", { id });
         // Die "KI" antwortet mit allen Platzhaltern, die sie bekommen hat, plus einem falschen.
         const platzhalter = gelesen.match(/\[[A-Z]+_\d+(?::[^\]\n]*)?\]/g) ?? [];
-        const gespeichert = await call("ergebnis_speichern", { id, text: `Antwort mit ${platzhalter.join(" ")} und [PERSON_999].` });
+        const fassung = Number(/Fassung (\d+)/.exec(gelesen)?.[1]);
+        const gespeichert = await call("ergebnis_speichern", { id, fassung, text: `Antwort mit ${platzhalter.join(" ")} und [PERSON_999].` });
         antworten += 2;
         for (const s of fall.sensibel) {
           for (const [wo, text] of [["Liste", liste], ["dokument_lesen", gelesen], ["ergebnis_speichern", gespeichert]] as const) {

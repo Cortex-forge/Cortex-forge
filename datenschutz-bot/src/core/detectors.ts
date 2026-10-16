@@ -10,7 +10,7 @@ import {
   ROLE_WORDS,
 } from "./names.js";
 import { PARTICLE, SALUTATION, TITLES } from "./salutations.js";
-import type { CompanyEntry, DetectOptions, EntityType, Finding } from "./types.js";
+import type { CompanyEntry, DetectOptions, EntityType, Finding, ManualMark } from "./types.js";
 
 // Alle Muster laufen mit dem Flag "u" (Unicode). Wichtig: \p{Lu} nie zusammen mit dem Flag "i" verwenden,
 // sonst passt es auch auf Kleinbuchstaben.
@@ -20,6 +20,12 @@ import type { CompanyEntry, DetectOptions, EntityType, Finding } from "./types.j
 
 const UP = String.raw`\p{Lu}`;
 const LO = String.raw`\p{Ll}`;
+
+/**
+ * Trennt unabhängige Teile eines Dokuments (Betreff, Text, Kontenplan). Ein Zeichen aus dem privaten Bereich von
+ * Unicode, das beim Ablegen aus Dokumenten entfernt wird. Kein Fund reicht über diese Grenze.
+ */
+export const SEGMENT_BREAK = "";
 
 /** Priorität bei Überschneidungen: höher gewinnt. */
 function priorityOf(f: Finding): number {
@@ -1068,40 +1074,144 @@ const CSV_COLUMNS: Array<{ re: RegExp; type: EntityType }> = [
   { re: /^(?:kennzeichen|kfz-kennzeichen|license plate)$/iu, type: "KENNZEICHEN" },
 ];
 
+/** Inhalt eines CSV-Feldes (ohne umschließende Anführungszeichen) als Position im Text. */
+interface CsvField {
+  start: number;
+  end: number;
+}
+
+/** So weit darf ein Feld in Anführungszeichen höchstens reichen (auch über mehrere Zeilen). */
+const MAX_QUOTED = 2000;
+
+/**
+ * Schließendes Anführungszeichen ab from. Verdoppelte Anführungszeichen ("") gehören zum Inhalt. Vor einer
+ * Leerzeile, einer Teilgrenze, nach MAX_QUOTED Zeichen oder hinter limit gibt es keinen Abschluss mehr: -1.
+ */
+function closingQuote(text: string, from: number, limit: number): number {
+  const to = Math.min(limit, from + MAX_QUOTED);
+  let blank = false; // seit dem letzten Zeilenumbruch nur Leerraum
+  for (let i = from; i < to; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (text[i + 1] === '"') {
+        i++;
+        blank = false;
+        continue;
+      }
+      return i;
+    }
+    if (c === SEGMENT_BREAK) return -1;
+    if (c === "\n") {
+      if (blank) return -1;
+      blank = true;
+    } else if (c !== " " && c !== "\t" && c !== "\r") {
+      blank = false;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Liest einen CSV-Datensatz ab pos: Felder in Anführungszeichen dürfen Trennzeichen, verdoppelte Anführungszeichen
+ * und Zeilenumbrüche enthalten. next zeigt auf den Anfang der nächsten Zeile. limit begrenzt Felder in
+ * Anführungszeichen (für Kopfzeilen: Zeilenende).
+ */
+function readCsvRecord(text: string, pos: number, delimiter: string, limit = text.length): { fields: CsvField[]; next: number } {
+  const fields: CsvField[] = [];
+  const isSpace = (c: string | undefined) => c !== delimiter && (c === " " || c === "\t" || c === "\r");
+  let i = pos;
+  for (;;) {
+    let j = i;
+    while (j < text.length && isSpace(text[j])) j++;
+    if (text[j] === '"') {
+      const close = closingQuote(text, j + 1, limit);
+      if (close !== -1) {
+        let k = close + 1;
+        while (k < text.length && isSpace(text[k])) k++;
+        const after = text[k];
+        if (after === undefined || after === delimiter || after === "\n") {
+          fields.push({ start: j + 1, end: close });
+          if (after === delimiter) {
+            i = k + 1;
+            continue;
+          }
+          return { fields, next: after === undefined ? k : k + 1 };
+        }
+      }
+    }
+    // Feld ohne (gültige) Anführungszeichen: bis zum nächsten Trennzeichen oder Zeilenende.
+    let k = i;
+    while (k < text.length && text[k] !== delimiter && text[k] !== "\n" && text[k] !== SEGMENT_BREAK) k++;
+    let s = i;
+    let e = k;
+    while (s < e && /\s/u.test(text[s] ?? "")) s++;
+    while (e > s && /\s/u.test(text[e - 1] ?? "")) e--;
+    if (text[s] === '"') s++;
+    if (e > s && text[e - 1] === '"') e--;
+    fields.push({ start: s, end: e });
+    if (text[k] === delimiter) {
+      i = k + 1;
+      continue;
+    }
+    return { fields, next: k < text.length ? k + 1 : k };
+  }
+}
+
+function trimmedSpan(text: string, f: CsvField): CsvField {
+  let { start, end } = f;
+  while (start < end && /\s/u.test(text[start] ?? "")) start++;
+  while (end > start && /\s/u.test(text[end - 1] ?? "")) end--;
+  return { start, end };
+}
+
+/**
+ * Typ einer Zelle. Hat eine Zeile mehr Felder als die Kopfzeile (z. B. ein Komma ohne Anführungszeichen in
+ * "Huber, Anna"), ist die Zuordnung unsicher: Dann gilt jeder Spaltentyp, der durch die Verschiebung in Frage
+ * kommt. Lieber zu viel schützen als eine verrutschte Telefonnummer stehen lassen.
+ */
+function cellType(types: Array<EntityType | undefined>, index: number, extra: number): EntityType | undefined {
+  for (let c = Math.max(0, index - extra); c <= index && c < types.length; c++) {
+    const type = types[c];
+    if (type) return type;
+  }
+  return undefined;
+}
+
 export function detectTables(text: string): Finding[] {
   const out: Finding[] = [];
-  const lines: Array<{ start: number; text: string }> = [];
   let pos = 0;
-  for (const line of text.split("\n")) {
-    lines.push({ start: pos, text: line });
-    pos += line.length + 1;
-  }
-  for (let i = 0; i < lines.length - 1; i++) {
-    const header = lines[i]?.text ?? "";
-    const delimiter = [";", "\t", ","].find((d) => header.split(d).length >= 2);
-    if (!delimiter) continue;
-    const cells = header.split(delimiter).map((c) => c.trim().replace(/^"|"$/g, ""));
-    if (cells.some((c) => c.length > 30 || /\d/.test(c))) continue;
-    const types = cells.map((c) => CSV_COLUMNS.find((col) => col.re.test(c))?.type);
-    if (!types.some(Boolean)) continue;
-    let row = i + 1;
-    for (; row < lines.length; row++) {
-      const line = lines[row];
-      if (!line || !line.text.trim()) break;
-      const parts = line.text.split(delimiter);
-      if (Math.abs(parts.length - cells.length) > 1) break;
-      let cellStart = line.start;
-      parts.forEach((cell, c) => {
-        const type = types[c];
-        const trimmed = cell.trim().replace(/^"|"$/g, "");
-        if (type && trimmed) {
-          const offset = cell.indexOf(trimmed);
-          out.push(finding(text, cellStart + offset, cellStart + offset + trimmed.length, type, `tabelle:${type.toLowerCase()}`));
+  while (pos < text.length) {
+    const lineEnd = lineEndOf(text, pos);
+    const headerLine = text.slice(pos, lineEnd);
+    const delimiter = [";", "\t", ","].find((d) => headerLine.includes(d));
+    let next = lineEnd + 1;
+    if (delimiter) {
+      const header = readCsvRecord(text, pos, delimiter, lineEnd).fields.map((f) => text.slice(f.start, f.end).trim());
+      const types = header.map((c) => CSV_COLUMNS.find((col) => col.re.test(c))?.type);
+      const plausible = header.length >= 2 && !header.some((c) => c.length > 30 || /\d/.test(c)) && types.some(Boolean);
+      if (plausible) {
+        let row = next;
+        while (row < text.length) {
+          const rowEnd = lineEndOf(text, row);
+          if (!text.slice(row, rowEnd).trim()) break;
+          const record = readCsvRecord(text, row, delimiter);
+          // Eine Zeile ohne Trennzeichen ist keine Tabellenzeile mehr (z. B. "Danke!" nach der Tabelle).
+          if (record.fields.length < 2) break;
+          const fields = record.fields.map((f) => trimmedSpan(text, f));
+          // Leere Felder am Ende (Trennzeichen am Zeilenende) zählen nicht.
+          while (fields.length > 1 && fields[fields.length - 1]?.start === fields[fields.length - 1]?.end) fields.pop();
+          if (fields.length < header.length - 1 || fields.length > header.length + 3) break;
+          const extra = Math.max(0, fields.length - header.length);
+          fields.forEach(({ start, end }, c) => {
+            const type = cellType(types, c, extra);
+            if (type && end > start) out.push(finding(text, start, end, type, `tabelle:${type.toLowerCase()}`));
+          });
+          row = record.next;
         }
-        cellStart += cell.length + delimiter.length;
-      });
+        next = Math.max(next, row);
+      }
     }
-    i = row - 1;
+    pos = next;
   }
   return out;
 }
@@ -1109,9 +1219,19 @@ export function detectTables(text: string): Finding[] {
 // ---------------------------------------------------------------------------
 // Manuelle Markierungen aus der Oberfläche
 
+/** Auf ganze Wörter erweitern: Wer "Hubert" in "Hubertus" schwärzt, schwärzt das ganze Wort. */
+function expandToWords(text: string, start: number, end: number): [number, number] {
+  let s = start;
+  let e = end;
+  while (s > 0 && /[\p{L}\p{N}]/u.test(text[s - 1] ?? "")) s--;
+  while (e < text.length && /[\p{L}\p{N}]/u.test(text[e] ?? "")) e++;
+  return [s, e];
+}
+
 /**
- * Fundstellen einer Markierung: ohne Groß-/Kleinschreibung, als ganzes Wort. Steht der markierte Text nur als
- * Teil eines Wortes im Dokument ("Hubert" in "Hubertus"), wird das ganze Wort genommen.
+ * Fundstellen eines markierten Textes: ohne Groß-/Kleinschreibung, als ganzes Wort. Steht der Text nur als Teil
+ * eines Wortes im Dokument ("Hubert" in "Hubertus"), wird das ganze Wort genommen. Lineare Laufzeit: Ein schon
+ * erfasstes Wort wird nicht noch einmal abgesucht.
  */
 export function manualMatches(text: string, value: string): Array<[number, number]> {
   const v = value.trim();
@@ -1121,20 +1241,32 @@ export function manualMatches(text: string, value: string): Array<[number, numbe
   for (const m of matchAll(text, whole)) out.push([m.index, m.index + m[0].length]);
   if (out.length) return out;
   const part = new RegExp(escapeRegExp(v), "giu");
-  for (const m of matchAll(text, part)) {
-    let s = m.index;
-    let e = m.index + m[0].length;
-    while (s > 0 && /[\p{L}\p{N}]/u.test(text[s - 1] ?? "")) s--;
-    while (e < text.length && /[\p{L}\p{N}]/u.test(text[e] ?? "")) e++;
-    if (!out.some(([a, b]) => a === s && b === e)) out.push([s, e]);
+  let m: RegExpExecArray | null;
+  while ((m = part.exec(text)) !== null) {
+    const [s, e] = expandToWords(text, m.index, m.index + m[0].length);
+    out.push([s, e]);
+    part.lastIndex = Math.max(e, m.index + 1);
   }
   return out;
+}
+
+/**
+ * Alle Stellen einer manuellen Markierung: die Stellen, die der Mitarbeiter ausgewählt hat (immer, auch mitten in
+ * einem Wort), und weitere Vorkommen des Textes.
+ */
+export function manualSpans(text: string, mark: ManualMark): Array<[number, number]> {
+  const spans = manualMatches(text, mark.value);
+  for (const [s, e] of mark.stellen ?? []) {
+    if (Number.isInteger(s) && Number.isInteger(e) && s >= 0 && e <= text.length && s < e) spans.push(expandToWords(text, s, e));
+  }
+  const seen = new Set<string>();
+  return spans.filter(([s, e]) => !seen.has(`${s}:${e}`) && !!seen.add(`${s}:${e}`)).sort((a, b) => a[0] - b[0]);
 }
 
 export function detectManual(text: string, marks: DetectOptions["manual"] = []): Finding[] {
   const out: Finding[] = [];
   for (const mark of marks) {
-    for (const [s, e] of manualMatches(text, mark.value)) out.push(finding(text, s, e, mark.type, "manuell"));
+    for (const [s, e] of manualSpans(text, mark)) out.push(finding(text, s, e, mark.type, "manuell"));
   }
   return out;
 }
@@ -1253,6 +1385,33 @@ function mergeAdjacentAddresses(text: string, findings: Finding[]): Finding[] {
   return out;
 }
 
+/** Kein Fund reicht über eine Teilgrenze (SEGMENT_BREAK): Solche Funde werden an der Grenze geteilt. */
+function splitAtSegments(text: string, findings: Finding[]): Finding[] {
+  const out: Finding[] = [];
+  for (const f of findings) {
+    if (!f.value.includes(SEGMENT_BREAK)) {
+      out.push(f);
+      continue;
+    }
+    let from = f.start;
+    for (let i = f.start; i <= f.end; i++) {
+      if (i < f.end && text[i] !== SEGMENT_BREAK) continue;
+      let s = from;
+      let e = i;
+      while (s < e && /\s/u.test(text[s] ?? "")) s++;
+      while (e > s && /\s/u.test(text[e - 1] ?? "")) e--;
+      if (e > s) {
+        const part: Finding = { ...f, start: s, end: e, value: text.slice(s, e) };
+        delete part.canonical;
+        delete part.nachname;
+        out.push(part);
+      }
+      from = i + 1;
+    }
+  }
+  return out;
+}
+
 export function detectAll(text: string, options: DetectOptions = {}): Finding[] {
   const excluded = new Set((options.excluded ?? []).map((v) => v.trim().toLowerCase()));
   const raw = [
@@ -1272,5 +1431,5 @@ export function detectAll(text: string, options: DetectOptions = {}): Finding[] 
     ...detectHealth(text),
     ...detectReligion(text),
   ].filter((f) => f.value.trim() !== "" && !excluded.has(f.value.trim().toLowerCase()));
-  return mergeAdjacentAddresses(text, resolveOverlaps(text, raw));
+  return splitAtSegments(text, mergeAdjacentAddresses(text, resolveOverlaps(text, raw)));
 }

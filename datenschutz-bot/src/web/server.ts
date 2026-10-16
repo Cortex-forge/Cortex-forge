@@ -92,6 +92,24 @@ function str(body: Record<string, unknown>, key: string, required = true): strin
   throw new HttpError(400, `Feld "${key}" fehlt.`);
 }
 
+function int(body: Record<string, unknown>, key: string): number {
+  const v = body[key];
+  if (typeof v === "number" && Number.isInteger(v)) return v;
+  throw new HttpError(400, `Feld "${key}" fehlt.`);
+}
+
+/** Optionale Auswahl im Original: { start, end } als ganze Zahlen. */
+function selection(body: Record<string, unknown>): [number, number] | undefined {
+  const v = body.stelle;
+  if (v === undefined || v === null) return undefined;
+  if (typeof v !== "object" || Array.isArray(v)) throw new HttpError(400, "Feld \"stelle\" ist ungültig.");
+  const { start, end } = v as Record<string, unknown>;
+  if (typeof start !== "number" || typeof end !== "number" || !Number.isInteger(start) || !Number.isInteger(end)) {
+    throw new HttpError(400, "Feld \"stelle\" ist ungültig.");
+  }
+  return [start, end];
+}
+
 /**
  * Schutz gegen fremde Webseiten, die die lokale Oberfläche ansprechen (DNS-Rebinding, CSRF):
  * Der Host-Kopf muss immer eine lokale Adresse sein, und Änderungen dürfen nur von der eigenen Seite kommen.
@@ -187,7 +205,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
         case "markieren": {
           const typ = str(body, "typ");
           if (!isEntityType(typ)) throw new HttpError(400, "Unbekannter Typ.");
-          const { treffer } = store.mark(id, { value: str(body, "wert"), type: typ });
+          const { treffer } = store.mark(id, { value: str(body, "wert"), type: typ }, selection(body));
           return json(res, 200, { ok: true, treffer });
         }
         case "ausnehmen":
@@ -197,14 +215,12 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
           store.undoMark(id, str(body, "wert"));
           break;
         case "ki-freigeben":
-          store.releaseForAi(id);
+          // rev: die Fassung, die der Mitarbeiter geprüft hat
+          store.releaseForAi(id, int(body, "rev"));
           break;
-        case "freigeben": {
-          const rev = body.ergebnisRev;
-          if (typeof rev !== "number") throw new HttpError(400, "Feld \"ergebnisRev\" fehlt.");
-          store.approve(id, rev);
+        case "freigeben":
+          store.approve(id, int(body, "ergebnisRev"));
           break;
-        }
         case "zurueck":
           store.sendBack(id);
           break;

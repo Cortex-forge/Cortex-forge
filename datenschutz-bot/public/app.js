@@ -8,7 +8,7 @@ const GROUP = {
 };
 const STEPS = ["Prüfen", "KI arbeitet", "Ergebnis prüfen", "Erledigt"];
 const STEP_INDEX = { neu: 0, bereit: 1, zur_pruefung: 2, freigegeben: 3, abgeschlossen: 4 };
-const state = { info: null, beispiele: [], list: [], defekt: 0, current: null, selection: "", busy: false };
+const state = { info: null, beispiele: [], list: [], defekt: 0, current: null, selection: null, busy: false, loadSeq: 0 };
 // Das Platzhalter-Muster kommt vom Server (eine Quelle für Bot und Oberfläche).
 let placeholderRe = /\[([A-Z]+)_(\d+)(?::[^\]\n]*)?\]/gi;
 const main = document.getElementById("main");
@@ -153,6 +153,7 @@ async function refreshList() {
 // Neues Dokument
 
 function renderNew() {
+  state.loadSeq++;
   state.current = null;
   renderList();
   const arten = state.info.arten;
@@ -210,6 +211,7 @@ function renderNew() {
 // KI verbinden
 
 function renderHelp() {
+  state.loadSeq++;
   state.current = null;
   renderList();
   const p = state.info.mcpPfad;
@@ -283,13 +285,32 @@ function manualList(detail) {
   );
 }
 
+/** Kontenplan im Original (mit Fundstellen), nur bei Buchhaltung. */
+function accountsOriginal(detail) {
+  if (!detail.konten || !detail.konten.length) return null;
+  return h("div", { class: "accounts" },
+    h("div", { class: "label", text: "Kontenplan (geht mit an die KI)" }),
+    h("pre", { class: "doc", id: "orig-konten" },
+      detail.konten.flatMap((k, i) => [i ? "\n" : "", `${k.nummer} `, highlightOriginal(k.name, k.markierungen)])),
+  );
+}
+
+/** Kontenplan, wie die KI ihn sieht. */
+function accountsAi(job) {
+  if (!job.kontenplanKi || !job.kontenplanKi.length) return null;
+  return h("div", { class: "accounts" },
+    h("div", { class: "label", text: "Kontenplan" }),
+    h("pre", { class: "doc" }, highlightPlaceholders(job.kontenplanKi.map((k) => `${k.nummer} ${k.name}`).join("\n"))),
+  );
+}
+
 function viewNeu(detail) {
   const orig = h("pre", { class: "doc", id: "orig" }, highlightOriginal(detail.original, detail.markierungen));
   const typeSelect = h("select", { "aria-label": "Art der Angabe" },
     state.info.typen.map((t) => h("option", { value: t.id, text: t.label, selected: t.id === "PERSON" })),
   );
   const selLabel = h("span", { class: "muted", id: "sel-label", text: "Text im Original markieren, dann schwärzen." });
-  state.selection = "";
+  state.selection = null;
 
   return [
     h("div", { class: "callout info" },
@@ -300,14 +321,17 @@ function viewNeu(detail) {
       h("div", { class: "pane" },
         h("h3", {}, "Original", h("small", { text: "bleibt bei euch" })),
         orig,
+        accountsOriginal(detail),
         h("div", { class: "selbar" },
           selLabel,
           typeSelect,
           h("button", { class: "small", type: "button", text: "Schwärzen", onclick: () => {
-            const value = state.selection.trim();
-            if (!value) return toast("Bitte zuerst Text im Original markieren.", true);
+            const sel = state.selection;
+            if (!sel || !sel.text) return toast("Bitte zuerst Text im Original markieren.", true);
             act(async () => {
-              const { treffer } = await api(`/api/dokumente/${detail.job.id}/markieren`, { method: "POST", body: { wert: value, typ: typeSelect.value } });
+              // Die genaue Stelle der Auswahl geht mit: Sie wird immer geschwärzt, auch mitten in einem Wort.
+              const body = { wert: sel.text, typ: typeSelect.value, ...(sel.stelle ? { stelle: sel.stelle } : {}) };
+              const { treffer } = await api(`/api/dokumente/${detail.job.id}/markieren`, { method: "POST", body });
               await loadDetail(detail.job.id);
               toast(`Geschwärzt: ${treffer} Stelle${treffer === 1 ? "" : "n"}.`);
             });
@@ -317,6 +341,7 @@ function viewNeu(detail) {
       h("div", { class: "pane" },
         h("h3", {}, "Das sieht die KI", h("small", { text: "nur Platzhalter" })),
         h("pre", { class: "doc" }, highlightPlaceholders((detail.job.betreffKi ? detail.job.betreffKi + "\n\n" : "") + detail.job.textKi)),
+        accountsAi(detail.job),
       ),
     ),
     manualList(detail),
@@ -324,7 +349,8 @@ function viewNeu(detail) {
     h("div", { class: "bar" },
       h("button", { class: "primary", type: "button", text: "Für KI freigeben", onclick: () =>
         act(async () => {
-          await api(`/api/dokumente/${detail.job.id}/ki-freigeben`, { method: "POST", body: {} });
+          // Freigegeben wird genau die angezeigte Fassung; hat sie sich inzwischen geändert, lehnt der Bot ab.
+          await api(`/api/dokumente/${detail.job.id}/ki-freigeben`, { method: "POST", body: { rev: detail.job.rev } });
           await loadDetail(detail.job.id);
           await refreshList();
         }, "Freigegeben. Die KI kann das Dokument jetzt lesen."),
@@ -354,6 +380,7 @@ function viewBereit(detail) {
     h("div", { class: "pane" },
       h("h3", {}, "Das sieht die KI", h("small", { text: "nur Platzhalter" })),
       h("pre", { class: "doc" }, highlightPlaceholders((detail.job.betreffKi ? detail.job.betreffKi + "\n\n" : "") + detail.job.textKi)),
+      accountsAi(detail.job),
     ),
     h("div", { class: "bar" }, backToReviewButton(detail.job.id)),
   ];
@@ -555,7 +582,10 @@ function renderDetail(detail) {
 }
 
 async function loadDetail(id) {
+  const seq = ++state.loadSeq;
   const detail = await api(`/api/dokumente/${id}`);
+  // Inzwischen ein anderes Dokument gewählt oder neuer geladen: diese Antwort ist überholt.
+  if (seq !== state.loadSeq || location.hash !== `#${id}`) return;
   state.current = detail;
   renderDetail(detail);
   renderList();
@@ -576,15 +606,31 @@ async function route() {
   }
 }
 
+/** Position im Original: Anzahl Zeichen vom Anfang des Bereichs bis zur Stelle. */
+function offsetIn(root, node, offset) {
+  const range = document.createRange();
+  range.setStart(root, 0);
+  range.setEnd(node, offset);
+  return range.toString().length;
+}
+
 document.addEventListener("selectionchange", () => {
-  const orig = document.getElementById("orig");
   const label = document.getElementById("sel-label");
   const sel = document.getSelection();
-  if (!orig || !label || !sel || sel.rangeCount === 0) return;
-  if (!orig.contains(sel.anchorNode) || !orig.contains(sel.focusNode)) return;
-  const text = sel.toString().trim();
+  if (!label || !sel || sel.rangeCount === 0) return;
+  const root = ["orig", "orig-konten"].map((id) => document.getElementById(id)).find((el) => el && el.contains(sel.anchorNode) && el.contains(sel.focusNode));
+  if (!root) return;
+  // Text und Position aus demselben Bereich, damit beide genau zusammenpassen.
+  const range = sel.getRangeAt(0);
+  const raw = range.toString();
+  const text = raw.trim();
   if (!text) return;
-  state.selection = text;
+  let stelle = null;
+  if (root.id === "orig") {
+    const start = offsetIn(root, range.startContainer, range.startOffset) + (raw.length - raw.trimStart().length);
+    stelle = { start, end: start + text.length };
+  }
+  state.selection = { text, stelle };
   label.textContent = `Ausgewählt: „${text.length > 40 ? text.slice(0, 40) + "…" : text}“ schwärzen als`;
 });
 

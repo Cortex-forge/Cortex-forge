@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ibanIsValid } from "../core/detectors.js";
+import { ibanIsValid, manualMatches, manualSpans } from "../core/detectors.js";
 import { pseudonymize } from "../core/pseudonymize.js";
 
 const ki = (text: string, options = {}) => pseudonymize(text, options).text;
@@ -285,11 +285,57 @@ test("Lange Eingaben ohne Treffer bleiben schnell (lineare Laufzeit)", () => {
     bindestriche: "Aaa-".repeat(50_000),
     telefonnummern: "x 0123456 ".repeat(20_000),
     tabelle: ["Vorname;Nachname;Telefon"].concat(Array.from({ length: 5000 }, (_, i) => `Anna;Huber${i};0664 ${1000000 + i}`)).join("\n"),
+    tabelleMitAnfuehrungszeichen: "Name,Kommentar\n" + '"Huber, Anna","'.repeat(20_000),
+    vieleNamen: Array.from({ length: 5000 }, (_, i) => `Frau Anna Huber${i} und HUBER${i}.`).join(" "),
   };
   for (const [name, text] of Object.entries(inputs)) {
     const t0 = performance.now();
     pseudonymize(text);
     const ms = performance.now() - t0;
     assert.ok(ms < 3000, `${name}: ${Math.round(ms)} ms`);
+  }
+});
+
+// Review Codex 2 #5: CSV mit Anführungszeichen
+test("CSV: Trennzeichen und Zeilenumbrüche in Anführungszeichen verschieben keine Spalten", () => {
+  assert.equal(ki('Kommentar,Telefon\n"spät, abends",5551234567'), 'Kommentar,Telefon\n"spät, abends",[TELEFON_1]');
+  assert.equal(ki('Name,Kommentar\n"Xylander, Zorwin",Ankunft'), 'Name,Kommentar\n"[PERSON_1]",Ankunft');
+  assert.equal(ki('Name;Adresse\n"Anna Huber";"Hauptstraße 5\n6020 Innsbruck"\n'), 'Name;Adresse\n"[PERSON_1]";"[ADRESSE_1]"\n');
+  assert.equal(ki('Name;Telefon\n"Anna ""Ani"" Huber";0664 1234567'), 'Name;Telefon\n"[PERSON_1]";[TELEFON_1]');
+  // Komma ohne Anführungszeichen: Die Spalten sind unsicher, also werden alle in Frage kommenden geschützt.
+  assertHidden("Name,Kommentar,Telefon\nHuber, Zorwin,spät,5551234567", ["Huber", "Zorwin", "5551234567"]);
+  // Kein Abschluss: Das Anführungszeichen gilt als normales Zeichen, die Zeile bleibt eine Zeile.
+  assertHidden('Name;Telefon\n"Zorwin Xylander;5551234567\nDanke!', ["Zorwin", "5551234567"]);
+  assert.ok(ki('Name;Telefon\n"Zorwin Xylander;5551234567\nDanke!').endsWith("\nDanke!"));
+  // Text mit Kommas ist keine Tabelle.
+  assert.equal(ki("Kommentar, bitte bis Montag, danke.\nAlles gut."), "Kommentar, bitte bis Montag, danke.\nAlles gut.");
+});
+
+// Review Codex 2 #6: Wiederholungen in anderer Schreibweise
+test("Namen werden auch in anderer Groß-/Kleinschreibung nachgezogen, Alltagswörter nicht", () => {
+  assert.equal(ki("Frau ANNA HUBER reist an; reserviert auf Huber."), "Frau [PERSON_1] reist an; reserviert auf [PERSON_1].");
+  assert.equal(ki("Anna Huber kommt. Später: huber zahlt."), "[PERSON_1] kommt. Später: [PERSON_1] zahlt.");
+  assert.equal(ki("Grüße, Anna Huber. PS: HUBER steht auf der Klingel."), "Grüße, [PERSON_1]. PS: [PERSON_1] steht auf der Klingel.");
+  // Gegenproben: kleingeschriebene Alltagswörter bleiben stehen
+  assert.equal(ki("Peter Klein bucht. Es wird ein klein wenig später."), "[PERSON_1] bucht. Es wird ein klein wenig später.");
+  assert.equal(ki("Thanks, Grace Park. Parking is in the park behind the hotel."), "Thanks, [PERSON_1]. Parking is in the park behind the hotel.");
+  assert.equal(ki("Mit freundlichen Grüßen\nMark Huber\n\nPS: please mark the date."), "Mit freundlichen Grüßen\n[PERSON_1]\n\nPS: please mark the date.");
+});
+
+// Review Codex 2 #7 und #8: ausgewählte Stelle immer schwärzen, lineare Laufzeit
+test("Manuelle Markierung: ausgewählte Stelle wird immer geschwärzt; Suche in linearer Zeit", () => {
+  const text = "Code ZORWIN und ZORWINBETA.";
+  const inWord = text.indexOf("ZORWINBETA");
+  assert.deepEqual(manualMatches(text, "ZORWIN"), [[5, 11]]);
+  const spans = manualSpans(text, { value: "ZORWIN", type: "SONSTIGES", stellen: [[inWord, inWord + 6]] });
+  assert.deepEqual(spans, [[5, 11], [inWord, inWord + 10]]);
+  assert.equal(
+    ki(text, { manual: [{ value: "ZORWIN", type: "SONSTIGES", stellen: [[inWord, inWord + 6]] }] }),
+    "Code [SONSTIGES_1] und [SONSTIGES_2].",
+  );
+  for (const n of [50_000, 200_000]) {
+    const t0 = performance.now();
+    assert.deepEqual(manualMatches("q".repeat(n), "qq"), [[0, n]]);
+    assert.ok(performance.now() - t0 < 500, `manualMatches bei ${n} Zeichen zu langsam`);
   }
 });

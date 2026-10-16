@@ -42,6 +42,18 @@ export function euro(cents: bigint): number {
   return Number(cents) / 100;
 }
 
+/** Anzahl der Nachkommastellen in der kürzesten Dezimaldarstellung (0,125 → 3; 1e-7 → 7). */
+export function nachkommastellen(value: number): number {
+  const b = exakt(value);
+  let d = b.d;
+  let n = 0;
+  while (d > 1n) {
+    d /= 10n;
+    n++;
+  }
+  return n;
+}
+
 /** Hat der Betrag mehr als zwei Nachkommastellen? */
 export function hatBruchteilCent(value: number): boolean {
   const b = exakt(value);
@@ -81,6 +93,21 @@ export function formatEuro(value: number): string {
 
 export function formatNumber(value: number): string {
   return NUMBER.format(value);
+}
+
+/**
+ * Genau so viele Nachkommastellen, wie die Zahl hat (mindestens min): Was auf der Rechnung steht, ist auch das,
+ * womit gerechnet wurde (0,125 bleibt 0,125). Erlaubt sind höchstens 4 Nachkommastellen (Prüfung beim Speichern).
+ */
+export function formatExact(value: number, min = 0): string {
+  const digits = Math.min(20, Math.max(min, nachkommastellen(value)));
+  return new Intl.NumberFormat("de-AT", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+}
+
+/** Euro-Betrag mit mindestens 2 und so vielen Nachkommastellen, wie der Betrag hat (Einzelpreise wie 0,0825 €). */
+export function formatEuroExact(value: number): string {
+  const digits = Math.min(20, Math.max(2, nachkommastellen(value)));
+  return new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
 /** Übliche Umsatzsteuersätze in Österreich (0, 10, 13, 20) und Deutschland (0, 7, 19). */

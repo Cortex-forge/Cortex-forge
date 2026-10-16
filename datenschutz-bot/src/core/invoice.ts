@@ -2,7 +2,8 @@ import {
   KNOWN_VAT_RATES,
   euro,
   formatEuro,
-  formatNumber,
+  formatEuroExact,
+  formatExact,
   nettoAusBruttoCent,
   produktCent,
   steuerCent,
@@ -112,10 +113,6 @@ export function invoiceChecks(inhalt: RechnungInhalt, summen: RechnungsSummen, f
   if (summen.brutto > 10000 && !inhalt.empfaenger_uid?.trim()) {
     hinweise.push("Über 10.000 € brutto: UID-Nummer des Empfängers angeben (bei Unternehmern).");
   }
-  const grossLines = inhalt.positionen.filter((p) => p.preis_ist_brutto).length;
-  if (grossLines > 0 && grossLines < inhalt.positionen.length) {
-    hinweise.push("Die Positionen mischen Brutto- und Nettopreise. Bitte einheitlich angeben.");
-  }
   inhalt.positionen.forEach((p, i) => {
     if (!KNOWN_VAT_RATES.includes(p.ust_satz)) hinweise.push(`Position ${i + 1}: ungewöhnlicher Steuersatz ${p.ust_satz} %.`);
     if (p.menge <= 0) hinweise.push(`Position ${i + 1}: Menge ist nicht positiv.`);
@@ -150,8 +147,8 @@ export function renderInvoiceHtml(options: {
       (p, i) => `<tr>
         <td>${i + 1}</td>
         <td>${escapeHtml(p.beschreibung)}</td>
-        <td class="r">${formatNumber(p.menge).replace(/,00$/, "")}${p.einheit ? " " + escapeHtml(p.einheit) : ""}</td>
-        <td class="r">${formatEuro(p.einzelpreis)}</td>
+        <td class="r">${formatExact(p.menge)}${p.einheit ? " " + escapeHtml(p.einheit) : ""}</td>
+        <td class="r">${formatEuroExact(p.einzelpreis)}</td>
         <td class="r">${p.ust_satz} %</td>
         <td class="r">${formatEuro(brutto ? p.brutto : p.netto)}</td>
       </tr>`,

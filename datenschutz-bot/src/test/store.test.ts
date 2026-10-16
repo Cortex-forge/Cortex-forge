@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { CONFIG_DIR, EXAMPLES_DIR, PROJECT_ROOT } from "../config.js";
 import { KeyError } from "../core/vault.js";
 import { filesUnder } from "../scripts/probe-lib.js";
+import type { RechnungsPosition } from "../core/invoice.js";
 import { JobError, JobStore, type ErgebnisKi } from "../store/jobs.js";
 import { ConfigError } from "../store/settings.js";
 
@@ -33,11 +34,15 @@ const invoice: ErgebnisKi = {
 
 function ready(store: JobStore, text = example("rechnungsauftrag.txt")): string {
   const job = store.create({ art: "hotel", betreff: "Rechnung Aufenthalt", text });
-  store.releaseForAi(job.id);
+  release(store, job.id);
   return job.id;
 }
 
 const rev = (store: JobStore, id: string) => store.detail(id).job.ergebnisRev ?? -1;
+/** Für die KI freigeben, so wie der Mitarbeiter es nach der Prüfung tut (mit der angezeigten Fassung). */
+const release = (store: JobStore, id: string) => store.releaseForAi(id, store.detail(id).job.rev);
+/** Ergebnis speichern wie die KI: mit der Fassung, die sie gelesen hat. */
+const save = (store: JobStore, id: string, ergebnis: ErgebnisKi) => store.saveResult(id, ergebnis, store.detail(id).job.kiFassung ?? 0);
 
 test("Ablauf Rechnung: freigeben, Ergebnis, Nummer bei Freigabe, Abschluss archiviert und löscht", () => {
   const store = tempStore();
@@ -46,10 +51,10 @@ test("Ablauf Rechnung: freigeben, Ergebnis, Nummer bei Freigabe, Abschluss archi
   assert.throws(() => store.readForAi(job.id), /noch nicht für die KI freigegeben/);
   assert.equal(store.listForAi().length, 0);
 
-  store.releaseForAi(job.id);
+  release(store, job.id);
   const doc = store.readForAi(job.id);
   assert.ok(!doc.text.includes("Huber") && !doc.text.includes("Bergweg"));
-  store.saveResult(job.id, invoice);
+  save(store, job.id, invoice);
 
   const approved = store.approve(job.id, rev(store, job.id));
   assert.match(approved.rechnungsnummer ?? "", /^\d{4}-0001$/);
@@ -86,7 +91,7 @@ test("Auf der Platte steht nichts im Klartext, auch nicht Übersehenes in der Pl
     for (const v of ["Xqzyl", "Zqvorn", "xq@example.com"]) assert.ok(!files.includes(v), `${stage}: "${v}" im Klartext`);
   };
   check("bereit");
-  store.saveResult(id, { art: "text", text: "Hallo Xqzyl, danke für Ihre Mail an [EMAIL_1]." });
+  save(store, id, { art: "text", text: "Hallo Xqzyl, danke für Ihre Mail an [EMAIL_1]." });
   check("zur_pruefung");
   store.approve(id, rev(store, id));
   check("freigegeben");
@@ -98,9 +103,9 @@ test("Auf der Platte steht nichts im Klartext, auch nicht Übersehenes in der Pl
 test("Freigabe gilt nur für die geprüfte Fassung", () => {
   const store = tempStore();
   const id = ready(store);
-  store.saveResult(id, { art: "text", text: "Version A: Preis 100 EUR." });
+  save(store, id, { art: "text", text: "Version A: Preis 100 EUR." });
   const geprueft = rev(store, id);
-  store.saveResult(id, { art: "text", text: "Version B: Preis 900 EUR." });
+  save(store, id, { art: "text", text: "Version B: Preis 900 EUR." });
   assert.throws(() => store.approve(id, geprueft), /inzwischen geändert/);
   assert.equal(store.detail(id).job.status, "zur_pruefung");
   store.approve(id, rev(store, id));
@@ -113,7 +118,7 @@ test("Freigabe gilt nur für die geprüfte Fassung", () => {
 test("Oberfläche und KI in getrennten Prozessen: keine verlorenen Änderungen, Abschluss bleibt Abschluss", async () => {
   const store = tempStore();
   const id = ready(store);
-  store.saveResult(id, invoice);
+  save(store, id, invoice);
   const script = path.join(store.dataDir, "ki-prozess.mjs");
   fs.writeFileSync(
     script,
@@ -122,7 +127,7 @@ const store = new JobStore(process.argv[2], process.argv[3]);
 const big = "Langer Text mit [PERSON_1]. ".repeat(4000);
 let saved = 0;
 for (let i = 0; i < 40; i++) {
-  try { store.saveResult(process.argv[4], { art: "rechnung", rechnung: { empfaenger: "[PERSON_1]", anmerkung: big, positionen: [{ beschreibung: "Zimmer", menge: 1, einzelpreis: 100 + i, ust_satz: 10 }] } }); saved++; }
+  try { store.saveResult(process.argv[4], { art: "rechnung", rechnung: { empfaenger: "[PERSON_1]", anmerkung: big, positionen: [{ beschreibung: "Zimmer", menge: 1, einzelpreis: 100 + i, ust_satz: 10 }] } }, 1); saved++; }
   catch (e) { if (!/nicht möglich/.test(e.message)) throw e; break; }
 }
 console.log(saved);`,
@@ -184,7 +189,7 @@ test("Eine belegte Sperre lässt andere warten; liegengebliebene Sperren werden 
   fs.writeFileSync(lock, `${process.pid}:${Date.now()}`);
   const jobs = JSON.stringify(path.join(PROJECT_ROOT, "dist", "store", "jobs.js"));
   const waiter = run(
-    `const { JobStore } = await import(${jobs}); try { new JobStore(${JSON.stringify(store.dataDir)}, ${JSON.stringify(CONFIG_DIR)}).releaseForAi(${JSON.stringify(id)}); process.exit(0); } catch (e) { process.exit(/gerade von einem anderen Vorgang/.test(e.message) ? 3 : 1); }`,
+    `const { JobStore } = await import(${jobs}); try { new JobStore(${JSON.stringify(store.dataDir)}, ${JSON.stringify(CONFIG_DIR)}).releaseForAi(${JSON.stringify(id)}, ${store.detail(id).job.rev}); process.exit(0); } catch (e) { process.exit(/gerade von einem anderen Vorgang/.test(e.message) ? 3 : 1); }`,
     { DSB_SPERRE_MS: "300" },
   );
   assert.equal(await exitCode(waiter), 3);
@@ -192,7 +197,7 @@ test("Eine belegte Sperre lässt andere warten; liegengebliebene Sperren werden 
 
   // 3) Eine Sperre eines beendeten Prozesses wird aufgeräumt.
   fs.writeFileSync(lock, `999999:${Date.now()}`);
-  store.releaseForAi(id);
+  release(store, id);
   assert.equal(store.detail(id).job.status, "bereit");
 });
 
@@ -219,7 +224,7 @@ test("Rechnungen mit Nummer lassen sich nicht löschen; Nummern laufen lückenlo
   const numbers: string[] = [];
   for (let i = 0; i < 2; i++) {
     const id = ready(store);
-    store.saveResult(id, invoice);
+    save(store, id, invoice);
     numbers.push(store.approve(id, rev(store, id)).rechnungsnummer ?? "");
     assert.throws(() => store.remove(id), /darf nicht gelöscht werden/);
   }
@@ -228,7 +233,7 @@ test("Rechnungen mit Nummer lassen sich nicht löschen; Nummern laufen lückenlo
   // Beschädigter Zähler: nie wieder bei 1 anfangen.
   fs.writeFileSync(path.join(store.dataDir, "rechnungsnummern.json"), "{kaputt");
   const id = ready(store);
-  store.saveResult(id, invoice);
+  save(store, id, invoice);
   assert.throws(() => store.approve(id, rev(store, id)), /beschädigt/);
 });
 
@@ -236,7 +241,7 @@ test("Rechnungen mit Nummer lassen sich nicht löschen; Nummern laufen lückenlo
 test("Herunterladen erst nach der Freigabe; Rückweg zur Prüfung", () => {
   const store = tempStore();
   const id = ready(store);
-  store.saveResult(id, { art: "text", text: "Sehr geehrte Frau [PERSON_1], ungeprüft." });
+  save(store, id, { art: "text", text: "Sehr geehrte Frau [PERSON_1], ungeprüft." });
   assert.throws(() => store.export(id), /nicht möglich/);
   store.backToReview(id);
   const d = store.detail(id);
@@ -269,14 +274,14 @@ test("Markieren und Ausnehmen ändern die KI-Sicht, danach ist es gesperrt", () 
   assert.equal(store.detail(job.id).job.textKi, "Projekt [SONSTIGES_1] mit Thomas besprochen.");
   store.undoMark(job.id, "Thomas");
   assert.equal(store.detail(job.id).job.textKi, "Projekt [SONSTIGES_1] mit [PERSON_1] besprochen.");
-  store.releaseForAi(job.id);
+  release(store, job.id);
   assert.throws(() => store.mark(job.id, { value: "Projekt", type: "SONSTIGES" }), /nicht möglich/);
 });
 
 test("Zurück an die KI verwirft das Ergebnis", () => {
   const store = tempStore();
   const id = ready(store, example("hotel-anfrage.txt"));
-  store.saveResult(id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" });
+  save(store, id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" });
   store.sendBack(id);
   const d = store.detail(id);
   assert.equal(d.job.status, "bereit");
@@ -289,8 +294,8 @@ test("Buchungen: Belegnummer wird zurückübersetzt, Platzhalter in Konten nur a
   const store = tempStore();
   const job = store.create({ art: "buchhaltung", text: "Beleg INV-42 von Anna Huber, Wartung 100 € netto." });
   store.mark(job.id, { value: "INV-42", type: "SONSTIGES" });
-  store.releaseForAi(job.id);
-  const { pruefung } = store.saveResult(job.id, {
+  release(store, job.id);
+  const { pruefung } = save(store, job.id, {
     art: "buchungen",
     buchungen: [
       { datum: "01.10.2026", belegnummer: "[SONSTIGES_1]", konto: "[PERSON_1]", gegenkonto: "3300", text: "Wartung [PERSON_1]", netto: 100, ust_satz: 20 },
@@ -358,4 +363,266 @@ test("Defekte Dateien und Protokollzeilen legen Liste und Protokoll nicht lahm",
   assert.equal(defekt, 1);
   assert.deepEqual(dokumente.map((d) => d.id), [job.id]);
   assert.ok(store.protokoll(job.id).some((e) => e.ereignis === "nach der kaputten Zeile"));
+});
+
+// ---------------------------------------------------------------------------
+// Zweite Prüfrunde (Codex 2)
+
+/** Dateioperation, die für eine bestimmte Datei einmal oder immer scheitert (simulierter Schreibfehler). */
+function failRenameFor(suffix: string): () => void {
+  const original = fs.renameSync;
+  fs.renameSync = ((from: fs.PathLike, to: fs.PathLike) => {
+    if (String(to).endsWith(suffix)) throw Object.assign(new Error("simulierter Schreibfehler"), { code: "EIO" });
+    return original(from, to);
+  }) as typeof fs.renameSync;
+  return () => {
+    fs.renameSync = original;
+  };
+}
+
+function configCopy(): string {
+  const dir = tempDir();
+  for (const f of ["firma.json", "firmen.json", "kontenplan.json"]) fs.copyFileSync(path.join(CONFIG_DIR, f), path.join(dir, f));
+  return dir;
+}
+
+// Review Codex 2 #1 (Blocker)
+test("Kontenplan: Bezeichnungen laufen durch die Erkennung, stehen in der Vorschau und bleiben wie geprüft", () => {
+  const configDir = configCopy();
+  const plan = (konten: Array<{ nummer: string; name: string }>) =>
+    fs.writeFileSync(path.join(configDir, "kontenplan.json"), JSON.stringify({ konten }));
+  plan([{ nummer: "3300", name: "Lieferant Anna Huber" }, { nummer: "7200", name: "Instandhaltung" }]);
+  const store = new JobStore(tempDir(), configDir);
+  const job = store.create({ art: "buchhaltung", text: "Lieferant Anna Huber; Wartung 10 EUR." });
+  const d = store.detail(job.id);
+  assert.equal(d.job.textKi, "Lieferant [PERSON_1]; Wartung 10 EUR.");
+  assert.deepEqual(d.job.kontenplanKi, [{ nummer: "3300", name: "Lieferant [PERSON_1]" }, { nummer: "7200", name: "Instandhaltung" }]);
+  assert.deepEqual(d.konten[0]?.markierungen.map((m) => [m.start, m.end, m.id]), [[10, 20, "PERSON_1"]]);
+  assert.deepEqual(d.markierungen.map((m) => m.id), ["PERSON_1"], "Fundstellen im Text bleiben im Text");
+  release(store, job.id);
+  // Eine später geänderte Konfiguration ändert nicht, was die KI bekommt.
+  plan([{ nummer: "3301", name: "Lieferant Lisa Gruber" }]);
+  const doc = store.readForAi(job.id);
+  assert.deepEqual(doc.kontenplan, d.job.kontenplanKi);
+  assert.ok(!/Huber|Gruber/.test(JSON.stringify(doc)));
+
+  // Nicht erkannte Namen im Kontenplan lassen sich schwärzen.
+  plan([{ nummer: "3302", name: "Lieferant Zorwin Xylander" }]);
+  const other = store.create({ art: "buchhaltung", text: "Beleg ohne Namen." });
+  assert.equal(store.detail(other.id).job.kontenplanKi?.[0]?.name, "Lieferant Zorwin Xylander");
+  assert.equal(store.mark(other.id, { value: "Zorwin Xylander", type: "PERSON" }).treffer, 1);
+  assert.equal(store.detail(other.id).job.kontenplanKi?.[0]?.name, "Lieferant [PERSON_1]");
+});
+
+// Review Codex 2 #2 (Blocker)
+test("Freigabe für die KI gilt nur für die geprüfte Fassung des Dokuments", () => {
+  const store = tempStore();
+  const job = store.create({ art: "allgemein", text: "Kontakt: anna.huber@example.com" });
+  const geprueft = store.detail(job.id).job.rev;
+  assert.equal(store.detail(job.id).job.textKi, "Kontakt: [EMAIL_1]");
+  store.exclude(job.id, "anna.huber@example.com"); // zweites Fenster
+  assert.throws(() => store.releaseForAi(job.id, geprueft), /inzwischen geändert/);
+  assert.equal(store.detail(job.id).job.status, "neu");
+  assert.throws(() => store.readForAi(job.id), /noch nicht für die KI freigegeben/);
+});
+
+// Review Codex 2 #4
+test("Ergebnisse zu einer überholten Fassung werden abgelehnt", () => {
+  const store = tempStore();
+  const job = store.create({ art: "allgemein", text: "Anna Huber reist mit Lisa Gruber." });
+  release(store, job.id);
+  const alt = store.readForAi(job.id);
+  assert.equal(alt.fassung, 1);
+  assert.equal(alt.text, "[PERSON_1] reist mit [PERSON_2].");
+  store.backToReview(job.id);
+  store.mark(job.id, { value: "Anna Huber", type: "SONSTIGES" });
+  release(store, job.id);
+  const neu = store.readForAi(job.id);
+  assert.equal(neu.fassung, 2);
+  assert.equal(neu.text, "[SONSTIGES_1] reist mit [PERSON_1].");
+  assert.throws(() => store.saveResult(job.id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" }, alt.fassung), /seit dem Lesen geändert/);
+  assert.equal(store.detail(job.id).ergebnis, undefined);
+  store.saveResult(job.id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" }, neu.fassung);
+  const r = store.detail(job.id).ergebnis;
+  assert.equal(r?.art === "text" ? r.text : "", "Sehr geehrte Frau Gruber");
+});
+
+// Review Codex 2 #3
+test("Sperre: vollständig angelegt, nur der Besitzer gibt frei, nie nur wegen des Alters entfernt", async () => {
+  const dir = tempDir();
+  const lock = path.join(dir, "sperren", "probe.lock");
+  new JobStore(dir, CONFIG_DIR);
+  const jobs = JSON.stringify(path.join(PROJECT_ROOT, "dist", "store", "jobs.js"));
+  /** Ein anderer Prozess versucht die Sperre zu bekommen: 0 = bekommen, 3 = nach der Wartezeit aufgegeben. */
+  const tryLock = () =>
+    new Promise<number>((resolve) => {
+      const c = spawn(
+        process.execPath,
+        [
+          "--input-type=module",
+          "-e",
+          `const { JobStore } = await import(${jobs}); try { new JobStore(${JSON.stringify(dir)}, ${JSON.stringify(CONFIG_DIR)}).withLock("probe", () => {}); process.exit(0); } catch (e) { process.exit(/gerade von einem anderen Vorgang/.test(e.message) ? 3 : 1); }`,
+        ],
+        { env: { ...process.env, DSB_SPERRE_MS: "300" }, stdio: "ignore" },
+      );
+      c.on("exit", (code) => resolve(code ?? -1));
+    });
+  const bootId = fs.existsSync("/proc/sys/kernel/random/boot_id") ? fs.readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim() : "";
+  const bootZeit = Date.now() - os.uptime() * 1000;
+  const ownStart = fs.existsSync("/proc/self/stat")
+    ? (() => {
+        const stat = fs.readFileSync(`/proc/${process.pid}/stat`, "utf8");
+        return stat.slice(stat.lastIndexOf(")") + 2).split(" ")[19];
+      })()
+    : undefined;
+  const owner = (extra: Record<string, unknown>) => JSON.stringify({ pid: process.pid, boot: bootId, bootZeit, ...(ownStart ? { start: ownStart } : {}), token: "t", ...extra });
+
+  // Leere, frische Sperrdatei (gerade angelegt, Inhalt kommt noch): Sie wird respektiert, nicht entfernt.
+  fs.writeFileSync(lock, "");
+  assert.equal(await tryLock(), 3);
+  assert.ok(fs.existsSync(lock));
+  // Bleibt sie leer und alt (Absturz beim Anlegen), wird sie aufgeräumt.
+  fs.utimesSync(lock, new Date(Date.now() - 20_000), new Date(Date.now() - 20_000));
+  assert.equal(await tryLock(), 0);
+  assert.ok(!fs.existsSync(lock));
+
+  // Lebender Besitzer: Die Sperre bleibt, egal wie alt sie ist.
+  fs.writeFileSync(lock, owner({}));
+  fs.utimesSync(lock, new Date(0), new Date(0));
+  assert.equal(await tryLock(), 3);
+  // Aus einem früheren Systemstart: verwaist.
+  fs.writeFileSync(lock, owner({ boot: bootId ? "frueherer-start" : "", bootZeit: bootZeit - 86_400_000 }));
+  assert.equal(await tryLock(), 0);
+  // Unter Linux: gleiche Prozessnummer, aber ein anderer Prozess (Nummer neu vergeben).
+  if (ownStart) {
+    fs.writeFileSync(lock, owner({ start: "1" }));
+    assert.equal(await tryLock(), 0);
+  }
+
+  // Nur der Besitzer gibt frei: Wurde die Sperre inzwischen von jemand anderem übernommen, bleibt sie.
+  class OffeneSperre extends JobStore {
+    sperre(fn: () => void) {
+      this.withLock("probe", fn);
+    }
+  }
+  const s = new OffeneSperre(dir, CONFIG_DIR);
+  s.sperre(() => fs.writeFileSync(lock, owner({ token: "fremd" })));
+  assert.equal(JSON.parse(fs.readFileSync(lock, "utf8")).token, "fremd");
+  fs.rmSync(lock);
+  s.sperre(() => assert.ok(fs.existsSync(lock)));
+  assert.ok(!fs.existsSync(lock));
+  assert.deepEqual(fs.readdirSync(path.join(dir, "sperren")), []);
+});
+
+test("Ohne Hardlinks (z. B. FAT, Netzlaufwerk) funktionieren Ablage und Sperren weiter", () => {
+  const original = fs.linkSync;
+  fs.linkSync = (() => {
+    throw Object.assign(new Error("Hardlinks nicht unterstützt"), { code: "ENOTSUP" });
+  }) as typeof fs.linkSync;
+  try {
+    const store = tempStore();
+    const id = ready(store);
+    save(store, id, { art: "text", text: "Sehr geehrte Frau [PERSON_1]" });
+    store.approve(id, rev(store, id));
+    assert.equal(store.detail(id).job.status, "freigegeben");
+    for (const sub of ["dokumente", "sperren"]) {
+      assert.ok(!fs.readdirSync(path.join(store.dataDir, sub)).some((f) => f.endsWith(".tmp") || f.endsWith(".lock")), `Reste in ${sub}`);
+    }
+  } finally {
+    fs.linkSync = original;
+  }
+});
+
+// Review Codex 2 #9
+test("Rechnungsnummern: Fehler bei der Freigabe verbrauchen keine Nummer, keine Nummer doppelt", () => {
+  const configDir = configCopy();
+  const store = new JobStore(tempDir(), configDir);
+  const counterFile = path.join(store.dataDir, "rechnungsnummern.json");
+  const id = ready(store);
+  save(store, id, invoice);
+  // Firmendaten fehlerhaft: Abbruch vor der Nummernvergabe.
+  fs.writeFileSync(path.join(configDir, "firma.json"), "{kaputt");
+  assert.throws(() => store.approve(id, rev(store, id)), ConfigError);
+  fs.copyFileSync(path.join(CONFIG_DIR, "firma.json"), path.join(configDir, "firma.json"));
+  // Speichern scheitert nach der Reservierung: keine Nummer verbraucht.
+  const restore = failRenameFor(`${id}.json`);
+  try {
+    assert.throws(() => store.approve(id, rev(store, id)), /simulierter Schreibfehler/);
+  } finally {
+    restore();
+  }
+  assert.ok(!fs.existsSync(counterFile));
+  assert.equal(store.detail(id).job.status, "zur_pruefung");
+  assert.match(store.approve(id, rev(store, id)).rechnungsnummer ?? "", /-0001$/);
+  // Absturz zwischen Speichern und Zählen (Zähler fehlt): Die Nummer im Dokument zählt mit.
+  fs.rmSync(counterFile);
+  const id2 = ready(store);
+  save(store, id2, invoice);
+  assert.match(store.approve(id2, rev(store, id2)).rechnungsnummer ?? "", /-0002$/);
+});
+
+// Review Codex 2 #10
+test("Abschluss lässt sich nach einem Schreibfehler wiederholen; eine fremde Rechnung im Archiv bleibt ein Fehler", () => {
+  const store = tempStore();
+  const archiv = (nummer: string) => path.join(store.dataDir, "rechnungen", `${nummer}.json`);
+  const id = ready(store);
+  save(store, id, invoice);
+  const nummer = store.approve(id, rev(store, id)).rechnungsnummer ?? "";
+  const restore = failRenameFor(`${id}.json`);
+  try {
+    assert.throws(() => store.close(id), /simulierter Schreibfehler/);
+  } finally {
+    restore();
+  }
+  assert.equal(store.detail(id).job.status, "freigegeben");
+  assert.ok(fs.existsSync(archiv(nummer)));
+  store.close(id);
+  assert.equal(store.detail(id).job.status, "abgeschlossen");
+  assert.ok(store.archivedInvoice(nummer).html.includes("Anna Huber"));
+
+  const id2 = ready(store);
+  save(store, id2, invoice);
+  const nummer2 = store.approve(id2, rev(store, id2)).rechnungsnummer ?? "";
+  fs.copyFileSync(archiv(nummer), archiv(nummer2));
+  assert.throws(() => store.close(id2), /andere Rechnung/);
+  assert.equal(store.detail(id2).job.status, "freigegeben");
+});
+
+// Review Codex 2 #11 und #12
+test("Rechnung: Mengen und Preise so genau wie gerechnet, keine gemischten Brutto- und Nettopreise", () => {
+  const store = tempStore();
+  const id = ready(store);
+  const rechnung = (positionen: RechnungsPosition[]): ErgebnisKi => ({
+    art: "rechnung",
+    rechnung: { empfaenger: "[PERSON_1]", empfaenger_adresse: "[ADRESSE_1]", leistungszeitraum: "Oktober 2026", positionen },
+  });
+  const { summen } = save(store, id, rechnung([
+    { beschreibung: "Beratung", menge: 0.125, einheit: "Std.", einzelpreis: 80, ust_satz: 20 },
+    { beschreibung: "Strom", menge: 100, einheit: "kWh", einzelpreis: 0.0825, ust_satz: 20 },
+  ]));
+  assert.equal(summen?.netto, 18.25);
+  const r = store.detail(id).ergebnis;
+  const html = r?.art === "rechnung" ? r.html : "";
+  assert.match(html, /0,125 Std\./);
+  assert.match(html, /€\s0,0825/);
+  assert.match(html, /€\s10,00/);
+  assert.throws(() => save(store, id, rechnung([{ beschreibung: "X", menge: 0.1234, einzelpreis: 10, ust_satz: 20 }])), /höchstens 3 Nachkommastellen/);
+  assert.throws(() => save(store, id, rechnung([{ beschreibung: "X", menge: 1, einzelpreis: 1.23456, ust_satz: 20 }])), /höchstens 4 Nachkommastellen/);
+  assert.throws(
+    () => save(store, id, rechnung([
+      { beschreibung: "Bruttopreis", menge: 1, einzelpreis: 120, preis_ist_brutto: true, ust_satz: 20 },
+      { beschreibung: "Nettopreis", menge: 1, einzelpreis: 100, ust_satz: 20 },
+    ])),
+    /mischen Brutto- und Nettopreise/,
+  );
+});
+
+// Review Codex 2 #7
+test("Markieren: die ausgewählte Stelle wird geschwärzt, auch wenn der Text anderswo als ganzes Wort steht", () => {
+  const store = tempStore();
+  const job = store.create({ art: "allgemein", text: "Code ZORWIN und ZORWINBETA." });
+  const at = "Code ZORWIN und ".length;
+  assert.equal(store.mark(job.id, { value: "ZORWIN", type: "SONSTIGES" }, [at, at + 6]).treffer, 2);
+  assert.equal(store.detail(job.id).job.textKi, "Code [SONSTIGES_1] und [SONSTIGES_2].");
+  assert.throws(() => store.mark(job.id, { value: "ZORWIN", type: "SONSTIGES" }, [1, 7]), /passt nicht zum Dokument/);
 });

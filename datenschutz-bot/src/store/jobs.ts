@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { CONFIG_DIR, DATA_DIR } from "../config.js";
 import {
@@ -10,7 +11,7 @@ import {
   type BuchungsSummen,
   type Konto,
 } from "../core/accounting.js";
-import { manualMatches } from "../core/detectors.js";
+import { manualSpans, SEGMENT_BREAK } from "../core/detectors.js";
 import {
   computeInvoice,
   invoiceChecks,
@@ -18,6 +19,7 @@ import {
   type RechnungInhalt,
   type RechnungsSummen,
 } from "../core/invoice.js";
+import { nachkommastellen } from "../core/money.js";
 import { placeholderRegex } from "../core/placeholders.js";
 import { placeholderLegend, pseudonymize } from "../core/pseudonymize.js";
 import { reidentify, type InventedData } from "../core/reidentify.js";
@@ -82,6 +84,8 @@ interface StoredJob {
   rev: number;
   /** Version des aktuellen KI-Ergebnisses. Die Freigabe muss genau diese Version nennen. */
   ergebnisRev?: number;
+  /** Fassung, die die KI liest. Steigt mit jeder Freigabe für die KI; Ergebnisse müssen sie nennen. */
+  kiFassung?: number;
   anzahlPlatzhalter: number;
   anzahlHinweise: number;
   rechnungsnummer?: string;
@@ -107,6 +111,8 @@ interface KiTeil {
   betreffKi: string;
   textKi: string;
   platzhalter: PlaceholderInfo[];
+  /** Nur Buchhaltung: Kontenplan, wie die KI ihn sieht (Bezeichnungen mit Platzhaltern). */
+  kontenplanKi?: Konto[];
   ergebnisKi?: ErgebnisKi;
   pruefung?: Pruefung;
 }
@@ -119,6 +125,11 @@ export interface Markierung {
   source: string;
 }
 
+/** Ein Konto aus dem Kontenplan mit den Fundstellen in seiner Bezeichnung (Positionen relativ zum Namen). */
+export interface KontoGeprueft extends Konto {
+  markierungen: Markierung[];
+}
+
 interface Geheim {
   betreff: string;
   text: string;
@@ -126,6 +137,8 @@ interface Geheim {
   ausgeschlossen: string[];
   mapping: MappingEntry[];
   markierungen: Markierung[];
+  /** Nur Buchhaltung: der Kontenplan, der mit dem Dokument pseudonymisiert wurde. */
+  konten?: KontoGeprueft[];
   /** Platzhalter, die schon im Original standen. */
   literal: string[];
   ergebnis?: ErgebnisFertig;
@@ -147,6 +160,7 @@ export interface JobInfo {
   aktualisiert: string;
   rev: number;
   ergebnisRev?: number;
+  kiFassung?: number;
   anzahlPlatzhalter: number;
   anzahlHinweise: number;
   rechnungsnummer?: string;
@@ -157,6 +171,8 @@ export interface JobDetail {
   job: JobInfo & Partial<KiTeil>;
   original: string;
   markierungen: Markierung[];
+  /** Nur Buchhaltung: Kontenplan im Original mit Fundstellen. */
+  konten: KontoGeprueft[];
   zuordnung: MappingEntry[];
   manuell: ManualMark[];
   ausgeschlossen: string[];
@@ -167,6 +183,8 @@ export interface JobDetail {
 export interface KiDokument {
   id: string;
   art: JobArt;
+  /** Fassung des Dokuments; die KI nennt sie beim Speichern. */
+  fassung: number;
   betreff: string;
   text: string;
   platzhalter: PlaceholderInfo[];
@@ -182,8 +200,9 @@ export interface Export {
 export class JobError extends Error {}
 
 /** Trennt Betreff und Text intern. Gleich lang wie die Anzeige ("\n\n"), damit die Positionen stimmen. */
-const SEP_INTERN = "\n";
+const SEP_INTERN = SEGMENT_BREAK + "\n";
 const SEP_ANZEIGE = "\n\n";
+const SEGMENT_BREAK_RE = new RegExp(SEGMENT_BREAK, "g");
 const MAX_TEXT = 200_000;
 const MAX_BETREFF = 500;
 const MAX_ERGEBNIS = 200_000;
@@ -241,7 +260,14 @@ function writeFileAtomic(file: string, content: string): void {
   }
 }
 
-/** Legt eine Datei nur an, wenn es sie noch nicht gibt. Gibt false zurück, wenn sie schon existiert. */
+/** Fehler beim Anlegen eines Hardlinks, wenn das Dateisystem keine kann (z. B. FAT, manche Netzlaufwerke). */
+const NO_HARDLINKS = new Set(["EPERM", "ENOTSUP", "EOPNOTSUPP", "ENOSYS", "EXDEV", "EINVAL"]);
+
+/**
+ * Legt eine Datei nur an, wenn es sie noch nicht gibt, und zwar gleich mit vollständigem Inhalt: Der Inhalt wird
+ * erst in eine eigene Datei geschrieben und dann per Hardlink veröffentlicht. Gibt false zurück, wenn es die Datei
+ * schon gibt. Ohne Hardlinks wird exklusiv angelegt und danach geschrieben (kurz unvollständig sichtbar).
+ */
 function createFileExclusive(file: string, content: string): boolean {
   const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
   const fd = fs.openSync(tmp, "wx", 0o600);
@@ -255,19 +281,119 @@ function createFileExclusive(file: string, content: string): boolean {
     fs.linkSync(tmp, file);
     return true;
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "EEXIST") return false;
-    throw err;
+    const code = (err as NodeJS.ErrnoException).code ?? "";
+    if (code === "EEXIST") return false;
+    if (!NO_HARDLINKS.has(code)) throw err;
   } finally {
     fs.rmSync(tmp, { force: true });
   }
+  let out: number;
+  try {
+    out = fs.openSync(file, "wx", 0o600);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST") return false;
+    throw err;
+  }
+  try {
+    fs.writeSync(out, content);
+    fs.fsyncSync(out);
+  } finally {
+    fs.closeSync(out);
+  }
+  return true;
 }
 
-function processAlive(pid: number): boolean {
+/** Inhalt einer Datei oder undefined, wenn es sie (gerade) nicht gibt. */
+function readOptional(file: string): string | undefined {
   try {
-    process.kill(pid, 0);
-    return true;
+    return fs.readFileSync(file, "utf8");
   } catch (err) {
-    return (err as NodeJS.ErrnoException).code === "EPERM";
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw err;
+  }
+}
+
+/** Kennung des laufenden Systemstarts. Eine Sperre aus einem früheren Start ist sicher verwaist. */
+const BOOT_ID = readOptional("/proc/sys/kernel/random/boot_id")?.trim() ?? "";
+/** Startzeit des Systems; dort, wo es keine Startkennung gibt (Windows, macOS). */
+const BOOT_TIME = Date.now() - os.uptime() * 1000;
+
+/** Unter Linux: Startzeitpunkt eines Prozesses (Feld 22 in /proc/<pid>/stat), um neu vergebene Prozessnummern zu erkennen. */
+function processStart(pid: number): string | undefined {
+  try {
+    const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8");
+    return stat.slice(stat.lastIndexOf(")") + 2).split(" ")[19];
+  } catch {
+    return undefined;
+  }
+}
+
+interface LockOwner {
+  pid: number;
+  boot?: string;
+  bootZeit?: number;
+  start?: string;
+  token?: string;
+}
+
+const OWN_START = processStart(process.pid);
+
+function lockContent(): string {
+  const owner: LockOwner = {
+    pid: process.pid,
+    boot: BOOT_ID,
+    bootZeit: BOOT_TIME,
+    ...(OWN_START ? { start: OWN_START } : {}),
+    token: crypto.randomBytes(8).toString("hex"),
+  };
+  return JSON.stringify(owner);
+}
+
+function parseLock(raw: string): LockOwner | null {
+  try {
+    const owner = JSON.parse(raw) as LockOwner;
+    if (Number.isInteger(owner.pid) && owner.pid > 0) return owner;
+  } catch {
+    // älteres Format "pid:zeit"
+    const pid = Number(/^(\d+):\d+$/.exec(raw.trim())?.[1]);
+    if (Number.isInteger(pid) && pid > 0) return { pid };
+  }
+  return null;
+}
+
+/**
+ * Ist der Besitzer einer Sperre sicher nicht mehr da? Nur dann darf sie weg. Eine Sperre wird nie nur wegen ihres
+ * Alters entfernt: Sie gilt als verwaist, wenn sie aus einem früheren Systemstart stammt, der Prozess nicht mehr
+ * existiert oder (unter Linux) die Prozessnummer inzwischen einem anderen Prozess gehört.
+ */
+function ownerGone(owner: LockOwner): boolean {
+  if (owner.boot !== undefined) {
+    if (owner.boot && BOOT_ID) {
+      if (owner.boot !== BOOT_ID) return true;
+    } else if (owner.bootZeit !== undefined && Math.abs(owner.bootZeit - BOOT_TIME) > 120_000) {
+      return true;
+    }
+  }
+  try {
+    process.kill(owner.pid, 0);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ESRCH") return true;
+  }
+  if (owner.start !== undefined) {
+    const current = processStart(owner.pid);
+    if (current !== undefined && current !== owner.start) return true;
+  }
+  return false;
+}
+
+/** Verwaiste Sperre? Unlesbare Inhalte (nur ohne Hardlinks kurz möglich) erst nach 10 Sekunden. */
+function lockAbandoned(file: string, raw: string): boolean {
+  const owner = parseLock(raw);
+  if (owner) return ownerGone(owner);
+  try {
+    return Date.now() - fs.statSync(file).mtimeMs > 10_000;
+  } catch {
+    return false;
   }
 }
 
@@ -364,27 +490,20 @@ export class JobStore {
   /**
    * Prozessübergreifende Sperre (Oberfläche und MCP-Server laufen getrennt). Laden, Prüfen und Speichern eines
    * Dokuments geschehen immer unter dieser Sperre, damit keine Änderung verloren geht.
+   *
+   * Die Sperrdatei entsteht in einem Schritt mit vollständigem Inhalt (wer sie sieht, sieht auch den Besitzer).
+   * Freigeben darf nur der Besitzer. Verwaiste Sperren (Besitzer nicht mehr da) räumt immer nur ein Vorgang auf,
+   * und nur, wenn die Sperre noch dieselbe ist.
    */
-  private withLock<T>(name: string, fn: () => T): T {
+  protected withLock<T>(name: string, fn: () => T): T {
     const lockFile = path.join(this.locksDir, `${name}.lock`);
+    const mine = lockContent();
     const deadline = Date.now() + LOCK_TIMEOUT_MS;
-    for (;;) {
-      try {
-        fs.writeFileSync(lockFile, `${process.pid}:${Date.now()}`, { flag: "wx", mode: 0o600 });
-        break;
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
-        try {
-          const [pid, since] = fs.readFileSync(lockFile, "utf8").split(":").map(Number);
-          const stale = !pid || !processAlive(pid) || Date.now() - (since ?? 0) > 60_000;
-          if (stale) {
-            fs.rmSync(lockFile, { force: true });
-            continue;
-          }
-        } catch {
-          // Sperre wurde gerade freigegeben: erneut versuchen.
-          continue;
-        }
+    while (!createFileExclusive(lockFile, mine)) {
+      const held = readOptional(lockFile);
+      if (held !== undefined && lockAbandoned(lockFile, held)) {
+        this.breakLock(lockFile, held, mine);
+      } else if (held !== undefined) {
         if (Date.now() > deadline) {
           throw new JobError("Das Dokument wird gerade von einem anderen Vorgang bearbeitet. Bitte gleich noch einmal versuchen.");
         }
@@ -394,7 +513,24 @@ export class JobStore {
     try {
       return fn();
     } finally {
-      fs.rmSync(lockFile, { force: true });
+      if (readOptional(lockFile) === mine) fs.rmSync(lockFile, { force: true });
+    }
+  }
+
+  /** Eine verwaiste Sperre entfernen. Ein zweiter Sperr-Schritt sorgt dafür, dass nie eine frische Sperre verschwindet. */
+  private breakLock(lockFile: string, stale: string, mine: string): void {
+    const breaker = `${lockFile}.aufraeumen`;
+    if (!createFileExclusive(breaker, mine)) {
+      // Ein anderer Vorgang räumt gerade auf. Ist dieser selbst verwaist, seinen Rest entfernen.
+      const other = readOptional(breaker);
+      if (other !== undefined && lockAbandoned(breaker, other) && readOptional(breaker) === other) fs.rmSync(breaker, { force: true });
+      sleep(5);
+      return;
+    }
+    try {
+      if (readOptional(lockFile) === stale) fs.rmSync(lockFile, { force: true });
+    } finally {
+      fs.rmSync(breaker, { force: true });
     }
   }
 
@@ -419,6 +555,7 @@ export class JobStore {
       aktualisiert: job.aktualisiert,
       rev: job.rev,
       ...(job.ergebnisRev !== undefined ? { ergebnisRev: job.ergebnisRev } : {}),
+      ...(job.kiFassung !== undefined ? { kiFassung: job.kiFassung } : {}),
       anzahlPlatzhalter: job.anzahlPlatzhalter,
       anzahlHinweise: job.anzahlHinweise,
       ...(job.rechnungsnummer ? { rechnungsnummer: job.rechnungsnummer } : {}),
@@ -453,24 +590,54 @@ export class JobStore {
   // -------------------------------------------------------------------------
   // Platzhalter-Fassung erzeugen
 
+  /**
+   * Der Text, den die Erkennung sieht: Betreff, Text und bei Buchhaltung die Bezeichnungen aus dem Kontenplan, je
+   * durch SEP_INTERN getrennt. Der Kontenplan geht mit an die KI; er läuft deshalb durch dieselbe Erkennung (dieselbe
+   * Person bekommt überall denselben Platzhalter) und erscheint in der Vorschau.
+   */
+  private internText(job: StoredJob, secret: Geheim): { text: string; docLength: number; konten: Konto[] } {
+    const doc = combine(secret.betreff, secret.text, SEP_INTERN);
+    const konten =
+      job.art === "buchhaltung"
+        ? loadAccounts(this.configDir).map((k) => ({ nummer: k.nummer, name: k.name.replace(/[\r\n]+/g, " ").replace(SEGMENT_BREAK_RE, "") }))
+        : [];
+    return { text: doc + konten.map((k) => SEP_INTERN + k.name).join(""), docLength: doc.length, konten };
+  }
+
   private pseudonymizeInto(job: StoredJob, secret: Geheim, keep: Pick<KiTeil, "ergebnisKi" | "pruefung"> = {}): void {
-    const intern = combine(secret.betreff, secret.text, SEP_INTERN);
+    const { text: intern, docLength, konten } = this.internText(job, secret);
     const result = pseudonymize(intern, {
       manual: secret.manuell,
       excluded: secret.ausgeschlossen,
       companies: loadCompanies(this.configDir),
     });
-    let betreffKi = "";
-    let textKi = result.text;
-    if (secret.betreff) {
-      const parts = result.text.split(SEP_INTERN);
-      if (parts.length !== 2) throw new Error("Interner Fehler: Betreff und Text ließen sich nicht trennen.");
-      [betreffKi, textKi] = [parts[0] ?? "", parts[1] ?? ""];
-    }
+    const parts = result.text.split(SEP_INTERN);
+    const docParts = secret.betreff ? 2 : 1;
+    if (parts.length !== docParts + konten.length) throw new Error("Interner Fehler: Die Teile des Dokuments ließen sich nicht trennen.");
+    const betreffKi = secret.betreff ? (parts[0] ?? "") : "";
+    const textKi = parts[docParts - 1] ?? "";
+    const kontenplanKi = konten.map((k, i) => ({ nummer: k.nummer, name: parts[docParts + i] ?? "" }));
+
+    const marks: Markierung[] = result.findings.map(({ start, end, type, id, source }) => ({ start, end, type, id, source }));
     secret.mapping = result.mapping;
     secret.literal = result.literal;
-    secret.markierungen = result.findings.map(({ start, end, type, id, source }) => ({ start, end, type, id, source }));
-    const ki: KiTeil = { betreffKi, textKi, platzhalter: placeholderLegend(result.mapping), ...keep };
+    secret.markierungen = marks.filter((m) => m.end <= docLength);
+    let pos = docLength;
+    const geprueft = konten.map((k) => {
+      const start = pos + SEP_INTERN.length;
+      pos = start + k.name.length;
+      const end = pos;
+      return { ...k, markierungen: marks.filter((m) => m.start >= start && m.end <= end).map((m) => ({ ...m, start: m.start - start, end: m.end - start })) };
+    });
+    if (geprueft.length) secret.konten = geprueft;
+    else delete secret.konten;
+    const ki: KiTeil = {
+      betreffKi,
+      textKi,
+      platzhalter: placeholderLegend(result.mapping),
+      ...(konten.length ? { kontenplanKi } : {}),
+      ...keep,
+    };
     const kopf: Kopf = {
       titel: titleOf(combine(secret.betreff, secret.text, "\n")),
       titelKi: titleOf(combine(betreffKi, textKi, "\n")),
@@ -508,8 +675,8 @@ export class JobStore {
 
   create(input: { art: string; betreff?: string; text: string }, quelle: Quelle = "oberflaeche"): JobInfo {
     if (!(ARTEN as readonly string[]).includes(input.art)) throw new JobError(`Unbekannte Art: ${input.art}`);
-    const text = input.text.replace(/\r\n?/g, "\n").replace(//g, "");
-    const betreff = (input.betreff ?? "").replace(/\s*\n\s*/g, " ").replace(//g, "").trim();
+    const text = input.text.replace(/\r\n?/g, "\n").replace(SEGMENT_BREAK_RE, "");
+    const betreff = (input.betreff ?? "").replace(/\s*\n\s*/g, " ").replace(SEGMENT_BREAK_RE, "").trim();
     if (!text.trim()) throw new JobError("Das Dokument ist leer.");
     if (text.length > MAX_TEXT) throw new JobError("Das Dokument ist zu groß (höchstens 200.000 Zeichen).");
     if (betreff.length > MAX_BETREFF) throw new JobError("Der Betreff ist zu lang (höchstens 500 Zeichen).");
@@ -555,6 +722,7 @@ export class JobStore {
       job: { ...info, ...(ki ?? {}) },
       original: "",
       markierungen: [],
+      konten: [],
       zuordnung: [],
       manuell: [],
       ausgeschlossen: [],
@@ -565,6 +733,7 @@ export class JobStore {
       ...base,
       original: combine(secret.betreff, secret.text, SEP_ANZEIGE),
       markierungen: secret.markierungen,
+      konten: secret.konten ?? [],
       zuordnung: secret.mapping,
       manuell: secret.manuell,
       ausgeschlossen: secret.ausgeschlossen,
@@ -572,21 +741,32 @@ export class JobStore {
     };
   }
 
-  /** Zusätzlich schwärzen (Text in der Oberfläche markiert). Gibt zurück, wie oft der Text vorkommt. */
-  mark(id: string, mark: ManualMark): { job: JobInfo; treffer: number } {
+  /**
+   * Zusätzlich schwärzen (Text in der Oberfläche markiert). stelle ist die Auswahl im Original (Anfang, Ende); sie
+   * wird immer geschwärzt, auch wenn der Text anderswo als ganzes Wort vorkommt. Gibt die Zahl der Stellen zurück.
+   */
+  mark(id: string, mark: ManualMark, stelle?: [number, number]): { job: JobInfo; treffer: number } {
     return this.mutate(id, (job) => {
       this.requireStatus(job, ["neu"], "Markieren");
       const secret = this.open<Geheim>(job, "geheim");
-      const value = mark.value.trim();
+      const value = mark.value.replace(SEGMENT_BREAK_RE, "").trim();
       if (!value) throw new JobError("Leere Markierung.");
-      const treffer = manualMatches(combine(secret.betreff, secret.text, SEP_INTERN), value).length;
+      const { text: intern, docLength } = this.internText(job, secret);
+      if (stelle) {
+        const [s, e] = stelle;
+        if (!Number.isInteger(s) || !Number.isInteger(e) || s < 0 || e > docLength || intern.slice(s, e) !== value) {
+          throw new JobError("Die markierte Stelle passt nicht zum Dokument. Bitte nur innerhalb eines Absatzes markieren oder die Seite neu laden.");
+        }
+      }
+      const existing = secret.manuell.find((m) => m.value.toLowerCase() === value.toLowerCase());
+      const stellen = [...(existing?.stellen ?? []), ...(stelle ? [stelle] : [])];
+      const entry: ManualMark = { value: existing?.value ?? value, type: existing?.type ?? mark.type, ...(stellen.length ? { stellen } : {}) };
+      const treffer = manualSpans(intern, entry).length;
       if (treffer === 0) {
         throw new JobError("Der markierte Text wurde so nicht im Dokument gefunden. Bitte nur innerhalb eines Absatzes markieren.");
       }
       secret.ausgeschlossen = secret.ausgeschlossen.filter((v) => v.toLowerCase() !== value.toLowerCase());
-      if (!secret.manuell.some((m) => m.value.toLowerCase() === value.toLowerCase())) {
-        secret.manuell.push({ value, type: mark.type });
-      }
+      secret.manuell = [...secret.manuell.filter((m) => m !== existing), entry];
       this.pseudonymizeInto(job, secret);
       this.persist(job);
       this.log(id, `Zusätzlich geschwärzt (${mark.type}, ${treffer} Stelle${treffer === 1 ? "" : "n"})`, "oberflaeche");
@@ -624,10 +804,18 @@ export class JobStore {
     });
   }
 
-  releaseForAi(id: string): JobInfo {
+  /**
+   * Für die KI freigeben. rev ist die Fassung, die der Mitarbeiter geprüft hat: Hat sich das Dokument inzwischen
+   * geändert (z. B. in einem zweiten Fenster), wird die Freigabe abgelehnt.
+   */
+  releaseForAi(id: string, rev: number): JobInfo {
     return this.mutate(id, (job) => {
       this.requireStatus(job, ["neu"], "Freigeben für die KI");
+      if (job.rev !== rev) {
+        throw new JobError("Das Dokument wurde inzwischen geändert. Bitte die aktuelle Fassung prüfen und dann freigeben.");
+      }
       job.status = "bereit";
+      job.kiFassung = (job.kiFassung ?? 0) + 1;
       this.persist(job);
       this.log(id, "Für die KI freigegeben (nur Platzhalter-Fassung)", "oberflaeche");
       return this.info(job);
@@ -663,19 +851,20 @@ export class JobStore {
       const secret = this.open<Geheim>(job, "geheim");
       const result = secret.ergebnis;
       if (result?.art === "rechnung") {
-        // Die Nummer wird erst jetzt vergeben, damit verworfene Entwürfe keine Lücken erzeugen.
-        job.rechnungsnummer = this.nextInvoiceNumber();
-        result.html = renderInvoiceHtml({
-          inhalt: result.rechnung,
-          summen: result.summen,
-          firma: loadOwnCompany(this.configDir),
-          nummer: job.rechnungsnummer,
-          datum: today(),
+        // Die Nummer wird erst jetzt vergeben, damit verworfene Entwürfe keine Lücken erzeugen. Alles, was scheitern
+        // kann (Firmendaten lesen), passiert vorher; gezählt wird die Nummer erst, wenn das Dokument gespeichert ist.
+        const firma = loadOwnCompany(this.configDir);
+        this.assignInvoiceNumber((nummer) => {
+          result.html = renderInvoiceHtml({ inhalt: result.rechnung, summen: result.summen, firma, nummer, datum: today() });
+          job.rechnungsnummer = nummer;
+          job.geheim = this.seal(job, "geheim", secret);
+          job.status = "freigegeben";
+          this.persist(job);
         });
-        job.geheim = this.seal(job, "geheim", secret);
+      } else {
+        job.status = "freigegeben";
+        this.persist(job);
       }
-      job.status = "freigegeben";
-      this.persist(job);
       this.log(
         id,
         job.rechnungsnummer ? `Freigegeben, Rechnungsnummer ${job.rechnungsnummer}` : "Ergebnis geprüft und freigegeben",
@@ -715,16 +904,18 @@ export class JobStore {
       const kopf = this.open<Kopf>(job, "kopf");
       if (job.rechnungsnummer && secret.ergebnis?.art === "rechnung") {
         const nummer = job.rechnungsnummer;
+        const inhalt = JSON.stringify(secret.ergebnis);
         const archiv = {
           format: 2,
           nummer,
           dokument: id,
           archiviert: now(),
           schluessel: this.keyKennung,
-          inhalt: encrypt(this.secretKey(), JSON.stringify(secret.ergebnis), `rechnung:${nummer}`),
+          inhalt: encrypt(this.secretKey(), inhalt, `rechnung:${nummer}`),
         };
-        if (!createFileExclusive(this.archiveFile(nummer), JSON.stringify(archiv, null, 2))) {
-          throw new JobError(`Im Archiv gibt es schon eine Rechnung ${nummer}. Bitte die Daten prüfen.`);
+        // Liegt genau diese Rechnung schon im Archiv, war ein früherer Abschluss unterbrochen: dann weitermachen.
+        if (!createFileExclusive(this.archiveFile(nummer), JSON.stringify(archiv, null, 2)) && !this.isArchived(nummer, id, inhalt)) {
+          throw new JobError(`Im Archiv gibt es schon eine andere Rechnung ${nummer}. Bitte die Daten prüfen.`);
         }
       }
       delete job.geheim;
@@ -800,23 +991,63 @@ export class JobStore {
     }
   }
 
-  private nextInvoiceNumber(): string {
-    return this.withLock("rechnungsnummern", () => {
+  /** Liegt im Archiv genau diese Rechnung (gleiches Dokument, gleicher Inhalt)? */
+  private isArchived(nummer: string, dokument: string, inhalt: string): boolean {
+    try {
+      const archiv = JSON.parse(fs.readFileSync(this.archiveFile(nummer), "utf8")) as { dokument?: string; inhalt?: string };
+      return archiv.dokument === dokument && decrypt(this.secretKey(), archiv.inhalt ?? "", `rechnung:${nummer}`) === inhalt;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Vergibt die nächste Rechnungsnummer und speichert damit, alles unter der Nummern-Sperre. Gezählt wird erst nach
+   * dem Speichern: Scheitert es, ist keine Nummer verbraucht. Die nächste Nummer richtet sich nach dem Zähler und nach
+   * den Nummern, die tatsächlich in Dokumenten und im Archiv stehen. So gibt es auch nach einem Absturz zwischen
+   * Speichern und Zählen keine Nummer doppelt.
+   */
+  private assignInvoiceNumber(save: (nummer: string) => void): void {
+    this.withLock("rechnungsnummern", () => {
       const year = String(new Date().getFullYear());
       let counters: Record<string, number> = {};
-      if (fs.existsSync(this.numbersFile)) {
+      const raw = readOptional(this.numbersFile);
+      if (raw !== undefined) {
         try {
-          counters = JSON.parse(fs.readFileSync(this.numbersFile, "utf8")) as Record<string, number>;
+          counters = JSON.parse(raw) as Record<string, number>;
         } catch {
           // Nie neu bei 1 anfangen: das würde Nummern doppelt vergeben.
           throw new JobError("Die Datei mit den Rechnungsnummern ist beschädigt. Bitte prüfen, bevor weitere Rechnungen freigegeben werden.");
         }
       }
-      const next = (counters[year] ?? 0) + 1;
+      const next = Math.max(counters[year] ?? 0, this.highestUsedNumber(year)) + 1;
+      save(`${year}-${String(next).padStart(4, "0")}`);
       counters[year] = next;
-      writeFileAtomic(this.numbersFile, JSON.stringify(counters, null, 2));
-      return `${year}-${String(next).padStart(4, "0")}`;
+      try {
+        writeFileAtomic(this.numbersFile, JSON.stringify(counters, null, 2));
+      } catch {
+        // Die Nummer steht schon im Dokument; die nächste Vergabe findet sie dort.
+      }
     });
+  }
+
+  /** Höchste laufende Nummer eines Jahres, die in Dokumenten oder im Archiv vorkommt. */
+  private highestUsedNumber(year: string): number {
+    let max = 0;
+    const consider = (nummer: unknown) => {
+      const m = typeof nummer === "string" ? /^(\d{4})-(\d+)$/.exec(nummer) : null;
+      if (m && m[1] === year) max = Math.max(max, Number(m[2]));
+    };
+    for (const f of fs.readdirSync(this.archiveDir)) if (f.endsWith(".json")) consider(f.slice(0, -5));
+    for (const f of fs.readdirSync(this.jobsDir)) {
+      if (!f.endsWith(".json")) continue;
+      try {
+        consider((JSON.parse(fs.readFileSync(path.join(this.jobsDir, f), "utf8")) as { rechnungsnummer?: unknown }).rechnungsnummer);
+      } catch {
+        // defekte Datei: wird in der Liste gemeldet
+      }
+    }
+    return max;
   }
 
   // -------------------------------------------------------------------------
@@ -846,10 +1077,12 @@ export class JobStore {
     return {
       id: job.id,
       art: job.art,
+      fassung: job.kiFassung ?? 0,
       betreff: ki.betreffKi,
       text: ki.textKi,
       platzhalter: ki.platzhalter,
-      ...(job.art === "buchhaltung" ? { kontenplan: loadAccounts(this.configDir) } : {}),
+      // Der Kontenplan so, wie er geprüft und freigegeben wurde (mit Platzhaltern), nie frisch aus der Konfiguration.
+      ...(ki.kontenplanKi ? { kontenplan: ki.kontenplanKi } : {}),
     };
   }
 
@@ -858,12 +1091,27 @@ export class JobStore {
    * Die Antwort an die KI enthält nur Prüfhinweise und Beträge, keine Originaldaten: Hinweise entstehen nur aus
    * dem, was die KI selbst geschrieben hat, und aus Beträgen und Kontonummern vor der Rückübersetzung.
    */
-  saveResult(id: string, ergebnis: ErgebnisKi): { pruefung: Pruefung; summen?: { netto: number; ust: number; brutto: number } } {
+  saveResult(
+    id: string,
+    ergebnis: ErgebnisKi,
+    fassung: number,
+  ): { pruefung: Pruefung; summen?: { netto: number; ust: number; brutto: number } } {
     checkSize(ergebnis);
+    if (ergebnis.art === "rechnung") checkInvoiceInput(ergebnis.rechnung);
     return this.mutate(id, (job) => {
       // Solange noch niemand freigegeben hat, darf die KI ihr Ergebnis korrigieren. Jede neue Fassung braucht
       // eine neue Prüfung, denn die Freigabe nennt die geprüfte Version.
       this.requireStatus(job, ["bereit", "zur_pruefung"], "Ergebnis speichern");
+      // Das Ergebnis muss zur Fassung gehören, die gerade freigegeben ist. Nach einer Änderung (zurück zur Prüfung,
+      // neu markiert) können Platzhalter andere Personen bezeichnen: Dann lieber ablehnen als falsch einsetzen.
+      if (job.kiFassung === undefined) {
+        throw new JobError("Dieses Dokument wurde mit einer älteren Version freigegeben. Bitte in der Oberfläche zurück zur Prüfung holen und neu freigeben.");
+      }
+      if (fassung !== job.kiFassung) {
+        throw new JobError(
+          `Das Dokument wurde seit dem Lesen geändert (jetzt Fassung ${job.kiFassung}). Bitte mit dokument_lesen neu lesen und das Ergebnis neu erstellen.`,
+        );
+      }
       const replacing = job.status === "zur_pruefung";
       const secret = this.open<Geheim>(job, "geheim");
       const ki = this.open<KiTeil>(job, "ki");
@@ -953,6 +1201,25 @@ export class JobStore {
       return summen ? { pruefung, summen } : { pruefung };
     });
   }
+}
+
+/**
+ * Eine Rechnung muss aus den sichtbaren Angaben nachvollziehbar sein: einheitlich netto oder brutto, und Mengen und
+ * Preise nur so genau, wie die Rechnung sie zeigt.
+ */
+function checkInvoiceInput(r: RechnungInhalt): void {
+  const brutto = r.positionen.filter((p) => p.preis_ist_brutto).length;
+  if (brutto > 0 && brutto < r.positionen.length) {
+    throw new JobError(
+      "Die Positionen mischen Brutto- und Nettopreise. Bitte alle Preise einheitlich netto oder einheitlich brutto angeben (preis_ist_brutto bei allen Positionen gleich).",
+    );
+  }
+  r.positionen.forEach((p, i) => {
+    if (nachkommastellen(p.menge) > 3) throw new JobError(`Position ${i + 1}: Menge bitte mit höchstens 3 Nachkommastellen angeben.`);
+    if (nachkommastellen(p.einzelpreis) > 4) {
+      throw new JobError(`Position ${i + 1}: Einzelpreis bitte mit höchstens 4 Nachkommastellen angeben.`);
+    }
+  });
 }
 
 /** Obergrenzen für Ergebnisse der KI, damit niemand den Bot mit riesigen Eingaben lahmlegt. */
