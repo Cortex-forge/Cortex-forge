@@ -11,6 +11,16 @@ const INVISIBLE = /[\u00AD\u200B-\u200D\u2060\uFEFF]/g;
 /** Geschützte, schmale und andere besondere Leerzeichen. */
 const SPECIAL_SPACES = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g;
 const LINE_SEPARATORS = /[\u2028\u2029\u0085]/g;
+/**
+ * Unsichtbare Formatzeichen (Unicode-Kategorie Cf): Steuerzeichen für die Schreibrichtung und Tag-Zeichen. Im Browser
+ * sieht man sie nicht, eine KI liest sie aber als Text. So ließen sich Anweisungen an die KI verstecken.
+ */
+const FORMAT_CHARS = /\p{Cf}/gu;
+/** Ligaturen aus PDFs ("ﬃ" in "Steﬃ") und Zeichen in voller Breite ("０６６４") als normale Buchstaben und Ziffern. */
+const LIGATURES = /[\uFB00-\uFB06]/g;
+const FULLWIDTH = /[\uFF01-\uFF5E]/g;
+/** Bindestrich-Varianten (geschützt, typografisch, Minus) als "-". Gedankenstriche bleiben, die Muster kennen sie. */
+const HYPHENS = /[\u2010\u2011\u2012\u2212\uFE63]/g;
 const SEGMENT_BREAKS = new RegExp(SEGMENT_BREAK, "g");
 
 /** Zeichen und Leerraum vereinheitlichen (auch für Betreff, Markierungen und Ausnahmen). */
@@ -20,6 +30,10 @@ export function normalizeChars(value: string): string {
     .replace(SEGMENT_BREAKS, "")
     .normalize("NFC")
     .replace(INVISIBLE, "")
+    .replace(FORMAT_CHARS, "")
+    .replace(LIGATURES, (c) => c.normalize("NFKC"))
+    .replace(FULLWIDTH, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(HYPHENS, "-")
     .replace(SPECIAL_SPACES, " ")
     .replace(LINE_SEPARATORS, "\n");
 }

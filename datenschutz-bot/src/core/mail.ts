@@ -8,7 +8,10 @@ export interface MailText {
   weggelassen: number;
 }
 
-const HEADER_LINE = /^[A-Za-z][A-Za-z0-9-]{0,60}:/;
+// Kopfnamen nach RFC 5322: druckbare Zeichen außer Doppelpunkt ("X_Mailer_Info:" ist erlaubt).
+const HEADER_LINE = /^[!-9;-~]{1,76}:/;
+// Trennzeile aus mbox-Postfächern vor der eigentlichen Mail: "From anna@example.com Mon Oct 12 09:14:00 2026"
+const MBOX_FROM = /^From [^\n]{1,200}\n/;
 const MAX_DEPTH = 8;
 
 /** Sieht der Text wie eine MIME-Nachricht aus (Kopfzeilen, Leerzeile, darunter MIME-Angaben)? */
@@ -285,7 +288,8 @@ function mailHeaderLines(entity: Entity): string[] {
  * Macht aus einer MIME-Nachricht lesbaren Text: wichtige Kopfzeilen (Von, An, Cc, Datum, Betreff), dann die Textteile.
  * Gibt null zurück, wenn der Text keine MIME-Nachricht ist.
  */
-export function decodeMail(raw: string): MailText | null {
+export function decodeMail(input: string): MailText | null {
+  const raw = input.replace(MBOX_FROM, "");
   if (!looksLikeMime(raw)) return null;
   const entity = parseEntity(raw);
   const out: Collected = { plain: [], weggelassen: 0 };

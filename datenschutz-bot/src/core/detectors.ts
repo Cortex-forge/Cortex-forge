@@ -13,6 +13,7 @@ import {
   PLACE_PREFIXES,
   ROLE_WORDS,
 } from "./names.js";
+import { htmlToText, looksLikeHtml } from "./mail.js";
 import { PARTICLE, SALUTATION, TITLES } from "./salutations.js";
 import type { CompanyEntry, DetectOptions, EntityType, Finding, ManualMark } from "./types.js";
 
@@ -183,7 +184,7 @@ export function detectEmails(text: string): Finding[] {
 // IBAN (mit Prüfziffer nach ISO 13616)
 
 export function ibanIsValid(raw: string): boolean {
-  const iban = raw.replace(/[\s-]+/g, "").toUpperCase();
+  const iban = raw.replace(/[\s–-]+/g, "").toUpperCase();
   if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
   const rearranged = iban.slice(4) + iban.slice(0, 4);
   let remainder = 0;
@@ -196,7 +197,7 @@ export function ibanIsValid(raw: string): boolean {
 
 // Gruppen getrennt durch Leerzeichen, Bindestrich oder einen Zeilenumbruch; Groß- oder Kleinschreibung.
 // Ob es wirklich eine IBAN ist, entscheidet die Prüfziffer.
-const IBAN_SEP = String.raw`(?:[ \t]{0,2}-?[ \t]{0,2}|[ \t]{0,2}\n[ \t]{0,2})`;
+const IBAN_SEP = String.raw`(?:[ \t]{0,2}[-–]?[ \t]{0,2}|[ \t]{0,2}\n[ \t]{0,2})`;
 const IBAN_RE = new RegExp(
   String.raw`(?<![\p{L}\p{N}])[A-Za-z]{2}\d{2}(?:${IBAN_SEP}[A-Za-z0-9]{4}){2,7}(?:${IBAN_SEP}[A-Za-z0-9]{1,4})?(?![\p{L}\p{N}])`,
   "gu",
@@ -207,14 +208,14 @@ export function detectIbans(text: string): Finding[] {
   for (const m of matchAll(text, IBAN_RE)) {
     // Am Ende können zusätzliche Zeichen mitgefangen werden: kürzen, bis die Prüfziffer stimmt.
     let candidate = m[0];
-    while (candidate.replace(/\s/g, "").length >= 15) {
+    while (candidate.replace(/[\s–-]/g, "").length >= 15) {
       if (ibanIsValid(candidate)) {
         out.push(finding(text, m.index, m.index + candidate.length, "IBAN", "iban"));
         break;
       }
-      const cut = Math.max(candidate.lastIndexOf(" "), candidate.lastIndexOf("-"), candidate.lastIndexOf("\n"));
+      const cut = Math.max(candidate.lastIndexOf(" "), candidate.lastIndexOf("-"), candidate.lastIndexOf("–"), candidate.lastIndexOf("\n"));
       if (cut <= 4) break;
-      candidate = candidate.slice(0, cut).replace(/[\s-]+$/u, "");
+      candidate = candidate.slice(0, cut).replace(/[\s–-]+$/u, "");
     }
   }
   return out;
@@ -323,9 +324,9 @@ const LANDLINE_SHAPE = /^0[1-9]\d{0,4}[ \t/-]{1,2}\d{3,9}(?:[ \t-]\d{1,6})?$/;
 // Zwischen Zifferngruppen steht immer ein Trennzeichen (oder es gibt gar keines): So hat jede Ziffernfolge genau eine
 // Aufteilung, und lange Ziffernfolgen kosten keine Zeit (Review Claude 3 #14).
 const PHONE_INTL_RE =
-  /(?<![\p{L}\p{N}+])(?:\+|00)(?:\d{7,15}|\d{1,7}(?:[ \t/.-]{1,3}(?:\(\d{1,4}\)[ \t/.-]{0,3})?\d{1,10}|[ \t]?\(\d{1,4}\)[ \t/.-]{0,3}\d{1,10}){1,7})(?![\p{L}\p{N}])/gu;
+  /(?<![\p{L}\p{N}+])(?:\+|00)(?:\d{7,15}|\d{1,7}(?:[ \t/.–-]{1,3}(?:\(\d{1,4}\)[ \t/.–-]{0,3})?\d{1,10}|[ \t]?\(\d{1,4}\)[ \t/.–-]{0,3}\d{1,10}){1,7})(?![\p{L}\p{N}])/gu;
 const PHONE_NATIONAL_RE =
-  /(?<![\p{L}\p{N}.,+/-])(?:0[1-9]\d{5,13}|(?:\(0\d{1,5}\)[ \t]?|0[1-9]\d{0,4}[ \t/.-]{1,3})\d{1,8}(?:[ \t/.-]{1,3}\d{1,8}){0,4})(?![\p{L}\p{N}]|[.,]\d)/gu;
+  /(?<![\p{L}\p{N}.,+/-])(?:0[1-9]\d{5,13}|(?:\(0\d{1,5}\)[ \t]?|0[1-9]\d{0,4}[ \t/.–-]{1,3})\d{1,8}(?:[ \t/.–-]{1,3}\d{1,8}){0,4})(?![\p{L}\p{N}]|[.,]\d)/gu;
 // Ohne führende 0 (italienische Handys "347 1234567", USA "(555) 123-4567"): nur mit Telefon-Wort davor.
 const PHONE_CONTEXT_RE =
   /(?<![\p{L}\p{N}.,+/-])(?:\(\d{2,4}\)[ \t]?|[1-9]\d{1,3}[ \t/.-]?)\d{2,4}(?:[ \t/.-]?\d{2,5}){1,2}(?![\p{L}\p{N}]|[.,]\d)/gu;
@@ -688,8 +689,24 @@ const CUSTOMER_LABEL_RE = new RegExp(
   "gud",
 );
 
+// Betriebe ohne Rechtsform: Branchenwort und Name ("Tischlerei Moosbrugger", "Elektro Valdessa", "Malerei Huber").
+const TRADE_WORDS =
+  "Tischlerei|Schreinerei|Zimmerei|Spenglerei|Malerei|Malerbetrieb|Elektro|Elektrotechnik|Installationen|Installateur|Sanitär|Heizungsbau|Dachdeckerei|Baufirma|Bauunternehmen|Baumeister|Transporte|Gärtnerei|Gartenbau|Fliesenleger|Bodenleger|Glaserei|Schlosserei|Metallbau|Steuerberatung|Steuerkanzlei|Kanzlei|Ordination|Praxis|Bäckerei|Konditorei|Metzgerei|Fleischerei|Druckerei|Autohaus|Werkstatt|Reinigung|Wäscherei|Weinhandel|Weingut|Hofladen|Käserei|Brennerei|Friseur|Friseursalon";
+const TRADE_RE = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])(?:${TRADE_WORDS})[ \t]{1,3}(?<n>${UP}[\p{L}'’-]{2,40}(?:[ \t]{1,3}(?:&|und)[ \t]{1,3}${UP}[\p{L}'’-]{2,40})?)(?![\p{L}\p{N}])`,
+  "gud",
+);
+
 export function detectCompanies(text: string, companies: CompanyEntry[] = []): Finding[] {
   const out: Finding[] = [];
+  for (const m of matchAll(text, TRADE_RE)) {
+    const name = m.groups?.n ?? "";
+    const first = name.split(/[ \t]/)[0] ?? "";
+    // "Elektro Installationen", "Praxis Montag": nach dem Branchenwort ein Allerweltswort, kein Name
+    if (isNotSurname(first) || ROLE_WORDS.has(first) || BUSINESS_WORDS.has(first) || MONTHS.has(first) || PLACE_PREFIXES.has(first)) continue;
+    if (new RegExp(`^(?:${TRADE_WORDS})$`, "u").test(first)) continue;
+    out.push(finding(text, m.index, m.index + m[0].length, "FIRMA", "firma:branche"));
+  }
 
   // 1) Bekannte Firmen aus dem Firmenverzeichnis, mit Kategorie für die KI. Groß-/Kleinschreibung egal.
   const known: Array<[number, number]> = [];
@@ -1244,8 +1261,12 @@ const HEALTH_ANYWHERE = [
   "fahrradunfall", "sportverletzung", "skiverletzung", "schnittverletzung", "ricoverat", "riabilitaz", "migraine",
   "emicrania", "gravidanza", "carrozzina", "dialisi", "ictus", "back pain", "heart condition", "heart attack",
   "heart surgery", "limited mobility", "reduced mobility", "mobility issues", "difficulty walking", "hospitalis",
-  "hospitaliz", "intervento chirurgico",
+  "hospitaliz", "intervento chirurgico", "lungenkrebs", "brustkrebs", "darmkrebs", "hautkrebs", "prostatakrebs",
+  "blutkrebs", "magenkrebs", "leberkrebs", "bauchspeicheldrüsenkrebs", "gebärmutterhalskrebs", "eierstockkrebs",
+  "leukämie", "leukemia", "lymphom", "metasta", "rheumatoid",
 ];
+// "Krebs" allein nur nach "hat", "an" oder einem Possessiv ("Meine Mutter hat Krebs"), nicht "Flusskrebs" auf der Karte.
+const CANCER_RE = /(?<![\p{L}])(?:hat|habe|hatte|haben|an|gegen|mit|wegen|seinem|seinen|ihrem|ihren|meinem|meinen|unserem)[ \t]{1,3}(?:(?:einen|einem|den|dem|schweren?|bösartigen?)[ \t]{1,3})?(?<v>Krebs)(?![\p{L}])/gud;
 // Ernährung ("glutenfrei") verrät nur zusammen mit einer Person etwas über die Gesundheit: in einem Satz mit einer
 // Gesundheitsangabe oder einem Bedarf ("wir bräuchten glutenfreies Frühstück"), nicht auf der Speisekarte.
 const DIET_RE =
@@ -1291,7 +1312,9 @@ const HEALTH_WORD_START = [
 // Ganze Wörter: Abkürzungen, die sonst in anderen Wörtern stecken ("Archiv").
 const HEALTH_WHOLE = ["hiv", "copd", "adhs", "adhd", "ms-patient"];
 const RELIGION_ANYWHERE = [
-  "halal", "koscher", "kosher", "gebetsraum", "gebetszeit", "gebetsteppich", "gebetsrichtung", "prayer", "qibla",
+  "erstkommunion", "kommunion", "firmung", "konfirmation", "bar mitzwa", "bat mitzwa", "bar mitzvah", "bat mitzvah",
+  "zuckerfest", "opferfest", "kurban", "taufe", "taufpate", "taufpatin", "baptism", "christening", "comunione",
+  "cresima", "battesimo", "halal", "koscher", "kosher", "gebetsraum", "gebetszeit", "gebetsteppich", "gebetsrichtung", "prayer", "qibla",
   "kibla", "mecca", "mekka", "ramadan", "yom kippur", "rosh hashanah", "rosch haschana", "religiöser feiertag",
   "fastenbrechen", "iftar", "sabbat", "schabbat", "shabbat", "muslim", "moslem", "islam", "moschee", "mosque",
   "moschea", "moskee", "jüdisch", "jüdin", "jewish", "synagoge", "synagogue", "sinagoga", "christlich", "katholisch",
@@ -1377,9 +1400,11 @@ export function detectHealth(text: string): Finding[] {
     BODY_CONDITION_RE.test(word.toLowerCase());
   const extraSpans: Array<[number, number]> = [];
   for (const re of [BODY_OP_RE, ...HEALTH_PARAPHRASE_RES]) for (const m of matchAll(text, re)) extraSpans.push([m.index, m.index + m[0].length]);
-  for (const m of matchAll(text, MIT_BODY_RE)) {
-    const span = groupSpan(m, "v");
-    if (span) extraSpans.push(span);
+  for (const re of [MIT_BODY_RE, CANCER_RE]) {
+    for (const m of matchAll(text, re)) {
+      const span = groupSpan(m, "v");
+      if (span) extraSpans.push(span);
+    }
   }
   const found = detectKeywords(text, HEALTH, "GESUNDHEIT", "gesundheit", { extraWord, extraSpans });
   for (const m of matchAll(text, DIET_RE)) {
@@ -1542,13 +1567,24 @@ export function detectTables(text: string): Finding[] {
     let next = lineEnd + 1;
     if (delimiter) {
       const header = readCsvRecord(text, pos, delimiter, lineEnd).fields.map((f) => text.slice(f.start, f.end).trim());
-      const types = header.map((c) => CSV_COLUMNS.find((col) => col.re.test(c))?.type);
-      const plausible = header.length >= 2 && !header.some((c) => c.length > 30 || /\d/.test(c)) && types.some(Boolean);
+      // Spaltenköpfe mit Nummer ("Tel. 1", "Name 2") zählen wie ohne Nummer.
+      const types = header.map((c) => CSV_COLUMNS.find((col) => col.re.test(c) || col.re.test(c.replace(/[ \t]*\d{1,2}$/u, "")))?.type);
+      const plausible =
+        header.length >= 2 && !header.some((c, i) => c.length > 30 || (/\d/.test(c) && !types[i])) && types.some(Boolean);
       if (plausible) {
         let row = next;
         while (row < text.length) {
           const rowEnd = lineEndOf(text, row);
-          if (!text.slice(row, rowEnd).trim()) break;
+          if (!text.slice(row, rowEnd).trim()) {
+            // Eine Leerzeile beendet die Tabelle nur, wenn danach keine Zeile mit gleich vielen Spalten folgt.
+            const nextStart = rowEnd + 1;
+            const nextLine = text.slice(nextStart, lineEndOf(text, nextStart));
+            if (nextStart < text.length && nextLine.trim() && readCsvRecord(text, nextStart, delimiter, lineEndOf(text, nextStart)).fields.length === header.length) {
+              row = nextStart;
+              continue;
+            }
+            break;
+          }
           const record = readCsvRecord(text, row, delimiter);
           // Eine Zeile ohne Trennzeichen ist keine Tabellenzeile mehr (z. B. "Danke!" nach der Tabelle).
           if (record.fields.length < 2) break;
@@ -1599,8 +1635,58 @@ function mostlyText(text: string): boolean {
   return total >= 16 && good / total >= 0.9;
 }
 
+/** Ist ein dekodierter Block lesbarer Text oder HTML mit lesbarem Text? */
+function readableDecoded(bytes: Buffer): boolean {
+  let decoded: string;
+  try {
+    decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return false;
+  }
+  if (!/[\p{L}\p{N}]{3}/u.test(decoded)) return false;
+  return mostlyText(decoded) || (looksLikeHtml(decoded) && mostlyText(htmlToText(decoded)));
+}
+
+/**
+ * Base64 über mehrere Zeilen (wie in Mails): Die Zeilen werden zusammengefasst und dekodiert. Lesbarer Text oder HTML
+ * wird als Ganzes geschwärzt, lange Blöcke ohne erkennbaren Inhalt immer (der Prüfer kann sie nicht lesen).
+ */
+function detectBase64Blocks(text: string, out: Finding[]): void {
+  let blockStart = -1;
+  let blockEnd = -1;
+  let joined = "";
+  const flush = () => {
+    if (blockStart >= 0 && joined.length >= 48) {
+      const clean = joined.replace(/=+$/, "");
+      if (joined.length >= 200 || (clean.length % 4 !== 1 && readableDecoded(Buffer.from(clean, "base64")))) {
+        out.push(finding(text, blockStart, blockEnd, "SONSTIGES", "codiert:base64", { description: "codierter Text" }));
+      }
+    }
+    blockStart = -1;
+    joined = "";
+  };
+  let pos = 0;
+  while (pos <= text.length) {
+    const end = lineEndOf(text, pos);
+    const line = text.slice(pos, end).trim();
+    // Die letzte Zeile eines Blocks ist oft kürzer ("…bD4="): als Fortsetzung zählt sie, wenn sie wie Base64 aussieht.
+    const continued = blockStart >= 0 && /^[A-Za-z0-9+/]{2,}={0,2}$/.test(line) && /[\d+/=]/.test(line);
+    if (/^[A-Za-z0-9+/]{16,}={0,2}$/.test(line) || continued) {
+      if (blockStart < 0) blockStart = pos + text.slice(pos, end).indexOf(line);
+      blockEnd = pos + text.slice(pos, end).indexOf(line) + line.length;
+      joined += line;
+    } else {
+      flush();
+    }
+    if (end >= text.length) break;
+    pos = end + 1;
+  }
+  flush();
+}
+
 export function detectEncoded(text: string): Finding[] {
   const out: Finding[] = [];
+  detectBase64Blocks(text, out);
   for (const m of matchAll(text, BASE64_RUN_RE)) {
     const clean = m[0].replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
     if (clean.length % 4 === 1) continue;

@@ -160,3 +160,11 @@ test("Rückübersetzung bleibt linear, auch bei sehr vielen Platzhaltern", () =>
   // Reste zwischen und nach Platzhaltern werden weiter gefunden.
   assert.deepEqual(reidentify("[UID_1] [NAME_1] [UID_1] PERSON 1", mapping).leftovers, ["[NAME_1]", "PERSON 1"]);
 });
+
+// Review Claude 3 #20
+test("Nachname aus Großbuchstaben steht nach der Anrede in üblicher Schreibweise", () => {
+  assert.equal(reidentify("Sehr geehrte Frau [PERSON_1]", pseudonymize("Gast: HUBER Anna. Sehr geehrte Frau Huber, danke.").mapping).text, "Sehr geehrte Frau Huber");
+  assert.equal(reidentify("Liebe Frau [PERSON_1]", pseudonymize("Mit freundlichen Grüßen\nANNA MÜLLER-BERGER").mapping).text, "Liebe Frau Müller-Berger");
+  // Der volle Name bleibt, wie er im Dokument stand.
+  assert.equal(reidentify("Gast: [PERSON_1]", pseudonymize("Gast: HUBER Anna").mapping).text, "Gast: HUBER Anna");
+});

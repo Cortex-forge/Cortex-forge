@@ -1,5 +1,5 @@
 import { detectAll, normalizeValue } from "./detectors.js";
-import { BUSINESS_WORDS, COMMON_LOWERCASE_WORDS, DETERMINERS, LOWERCASE_STOPWORDS, NOT_SURNAME, NOUN_SURNAMES, ROLE_WORDS } from "./names.js";
+import { BUSINESS_WORDS, COMMON_LOWERCASE_WORDS, DETERMINERS, FIRST_NAMES, LOWERCASE_STOPWORDS, NOT_SURNAME, NOUN_SURNAMES, ROLE_WORDS } from "./names.js";
 import { formatPlaceholder, placeholderId, placeholderRegex } from "./placeholders.js";
 import { PARTICLE_WORDS } from "./salutations.js";
 import type {
@@ -33,7 +33,8 @@ function nameParts(name: string): string[] {
     if (/^(?:Dr|DDr|Prof|Mag|MMag|Ing|DI|Dipl|Dkfm|Prim|Univ|Dott|Avv|Arch)\.?$/u.test(t)) return false;
     // Kurze Nachnamen ("Herr Wu"): nur in der Form "Wu", nie als Allerweltswort ("Am", "In", "So").
     if (t.length === 2) return /^\p{Lu}\p{Ll}$/u.test(t) && !NOT_SURNAME.has(t) && !LOWERCASE_STOPWORDS.has(t.toLowerCase());
-    if (/^\p{Lu}/u.test(t)) return !NOT_SURNAME.has(t) && !NOT_SURNAME.has(titleCase(t));
+    // Nachnamen, die auch Hauptwörter sind ("Sommer"), ja; beim Nachziehen schützt die Artikel-Prüfung "im Sommer".
+    if (/^\p{Lu}/u.test(t)) return NOUN_SURNAMES.has(titleCase(t)) || (!NOT_SURNAME.has(t) && !NOT_SURNAME.has(titleCase(t)));
     // Kleingeschriebene Namen aus lockeren Texten ("steffi", "lechner")
     return t.length >= 4 && /^\p{Ll}+$/u.test(t) && !LOWERCASE_STOPWORDS.has(t);
   });
@@ -129,8 +130,13 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
     // Kleingeschrieben: nur, wenn der Name auch so im Text stand oder kein Alltagswort ist.
     if (m[0] === key && !owner.lowercase && (key.length < 4 || LOWERCASE_STOPWORDS.has(key) || COMMON_LOWERCASE_WORDS.has(key))) continue;
     if (NOUN_SURNAMES.has(titleCase(key))) {
-      const prevWord = /(\p{L}+)[ \t]+$/u.exec(text.slice(Math.max(0, start - 30), start))?.[1]?.toLowerCase();
-      if (prevWord && DETERMINERS.has(prevWord)) continue;
+      // Hauptwort nach Artikel, Präposition oder kleingeschriebenem Adjektiv ("im Sommer", "letzten Winter", "den Berg")
+      const prevRaw = /(\p{L}+)[ \t]+$/u.exec(text.slice(Math.max(0, start - 30), start))?.[1] ?? "";
+      const prevWord = prevRaw.toLowerCase();
+      const adjective = /^\p{Ll}+(?:en|em|er|es|e)$/u.test(prevWord) && !FIRST_NAMES.has(titleCase(prevWord));
+      if (prevWord && (DETERMINERS.has(prevWord) || LOWERCASE_STOPWORDS.has(prevWord) || adjective)) continue;
+      // Kleingeschrieben ist es das Hauptwort, außer der Name stand selbst klein im Text ("steffi sommer").
+      if (m[0] === key && !owner.lowercase) continue;
     }
     const f: Finding = { start, end, type: "PERSON", value: m[0], source: "person:wiederholung" };
     const canon = canonicalFor(key);

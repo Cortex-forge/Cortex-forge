@@ -34,11 +34,31 @@ export interface ReidentifyResult {
 
 /** Nachname für "Sehr geehrte Frau …": gespeichert bei der Erkennung, sonst der letzte Teil samt Zusatz. */
 function surnameOf(entry: MappingEntry): string {
-  if (entry.nachname) return entry.nachname;
-  const parts = entry.original.trim().split(/[ \t]+/);
-  let i = parts.length - 1;
-  while (i > 0 && PARTICLE_WORDS.has((parts[i - 1] ?? "").toLowerCase())) i--;
-  return parts.slice(i).join(" ") || entry.original;
+  let surname = entry.nachname;
+  if (!surname) {
+    const parts = entry.original.trim().split(/[ \t]+/);
+    let i = parts.length - 1;
+    while (i > 0 && PARTICLE_WORDS.has((parts[i - 1] ?? "").toLowerCase())) i--;
+    surname = parts.slice(i).join(" ") || entry.original;
+  }
+  return usualCase(surname, entry);
+}
+
+/**
+ * Nachname aus einem Formular in Großbuchstaben ("HUBER") nach der Anrede in üblicher Schreibweise: so, wie er an
+ * anderer Stelle im Dokument stand, sonst mit großem Anfangsbuchstaben ("Sehr geehrte Frau Huber").
+ */
+function usualCase(surname: string, entry: MappingEntry): string {
+  if (!/\p{Lu}{2}/u.test(surname) || surname !== surname.toUpperCase()) return surname;
+  const lower = surname.toLowerCase();
+  for (const v of entry.variants) {
+    const words = v.split(/[ \t,]+/);
+    const hit = words.find((w) => w.toLowerCase() === lower && w !== w.toUpperCase());
+    if (hit) return hit;
+  }
+  return surname
+    .toLowerCase()
+    .replace(/(^|[ \t-])(\p{Ll})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase());
 }
 
 /** Sucht in einem KI-Text nach Kontaktdaten, die nicht als Platzhalter kamen. */

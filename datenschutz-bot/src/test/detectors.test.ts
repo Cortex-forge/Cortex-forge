@@ -564,3 +564,39 @@ test("Firmen mit kleingeschriebener oder großgeschriebener Rechtsform und Verbi
   assert.equal(ki("Enoteca Pichler s.a.s. liefert"), "[FIRMA_1] liefert");
   assert.equal(ki("An: Kanzlei Kreuzer-Eberharter\nBetreff: Aufenthalt"), "An: [FIRMA_1]\nBetreff: Aufenthalt");
 });
+
+// Review Claude 3 #5
+test("CSV: Leerzeile mitten in der Tabelle und Spaltenköpfe mit Nummer", () => {
+  assert.equal(
+    ki("Nachname;Vorname;Telefon;E-Mail\nGstrein;Florian;;\nKathrein;Valentina;0512 562837;v.kathrein@example.com\n\nAuer;Quirin;0512 667788;"),
+    "Nachname;Vorname;Telefon;E-Mail\n[PERSON_1];[PERSON_2];;\n[PERSON_3];[PERSON_4];[TELEFON_1];[EMAIL_1]\n\n[PERSON_5];[PERSON_6];[TELEFON_2];",
+  );
+  assert.equal(ki("Name;Tel. 1\nKathrein;0512 562837"), "Name;Tel. 1\n[PERSON_1];[TELEFON_1]");
+  // Gegenprobe: Nach der Leerzeile folgt Text, keine Tabellenzeile.
+  assert.equal(ki("Name;Telefon\nKathrein;0512 562837\n\nDanke für alles!"), "Name;Telefon\n[PERSON_1];[TELEFON_1]\n\nDanke für alles!");
+});
+
+// Review Claude 3 #6
+test("Krebs und andere Leiden als Wortbildung, Sakramente und religiöse Feste", () => {
+  assert.equal(ki("Mein Mann hat Lungenkrebs und braucht viel Ruhe."), "Mein Mann hat [GESUNDHEIT_1] und braucht viel Ruhe.");
+  assert.equal(ki("Meine Mutter hat Krebs."), "Meine Mutter hat [GESUNDHEIT_1].");
+  assert.equal(ki("Wegen meines Bandscheibenvorfalls und Rheuma brauche ich ein festes Bett."), "Wegen meines [GESUNDHEIT_1] und [GESUNDHEIT_2] brauche ich ein festes Bett.");
+  assert.equal(ki("Feier zur Erstkommunion unserer Tochter"), "Feier zur [RELIGION_1] unserer Tochter");
+  assert.equal(ki("Wir feiern die Bar Mitzwa unseres Sohnes."), "Wir feiern die [RELIGION_1] unseres Sohnes.");
+  assert.equal(ki("Über das Zuckerfest bitte einen Gebetsplatz."), "Über das [RELIGION_1] bitte [RELIGION_2].");
+  // Gegenproben
+  for (const text of ["Auf der Karte: Flusskrebs mit Dill", "Wir haben Sie gebeten, den Gebetsteppich… nein: die Rechnung zu senden."]) {
+    assert.equal(ki(text).includes("GESUNDHEIT"), false, text);
+  }
+});
+
+// Review Claude 3 #10 (Betriebe ohne Rechtsform), #4 (Nachziehen von Nachnamen, die auch Hauptwörter sind)
+test("Betriebe mit Branchenwort und Name; Nachnamen wie Sommer werden nachgezogen, das Hauptwort nicht", () => {
+  assert.equal(ki("Die Rechnung der Tischlerei Moosbrugger kam."), "Die Rechnung der [FIRMA_1] kam.");
+  assert.equal(ki("Wartung durch Elektro Valdessa."), "Wartung durch [FIRMA_1].");
+  assert.equal(ki("Die Praxis Montag bis Freitag geöffnet."), "Die Praxis Montag bis Freitag geöffnet.");
+  assert.equal(
+    ki("Sehr geehrte Frau Sommer,\nIm Sommer wandern wir. Letzten Sommer auch. Sommer bringt den Schlüssel."),
+    "Sehr geehrte Frau [PERSON_1],\nIm Sommer wandern wir. Letzten Sommer auch. [PERSON_1] bringt den Schlüssel.",
+  );
+});
