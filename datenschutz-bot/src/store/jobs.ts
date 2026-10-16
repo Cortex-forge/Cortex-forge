@@ -548,7 +548,7 @@ export class JobStore {
     const prepared = prepareDocument(input.text);
     if (prepared.unlesbar) {
       throw new JobError(
-        "Der Text enthält unlesbare Zeichen (�), vermutlich ein falscher Zeichensatz. Namen wären so nicht erkennbar. Bitte die Datei als UTF-8 speichern oder den Text direkt einfügen.",
+        "Der Text enthält unlesbare Zeichen (z. B. � oder Steuerzeichen), vermutlich ein falscher Zeichensatz. Namen wären so nicht erkennbar. Bitte die Datei als UTF-8 speichern oder den Text direkt einfügen.",
       );
     }
     const text = prepared.text;

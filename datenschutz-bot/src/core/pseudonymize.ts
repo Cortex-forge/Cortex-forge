@@ -86,7 +86,12 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
   for (const p of findings) {
     if (p.type !== "PERSON") continue;
     const full = (p.canonical ?? p.value).trim().replace(/\s+/g, " ");
-    for (const part of nameParts(full)) {
+    const parts = nameParts(full);
+    // Mehr als acht Namensteile sind keine einzelne Person, sondern eine Aufzählung ("Anna Lena Paul Maria …"):
+    // nicht nachziehen. Das hält die Laufzeit linear (Review Claude 4 #12).
+    if (parts.length > 8) continue;
+    const b = full.toLowerCase();
+    for (const part of parts) {
       const key = part.toLowerCase();
       if (excluded.has(key)) continue;
       const lowercase = part === key;
@@ -97,7 +102,6 @@ function propagatePersons(text: string, findings: Finding[], options: DetectOpti
       }
       if (lowercase) prev.lowercase = true;
       const a = prev.full.toLowerCase();
-      const b = full.toLowerCase();
       if (a === b) continue;
       // "Huber" und später "Anna Huber": der längere Name gewinnt. Verglichen wird Wort für Wort, nicht als
       // Zeichenfolge ("Anna Huber" steckt nicht in "Hanna Huber"). Zwei verschiedene Namen: nicht eindeutig, und das

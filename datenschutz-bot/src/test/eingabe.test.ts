@@ -130,3 +130,13 @@ test("Mails mit mbox-Zeile und freien Kopfnamen, Base64-HTML, Ligaturen, volle B
   // Gedankenstriche im Text bleiben, wie sie sind.
   assert.equal(prepareDocument("Mo–Fr 8–12 Uhr").text, "Mo–Fr 8–12 Uhr");
 });
+
+// Review Claude 4 #13
+test("UTF-16 ohne BOM und Steuerzeichen werden abgelehnt, Seitenumbrüche aus PDF werden Zeilen", () => {
+  const store = tempStore();
+  const utf16 = Buffer.from("Gast: Anna Moosbrugger, Tel. 0664 1234567", "utf16le").toString("utf8");
+  assert.throws(() => store.create({ art: "hotel", text: utf16 }), /unlesbare Zeichen/);
+  assert.throws(() => store.create({ art: "hotel", text: "Gast\u0007 Anna" }), /unlesbare Zeichen/);
+  assert.equal(prepareDocument("Seite 1\fSeite 2").text, "Seite 1\nSeite 2");
+  assert.equal(prepareDocument("Spalte\tWert\nZeile").unlesbar, false);
+});

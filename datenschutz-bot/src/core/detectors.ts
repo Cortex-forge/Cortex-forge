@@ -379,8 +379,8 @@ const PHONE_CONTEXT_RE =
 const ITALIAN_MOBILE_RE = /(?<![\p{L}\p{N}.,+/-])3[1-9]\d(?:[ \t.]\d{3}[ \t.]\d{3,4}|[ \t.]\d{6,7})(?![\p{L}\p{N}]|[.,]\d)/gu;
 // Messenger-Links mit Rufnummer: "wa.me/436641234567"
 const MESSENGER_LINK_RE = /(?<![\p{L}\p{N}])(?:wa\.me|api\.whatsapp\.com\/send\?phone=|t\.me\/\+?)\/?(?<v>\+?\d{7,15})(?![\p{N}])/gud;
-// Datum mit Punkten ("01.09.1953") ist keine Telefonnummer.
-const DATE_SHAPE = /^\d{1,2}\.\d{1,2}\.(?:\d{2}|\d{4})$/;
+// Ein Datum ("01.09.1953", "03/05/2027", "03-05-2027", "2027-05-03") ist keine Telefonnummer (Review Claude 4 #7).
+const DATE_SHAPE = /^(?:\d{1,2}([./-])\d{1,2}\1(?:\d{2}|\d{4})|\d{4}([/-])\d{2}\2\d{2})$/;
 
 /**
  * Mehrere Nummern in einem Treffer ("0512 123456 / 0512 654321"): Teile ab jeder Zifferngruppe, die mit 0 beginnt.
@@ -429,7 +429,9 @@ export function detectPhones(text: string): Finding[] {
       if (kind === "national") {
         const mobile = /^0(?:6[5-9]\d|1[5-7]\d|7[5-9])/.test(digits);
         const landline = digits.length >= 9 && LANDLINE_SHAPE.test(value);
-        if (!atLineStart(text, start) && !mobile && !landline) return;
+        // Am Zeilenanfang (Signatur, Kontaktblock) genügen 9 Ziffern; kürzere sind dort oft Artikelnummern
+        // ("0815-2201 Duschgel", Review Claude 4 #7).
+        if (!mobile && !landline && !(atLineStart(text, start) && digits.length >= 9)) return;
       }
     }
     out.push(finding(text, start, start + value.length, "TELEFON", "telefon"));
@@ -537,7 +539,7 @@ const CONTEXT_RULES: ContextRule[] = [
   },
   {
     type: "KREDITKARTE",
-    re: /(?<![\p{L}])(?:CVC2?|CVV2?|CID|CSC|Kartenprüfnummer|Prüfnummer|Sicherheitscode|security code|codice di sicurezza)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{3,4})(?![\p{N}])/giud,
+    re: /(?<![\p{L}])(?:CVC2?|CVV2?|CID|CSC|Kartenprüfnummer|Sicherheitscode|security code|codice di sicurezza)[ \t]{0,20}[:#]?[ \t]{0,20}(?<v>\d{3,4})(?![\p{N}])/giud,
   },
   {
     // Ablaufdatum einer Karte ("gültig bis 08/28")
@@ -660,7 +662,7 @@ const STREET_ENGLISH_RE = new RegExp(
 );
 // Britische und irische Postleitzahlen ("Leeds LS12 2PL", "Harrow HA1 4LP", "Dublin 6, D06 K2P7"), mit Ort davor.
 const UK_POSTCODE_RE = new RegExp(
-  String.raw`(?<![\p{L}\p{N}])(?:${UP}${LO}{2,30}(?:[ \t]${UP}${LO}{2,30})?(?:[ \t]\d{1,2}[Ww]?)?,?[ \t]{1,3})?(?:[A-Z]{1,2}\d[A-Z\d]?[ \t]\d[A-Z]{2}|(?:[AC-FHKNPRTV-Y]\d{2}|D6W)[ \t][0-9AC-FHKNPRTV-Y]{4})(?![\p{L}\p{N}])`,
+  String.raw`(?<![\p{L}\p{N}])(?:${UP}${LO}{2,30}(?:[ \t]${UP}${LO}{2,30})?(?:[ \t]\d{1,2}[Ww]?)?,?[ \t]{1,3})?(?:[A-Z]{1,2}\d[A-Z\d]?[ \t]\d[ABD-HJLNP-UW-Z]{2}|(?:[AC-FHKNPRTV-Y]\d{2}|D6W)[ \t](?=[0-9]{0,3}[AC-FHKNPRTV-Y])[0-9AC-FHKNPRTV-Y]{4})(?![\p{L}\p{N}])`,
   "gu",
 );
 // Polnische Adressen: "ul. Długa 17 m. 4"

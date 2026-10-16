@@ -44,9 +44,15 @@ export interface Prepared {
   quelle?: "mail" | "html";
   /** Weggelassene Anhänge oder unlesbare Teile einer Mail. */
   weggelassen: number;
-  /** Ersatzzeichen (U+FFFD) im Text: falscher Zeichensatz, Namen wären verstümmelt. */
+  /** Ersatzzeichen (U+FFFD) oder Steuerzeichen im Text: falscher Zeichensatz, Namen wären verstümmelt. */
   unlesbar: boolean;
 }
+
+/**
+ * Ersatzzeichen und Steuerzeichen außer Tab und Zeilenumbruch: Der Zeichensatz stimmt nicht (z. B. UTF-16 ohne BOM, als
+ * UTF-8 gelesen: ein NUL zwischen allen Buchstaben, Review Claude 4 #13). Die Erkennung fände darin nichts.
+ */
+const UNREADABLE = /[\uFFFD\u0000-\u0008\u000E-\u001F\u007F-\u009F]/u;
 
 /** Ein abgelegtes Dokument lesbar und einheitlich machen: Mail entschlüsseln, HTML in Text, Zeichen vereinheitlichen. */
 export function prepareDocument(raw: string): Prepared {
@@ -62,6 +68,7 @@ export function prepareDocument(raw: string): Prepared {
     text = htmlToText(text);
     quelle = "html";
   }
-  text = normalizeChars(decodeEntities(text));
-  return { text, ...(quelle ? { quelle } : {}), weggelassen, unlesbar: text.includes("�") };
+  // Seitenumbrüche aus Kopien von PDF ("\f") und senkrechte Tabs werden Zeilenumbrüche.
+  text = normalizeChars(decodeEntities(text)).replace(/[\f\v]/g, "\n");
+  return { text, ...(quelle ? { quelle } : {}), weggelassen, unlesbar: UNREADABLE.test(text) };
 }

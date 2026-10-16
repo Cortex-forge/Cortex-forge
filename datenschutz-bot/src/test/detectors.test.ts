@@ -298,6 +298,8 @@ test("Lange Eingaben ohne Treffer bleiben schnell (lineare Laufzeit)", () => {
     tabelle: ["Vorname;Nachname;Telefon"].concat(Array.from({ length: 5000 }, (_, i) => `Anna;Huber${i};0664 ${1000000 + i}`)).join("\n"),
     tabelleMitAnfuehrungszeichen: "Name,Kommentar\n" + '"Huber, Anna","'.repeat(20_000),
     vieleNamen: Array.from({ length: 5000 }, (_, i) => `Frau Anna Huber${i} und HUBER${i}.`).join(" "),
+    // Review Claude 4 #12: eine Kette von Vornamen ohne Satzzeichen
+    vornamenKette: "Anna Lena Paul Maria ".repeat(10_000),
   };
   for (const [name, text] of Object.entries(inputs)) {
     const t0 = performance.now();
@@ -666,4 +668,22 @@ test("Zeilenumbruch mitten in einer Angabe (Kopien aus PDF, schmale Spalten)", (
   // Gegenproben: Eine Zeile mit Bezeichnung ist ein neues Feld; Firma und Adresse bleiben zeilenweise.
   assert.equal(ki("An: Florian Prantl\nBetreff: Anfrage"), "An: [PERSON_1]\nBetreff: Anfrage");
   assert.equal(ki("Danke, Hotel Alpenrose\nFormaggi und Wein kommen morgen."), ki("Danke, Hotel Alpenrose\n\nFormaggi und Wein kommen morgen.").replace("\n\n", "\n"));
+});
+
+// Review Claude 4 #7
+test("Datum, Artikelnummer und Raumangaben sind keine Telefonnummer, Adresse oder Kartennummer", () => {
+  for (const text of [
+    "Reiseplan:\n03/05/2027 Anreise Innsbruck\n07/05/2027 Abreise",
+    "Datum;Zimmer;Personen;Preis\n03/05/2027;Doppelzimmer;2;180,00",
+    "03-05-2027 Anreise",
+    "0815-2201  Duschgel 30 ml",
+    "Zimmer A12 2027 ist schon belegt. Raum B2 1OG.",
+    "TÜV-Prüfnummer 4711",
+  ]) {
+    assert.equal(ki(text), text);
+  }
+  // Gegenproben: echte Nummern, Postleitzahlen und Prüfnummern der Karte
+  assert.equal(ki("0512 123456\nAnna Huber"), "[TELEFON_1]\n[PERSON_1]");
+  assert.equal(ki("London SW1A 1AA. Dublin D02 X285."), "[ADRESSE_1]. [ADRESSE_2].");
+  assert.equal(ki("CVC 123, Kartenprüfnummer 456"), "CVC [KREDITKARTE_1], Kartenprüfnummer [KREDITKARTE_2]");
 });
