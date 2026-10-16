@@ -160,7 +160,7 @@ function isNounSurname(word: string): boolean {
 
 // Abkürzungen in Großbuchstaben, die kein Name sind.
 const ACRONYMS = new Set(
-  `GMBH AG KG OG UG SE GESMBH OHG EU USA UK UID IBAN BIC SWIFT PLZ TEL FAX MWST UST CEO CFO CTO GF HR IT PDF CSV MBH
+  `GMBH AG KG OG UG SE GESMBH OHG EU USA UK UID IBAN BIC SWIFT PLZ TEL FAX MWST UST CEO CFO CTO GF HR PDF CSV MBH
    NR NO REF ZH ZHD WC TV OK ATU AT DE CH IT NL FR ES HRB FN AZ KW KM EUR USD CHF`
     .split(/\s+/)
     .filter(Boolean),
@@ -667,7 +667,7 @@ export function detectAddresses(text: string): Finding[] {
 // ---------------------------------------------------------------------------
 // Firmen
 
-const LEGAL_FORM = String.raw`(?:GmbH(?:[ \t]*&[ \t]*Co\.?[ \t]*KG)?|GMBH|GesmbH|GesmbH|Ges\.m\.b\.H\.|gGmbH|mbH|AG|KG|OG|OHG|e\.[ \t]?U\.|e\.[ \t]?K\.|e\.[ \t]?V\.|GesbR|GbR|UG(?:[ \t]*\(haftungsbeschränkt\))?|SE|Ltd\.?|LTD\.?|Limited|LIMITED|Inc\.?|INC\.?|LLC|LLP|PLC|Plc|Corp\.?|S\.r\.l\.|S\.R\.L\.|s\.r\.l\.|Srl|S\.p\.A\.|s\.p\.a\.|S\.n\.c\.|s\.n\.c\.|S\.a\.s\.|s\.a\.s\.|B\.V\.|BV|N\.V\.|S\.A\.|S\.L\.|SAS|Sarl|SARL|s\.r\.o\.|Kft\.|d\.o\.o\.|Sp\.[ \t]?z[ \t]?o\.o\.|A/S|Oy)`;
+const LEGAL_FORM = String.raw`(?:GmbH(?:[ \t]*&[ \t]*Co\.?[ \t]*KG)?|GMBH|GesmbH|Ges\.m\.b\.H\.|gGmbH|mbH|AG|KG|OG|OHG|e\.[ \t]?U\.|e\.[ \t]?K\.|e\.[ \t]?V\.|GesbR|GbR|UG(?:[ \t]*\(haftungsbeschränkt\))?|SE|Ltd\.?|LTD\.?|Limited|LIMITED|Inc\.?|INC\.?|LLC|LLP|PLC|Plc|Corp\.?|S\.r\.l\.|S\.R\.L\.|s\.r\.l\.|Srl|S\.p\.A\.|s\.p\.a\.|S\.n\.c\.|s\.n\.c\.|S\.a\.s\.|s\.a\.s\.|B\.V\.|BV|N\.V\.|S\.A\.|S\.L\.|SAS|Sarl|SARL|s\.r\.o\.|Kft\.|d\.o\.o\.|Sp\.[ \t]?z[ \t]?o\.o\.|A/S|Oy)`;
 const LEGAL_FORM_ONLY = new RegExp(`^${LEGAL_FORM}$`, "u");
 const LEGAL_FORM_ANY = new RegExp(LEGAL_FORM, "u");
 // Kurze Rechtsformen, die auch etwas anderes heißen ("im 2. OG", "AG" als Abkürzung).

@@ -37,18 +37,18 @@ Wendelin Wilfried Wolfram Xaver Yannick Toni Sepp Seppi Hansi Andi Flo Basti Mic
 Giuseppe Giovanni Francesco Antonio Alessandro Lorenzo Leonardo Riccardo Davide Federico Stefano Paolo Roberto
 Giulia Francesca Chiara Federica Alessia Giorgia Aurora Ginevra Beatrice Alice Camilla Serena Roberta Alberto Angelo
 Antonella Arianna Bruno Carlo Caterina Cesare Claudio Cristina Dario Domenico Emanuele Enrico Enzo Fabio Fabrizio
-Filippo Gabriele Gaia Giacomo Gianluca Gianni Giorgio Giuliana Giulio Giuseppina Ilaria Luigi Marcello Marta Massimo
+Filippo Gaia Giacomo Gianluca Gianni Giorgio Giuliana Giulio Giuseppina Ilaria Luigi Marcello Marta Massimo
 Matilde Maurizio Michela Michele Nicola Nicolò Noemi Paola Pietro Raffaele Renato Rocco Salvatore Sergio Simona
 Tommaso Valeria Valerio Vincenzo Vittoria Vittorio
-Alejandro Carlos Carmen Diego Eduardo Fernando Francisco Gabriela Javier Jorge José Josefa Juan Juana Lucía Luis
+Alejandro Carlos Carmen Diego Eduardo Fernando Francisco Gabriela Javier Jorge José Juan Juana Lucía Luis
 María Miguel Pablo Pedro Ramón Raúl Santiago Sofía João Gonçalo Inês Joana Rui Tiago
 Amélie Antoine Aurélie Benoît Camille Céline Chloé Claire Clément Delphine Élodie Émilie Étienne Fabrice François
 Françoise Frédéric Guillaume Hélène Isabelle Jacques Jean Jérôme Julien Laurent Léa Louis Manon Marc Margaux Mathieu
 Nicolas Olivier Pauline Philippe Pierre Sébastien Stéphane Sylvie Thierry Valérie Yves
 James John William Charles Christopher Matthew Anthony Andrew Joshua Brian George Edward Ryan Jacob Nicholas Jonathan
-Stephen Steven Harry Jack Liam Ethan Mary Patricia Linda Elizabeth Susan Karen Nancy Margaret Ashley Michelle Amanda
+Stephen Steven Harry Jack Liam Ethan Mary Linda Elizabeth Susan Karen Nancy Margaret Ashley Michelle Amanda
 Melissa Amy Amelia Chloe Lucy Kate Katherine Catherine Rachel Helen Aaron Abigail Adam Aidan Alan Alison Andy Anne
-Annie Barry Bethany Bradley Brendan Bridget Caitlin Callum Carl Caroline Carol Cathal Charlie Ciara Ciaran Colin Conor
+Annie Barry Bethany Bradley Brendan Bridget Caitlin Callum Caroline Carol Cathal Charlie Ciara Ciaran Colin Conor
 Craig Darren Declan Deirdre Derek Donal Donna Dylan Eamon Eileen Eleanor Ellie Eoin Erin Evan Fiona Gareth Gavin Gemma
 Gerard Gillian Graham Grace Heather Henry Holly Ian Jake Jamie Jane Janet Jason Jeffrey Jeremy Joan Joanne Joe Jordan
 Julie Justin Kathleen Katie Keith Kelly Kieran Lauren Leah Leo Lewis Louise Luke Mairead Megan Molly Naomi Neil
@@ -148,13 +148,13 @@ Rezeption Service Qualität Bewertung Beschwerde Lob Dank Ihnen Euch Bitte Leide
 Vielleicht Heute Gestern Vormittag Nachmittag Ostern Weihnachten Silvester Pfingsten Fasching Advent Kollege Kollegin
 Assistenz Geschäftsführung Geschäftsführer Geschäftsführerin Leitung Verwaltung Buchhaltung Abteilung Vertrieb
 Marketing Einkauf Technik Hausmeister Küchenchef Direktion Rezeptionist Rezeptionistin Obmann Vorstand Sekretariat
-The And Or With From To For At On Of By Dear Hello Thanks Thank Regards Best Kind Room Rooms Booking Reservation
+The And Or With From To For At On Of By Dear Hello Thanks Thank Regards Best Room Rooms Booking Reservation
 Arrival Departure Breakfast Dinner Lunch Night Nights Day Days Week Weekend Month Year Please Sorry Yes No Today
 Tomorrow Yesterday Morning Evening Afternoon Street Road Floor Car Parking Train Airport Flight Family Friends
 Children Kids Wife Husband Son Daughter Mother Father Group Price Prices Invoice Payment Deposit Card Credit Account
 Number Phone Address Date Time Grazie Saluti Buongiorno Buonasera Camera Camere Notte Notti Giorno Giorni Settimana
 Prenotazione Arrivo Partenza Colazione Cena Pranzo Famiglia Moglie Marito Figlio Figlia
-Cheers Servus Ciao Tschüss Saluti Grazie Groetjes Groeten Bye Love Xoxo LG VG MfG GLG Herzlich Herzliche Beste
+Cheers Servus Ciao Tschüss Groetjes Groeten Bye Love Xoxo LG VG MfG GLG Herzlich Herzliche Beste
 `;
 
 export const NOT_SURNAME: ReadonlySet<string> = new Set(words(NOT_SURNAME_RAW));
@@ -190,7 +190,7 @@ export const COMMON_LOWERCASE_WORDS: ReadonlySet<string> = new Set(
    breit hoch tief nett rein reich arm kalt süß sauer bitter edel kraft krause kraus koch busch fuchs wolf stock
    will may mark bill rose grant hope young long short white black brown green gray grey little small strong rich
    noble bright sharp swift wise wells park king bell cook baker walker turner hunter fisher carter cooper ward hall
-   gates rivers banks moore lane street field west east north south page case bush fox hart day march price stone
+   gates rivers banks moore lane street field west east north south page case bush fox day march price stone
    love joy faith grace dawn summer winter spring storm snow frost rain glass steel iron gold silver cash wood hill
    bianco bianca bianchi rosso rossi nero neri bello bella santo santi conte forte grande piccolo
    groot jong smit visser bakker de`),
@@ -211,9 +211,9 @@ export const LOWERCASE_STOPWORDS: ReadonlySet<string> = new Set(
    ich du er sie es wir ihr mich dich sich uns euch mir dir ihm ihn ihnen mein meine dein sein unser euer ist sind war
    waren hat haben hatte wird werden kann können muss soll will möchte bitte danke ja nein nicht auch noch schon nur
    sehr so wie was wer wo wann warum dass ob wenn weil als da dann hier dort heute morgen gestern jetzt gerne gern mal
-   vielleicht also eben halt doch ganz viel mehr wieder immer the and or with from to for at on of by is are was were be
-   have has had will would can could i you he she it we they me him her us them my your his our their this that a an
-   not no yes please thanks il la lo le gli un una uno e o di da del della che per con su al alla è sono de het een en
+   vielleicht also eben halt doch ganz viel mehr wieder immer the and or with from to for at on of by is are were be
+   have has had would can could i you he she it we they me him her us them my your his our their this that a
+   not no yes please thanks il la lo le gli un una uno e o di del della che per con su al alla è sono de het een en
    van met voor op aan bij uit naar zijn ik je wij zij niet ook maar lg vg mfg hallo hi hey servus ciao tschüss grüße
    gruß liebe lieber viele beste herzliche vielen dank cheers regards`),
 );
@@ -225,7 +225,7 @@ export const ROLE_WORDS: ReadonlySet<string> = new Set(
    Personal Personalabteilung Sekretariat Zentrale Helpdesk Hotline Abteilung Department Desk Customer Guest Relations
    Front Accounting Billing Admin Administration System Mailer Notification Benachrichtigung Portal Accounts Payable
    Receivable Purchasing Procurement Finance Reception Management Housekeeping Concierge Aushilfe Aushilfen Praktikant
-   Praktikantin Lehrling Azubi Springer Vertretung Hotelleitung Küche Service Haustechnik`),
+   Praktikantin Lehrling Azubi Springer Vertretung Hotelleitung Küche Haustechnik`),
 );
 
 // Wörter am Anfang von Betriebsnamen ("Gasthof Sonnhof", "Pension Alpenblick").
@@ -240,7 +240,7 @@ export const BUSINESS_WORDS: ReadonlySet<string> = new Set(
 export const MONTHS: ReadonlySet<string> = new Set(
   words(`Januar Jänner Februar Feber März April Mai Juni Juli August September Oktober November Dezember January
    February March May June July October December Gennaio Febbraio Marzo Aprile Maggio Giugno Luglio Agosto Settembre
-   Ottobre Novembre Dicembre Januari Februari Maart Juni Juli Augustus Oktober`),
+   Ottobre Novembre Dicembre Januari Februari Maart Augustus`),
 );
 
 // Häufige chinesische Familiennamen. Weggelassen, weil auch gewöhnliche Wörter: He, Ma, Du, Ye, Su, Long, Song, Fan,
@@ -261,6 +261,6 @@ export const KIN_WORDS: ReadonlySet<string> = new Set(
    child baby kid
    figlio figlia moglie marito compagno compagna fidanzato fidanzata madre padre mamma papà nonna nonno zia zio sorella
    fratello cugino cugina nipote collega bambino bambina
-   zoon dochter vrouw man echtgenote echtgenoot partner vriend vriendin moeder vader mama papa oma opa tante oom zus
-   broer neef nicht kleinzoon kleindochter collega kind`),
+   zoon dochter vrouw man echtgenote echtgenoot vriend vriendin moeder vader mama papa oma opa tante oom zus
+   broer neef nicht kleinzoon kleindochter kind`),
 );

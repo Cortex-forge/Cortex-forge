@@ -224,6 +224,19 @@ test("Oberfläche im Browser: Zugang bleibt bei der Seite, überholte Antworten 
     await evaluate(`location.hash = ${JSON.stringify(b.id)}`);
     await waitFor(`document.querySelector(".doc-head .sub")?.textContent.includes(${JSON.stringify(b.id)})`, "B wieder angezeigt");
 
+    // 1c) Claude 3 #13: Wird das Dokument woanders geändert, bleibt die geprüfte Ansicht und Freigeben ist gesperrt.
+    await evaluate(`location.hash = ${JSON.stringify(a.id)}`);
+    await waitFor(`document.querySelector(".doc-head .sub")?.textContent.includes(${JSON.stringify(a.id)})`, "A angezeigt");
+    const releaseButton = `([...document.querySelectorAll("button")].find((x) => x.textContent === "Für KI freigeben"))`;
+    store.mark(a.id, { value: "Erstes", type: "SONSTIGES" });
+    await waitFor(`document.body.textContent.includes("inzwischen geändert")`, "Hinweis auf geänderte Fassung");
+    assert.equal(await evaluate(`${releaseButton}.disabled`), true, "alte Fassung nicht freigebbar");
+    assert.ok(!String(await evaluate(`document.body.textContent`)).includes("[SONSTIGES_1]"), "kein stiller Austausch");
+    await evaluate(`[...document.querySelectorAll("button")].find((x) => x.textContent === "Neue Fassung anzeigen").click()`);
+    await waitFor(`document.body.textContent.includes("[SONSTIGES_1]") && !${releaseButton}.disabled`, "neue Fassung angezeigt");
+    await evaluate(`location.hash = ${JSON.stringify(b.id)}`);
+    await waitFor(`document.querySelector(".doc-head .sub")?.textContent.includes(${JSON.stringify(b.id)})`, "B wieder angezeigt");
+
     // 2) Auswahl mitten im Wort schwärzen: Die Oberfläche schickt die genaue Stelle mit.
     await evaluate(`(() => {
       const node = document.getElementById("orig").firstChild;

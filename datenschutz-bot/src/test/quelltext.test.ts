@@ -22,3 +22,14 @@ test("Quelltext enthält keine unsichtbaren Zeichen", () => {
   }
   assert.deepEqual(funde, []);
 });
+
+// Review Claude 3 #22: Wortlisten ohne doppelte Einträge (doppelte Einträge verdecken, welche Liste was regelt)
+test("Wortlisten der Erkennung enthalten keine doppelten Einträge", () => {
+  const source = fs.readFileSync(path.join(PROJECT_ROOT, "src", "core", "names.ts"), "utf8");
+  const lists = [...source.matchAll(/(?:words\(|_RAW = )`([^`]*)`/g)].map((m) => (m[1] ?? "").split(/\s+/).filter(Boolean));
+  assert.ok(lists.length >= 10, "Wortlisten gefunden");
+  for (const list of lists) {
+    const doppelt = list.filter((w, i) => list.indexOf(w) !== i);
+    assert.deepEqual(doppelt, [], `doppelt: ${doppelt.join(" ")}`);
+  }
+});

@@ -35,7 +35,10 @@ steps.push({ name: "Build", ...run(npm, ["run", "build", "--silent"]) });
 steps.push({ name: "Typprüfung", ...run(npm, ["run", "typecheck", "--silent"]) });
 const tests = run(process.execPath, ["--test", "dist/test/*.test.js"]);
 const testLines = tests.out.split("\n").filter((l) => /^(ok|not ok) \d+|^# (tests|pass|fail|cancelled|skipped)/.test(l));
-steps.push({ name: "Tests", ...tests, out: tests.ok ? testLines.join("\n") : tests.out });
+// Ein übersprungener Test (z. B. Browser-Test ohne Chromium) ist kein Nachweis: dann nicht bestanden.
+const skipped = Number(/^# skipped (\d+)/m.exec(tests.out)?.[1] ?? 0);
+if (skipped > 0) testLines.push(`Nicht bestanden: ${skipped} Test(s) übersprungen.`);
+steps.push({ name: "Tests", ...tests, ok: tests.ok && skipped === 0, out: tests.ok ? testLines.join("\n") : tests.out });
 steps.push({ name: "Datenschutz-Probe (Demo, Lösungsblatt der Beispiele)", ...run(process.execPath, ["dist/scripts/demo.js", "--leise"], { DSB_DATA_DIR: tmpData }) });
 fs.rmSync(tmpData, { recursive: true, force: true });
 steps.push({ name: "Datenschutz-Probe (Lösungsblatt: Beispiele und Testset über den MCP-Server)", ...run(process.execPath, ["dist/scripts/probe.js"]) });

@@ -353,6 +353,8 @@ function accountsAi(job) {
 }
 
 function viewNeu(detail) {
+  const id = detail.job.id;
+  const stale = state.stale === id;
   const orig = h("pre", { class: "doc", id: "orig" }, highlightOriginal(detail.original, detail.markierungen));
   const typeSelect = h("select", { "aria-label": "Art der Angabe" },
     state.info.typen.map((t) => h("option", { value: t.id, text: t.label, selected: t.id === "PERSON" })),
@@ -361,10 +363,22 @@ function viewNeu(detail) {
   state.selection = null;
 
   return [
-    h("div", { class: "callout info" },
-      h("strong", { text: "Prüfe, was die KI sehen wird. " }),
-      "Fehlt etwas? Markiere es links im Original und klicke „Schwärzen“. Zu viel ersetzt? „Nicht sensibel“ in der Tabelle.",
-    ),
+    stale
+      ? h("div", { class: "callout warn" },
+          h("strong", { text: "Das Dokument wurde inzwischen geändert. " }),
+          "Angezeigt ist noch die alte Fassung; sie kann nicht für die KI freigegeben werden. ",
+          h("button", { class: "small", type: "button", text: "Neue Fassung anzeigen", onclick: () =>
+            act(async () => {
+              state.stale = null;
+              state.replaced = id;
+              await loadDetail(id);
+            }),
+          }),
+        )
+      : h("div", { class: "callout info" },
+          h("strong", { text: "Prüfe, was die KI sehen wird. " }),
+          "Fehlt etwas? Markiere es links im Original und klicke „Schwärzen“. Zu viel ersetzt? „Nicht sensibel“ in der Tabelle.",
+        ),
     h("div", { class: "panes" },
       h("div", { class: "pane" },
         h("h3", {}, "Original", h("small", { text: "bleibt bei euch" })),
@@ -395,7 +409,7 @@ function viewNeu(detail) {
     manualList(detail),
     findingsTable(detail),
     h("div", { class: "bar" },
-      h("button", { class: "primary", type: "button", text: "Für KI freigeben", onclick: () =>
+      h("button", { class: "primary", type: "button", text: "Für KI freigeben", disabled: stale, title: stale ? "Erst die neue Fassung anzeigen und prüfen" : undefined, onclick: () =>
         act(async () => {
           // Freigegeben wird genau die angezeigte Fassung; hat sie sich inzwischen geändert, lehnt der Bot ab.
           await api(`/api/dokumente/${detail.job.id}/ki-freigeben`, { method: "POST", body: { rev: detail.job.rev } });
@@ -724,13 +738,24 @@ async function poll() {
     if (cur && location.hash === `#${cur.job.id}`) {
       const fresh = state.list.find((d) => d.id === cur.job.id);
       const selecting = document.getSelection() && document.getSelection().toString().trim();
-      if (fresh && fresh.aktualisiert !== cur.job.aktualisiert && !selecting) {
+      // Während einer eigenen Aktion ändert sich das Dokument absichtlich: nicht als fremde Änderung werten.
+      if (fresh && fresh.aktualisiert !== cur.job.aktualisiert && !selecting && !state.busy) {
         // Hat die KI ein Ergebnis ersetzt, während es hier angezeigt wird: nicht still austauschen, sondern
         // Freigeben sperren und die neue Fassung erst auf Wunsch zeigen.
         if (cur.job.status === "zur_pruefung" && fresh.status === "zur_pruefung" && fresh.ergebnisRev !== cur.job.ergebnisRev) {
           if (state.stale !== cur.job.id) {
             state.stale = cur.job.id;
             toast("Die KI hat das Ergebnis ersetzt. Bitte die neue Fassung anzeigen und prüfen.", true);
+            renderDetail(cur);
+          }
+          return;
+        }
+        // Ebenso bei der Prüfung vor der Freigabe für die KI (z. B. in einem zweiten Fenster geändert): Die geprüfte
+        // Ansicht bleibt stehen, freigegeben werden kann erst die neu angezeigte Fassung (Review Claude 3 #13).
+        if (cur.job.status === "neu" && fresh.status === "neu") {
+          if (state.stale !== cur.job.id) {
+            state.stale = cur.job.id;
+            toast("Das Dokument wurde inzwischen geändert. Bitte die neue Fassung anzeigen und prüfen.", true);
             renderDetail(cur);
           }
           return;
