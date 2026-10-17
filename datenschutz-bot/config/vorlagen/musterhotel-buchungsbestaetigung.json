@@ -1,0 +1,59 @@
+{
+  "_hinweis": "Vorlage für das Musterdokument examples/musterhotel-buchungsbestaetigung.txt (erfundenes Hotel, für Vorführungen). Aufbau einer Vorlage: config/vorlagen/README.md.",
+  "id": "musterhotel-buchungsbestaetigung",
+  "name": "Buchungsbestätigung Musterhotel Alpenblick",
+  "erkennen": [
+    "Musterhotel Alpenblick",
+    "Buchungsbestätigung"
+  ],
+  "felder": [
+    {
+      "bezeichnung": "Gast",
+      "typ": "PERSON"
+    },
+    {
+      "bezeichnung": "Anschrift",
+      "typ": "ADRESSE",
+      "zeilen": 2
+    },
+    {
+      "bezeichnung": "Telefon",
+      "typ": "TELEFON"
+    },
+    {
+      "bezeichnung": "E-Mail",
+      "typ": "EMAIL"
+    },
+    {
+      "bezeichnung": "Geburtsdatum",
+      "typ": "GEBURTSDATUM",
+      "pflicht": false
+    },
+    {
+      "bezeichnung": "Begleitperson",
+      "typ": "PERSON",
+      "pflicht": false
+    },
+    {
+      "bezeichnung": "Kfz-Kennzeichen",
+      "typ": "KENNZEICHEN",
+      "pflicht": false
+    },
+    {
+      "bezeichnung": "Firma (Rechnung)",
+      "typ": "FIRMA",
+      "pflicht": false
+    },
+    {
+      "bezeichnung": "Besondere Wünsche",
+      "typ": "FREITEXT",
+      "zeilen": 5,
+      "pflicht": false
+    }
+  ],
+  "unveraendert": [
+    "Musterhotel Alpenblick",
+    "Dorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example",
+    "Musterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999"
+  ]
+}

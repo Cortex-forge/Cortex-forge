@@ -33,7 +33,7 @@ Der Datenschutz-Bot ersetzt personenbezogene Daten durch Platzhalter, bevor eine
 | `src/mcp/` | MCP-Server für die KI |
 | `src/web/` + `public/` | Oberfläche (nur localhost) |
 | `src/test/` | Tests (`node:test`) |
-| `config/` | Firmendaten, Firmenverzeichnis, Kontenplan (Beispieldaten) |
+| `config/` | Firmendaten, Firmenverzeichnis, Kontenplan, Vorlagen für feste Dokumente in `config/vorlagen/` (Beispieldaten) |
 | `examples/` | erfundene Beispiel-Dokumente |
 | `docs/` | Projektordner: Auftrag, Architektur, Datenschutz, Qualität, Reviews, Nachweise, Berichte, Roadmap (Übersicht: `docs/README.md`) |
 

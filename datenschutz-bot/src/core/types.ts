@@ -89,6 +89,31 @@ export interface DetectOptions {
   manual?: ManualMark[];
   excluded?: string[];
   companies?: CompanyEntry[];
+  /** Vorlagen für feste Dokumente der Firma (ADR-007). */
+  templates?: DocumentTemplate[];
+}
+
+/** Ein Feld einer Vorlage: Bezeichnung am Zeilenanfang, danach der Wert. */
+export interface TemplateField {
+  /** So steht die Bezeichnung im Dokument, z. B. "Gast" oder "Anschrift" (ein Doppelpunkt dahinter ist erlaubt). */
+  bezeichnung: string;
+  /** Art der Angabe; "FREITEXT" läuft durch die normale Erkennung (Wünsche, Bemerkungen). */
+  typ: EntityType | "FREITEXT";
+  /** Wie viele Zeilen der Wert hat (Adresse: Straße und Ort). Standard 1. */
+  zeilen?: number;
+  /** Fehlt das Feld oder ist es leer, meldet die Oberfläche eine Abweichung. Standard: ja. */
+  pflicht?: boolean;
+}
+
+/** Vorlage für ein festes Dokument einer Firma (z. B. ihre Buchungsbestätigung). Enthält keine Personendaten. */
+export interface DocumentTemplate {
+  id: string;
+  name: string;
+  /** Texte, die alle im Dokument stehen müssen, damit die Vorlage passt. */
+  erkennen: string[];
+  felder: TemplateField[];
+  /** Feste Texte der Firma (Briefkopf, Fußzeile): Darin wird nichts ersetzt. */
+  unveraendert?: string[];
 }
 
 export interface CompanyEntry {

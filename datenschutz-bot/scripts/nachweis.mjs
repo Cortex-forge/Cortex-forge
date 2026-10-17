@@ -50,6 +50,7 @@ const messung = (name, args) => {
 };
 steps.push(messung("Messung Entwicklungsset", []));
 steps.push(messung("Messung Prüfset 1 (blind erstellt, seit 2026-10-16 zum Entwickeln freigegeben)", ["--datei", "testset/pruefset.json"]));
+steps.push(messung("Messung Vorlagen-Testset (feste Dokumente, ADR-007)", ["--datei", "testset/vorlagen.json"]));
 if (fs.existsSync(path.join(root, "testset", "pruefset-2.json"))) {
   steps.push(messung("Messung Prüfset 2 (blind erstellt, nicht zum Entwickeln benutzt)", ["--datei", "testset/pruefset-2.json", "--nur-zahlen"]));
 } else {

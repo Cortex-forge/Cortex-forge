@@ -40,6 +40,8 @@ const EXAMPLES = [
   { id: "hotel", titel: "Hotel-Anfrage", art: "hotel", betreff: "", datei: "hotel-anfrage.txt" },
   { id: "rechnung", titel: "Eingangsrechnung", art: "buchhaltung", betreff: "Eingangsrechnung Elektriker", datei: "eingangsrechnung.txt" },
   { id: "auftrag", titel: "Rechnungsauftrag", art: "hotel", betreff: "Rechnung Aufenthalt", datei: "rechnungsauftrag.txt" },
+  // Festes Dokument mit Vorlage (ADR-007), für Vorführungen
+  { id: "vorlage", titel: "Buchungsbestätigung (Vorlage)", art: "hotel", betreff: "", datei: "musterhotel-buchungsbestaetigung.txt" },
 ];
 
 const STATIC: Record<string, string> = {

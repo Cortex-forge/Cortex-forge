@@ -15,6 +15,7 @@ import {
 } from "./names.js";
 import { htmlToText, looksLikeHtml } from "./mail.js";
 import { PARTICLE, SALUTATION, TITLES } from "./salutations.js";
+import { applyMatchingTemplate } from "./templates.js";
 import type { CompanyEntry, DetectOptions, EntityType, Finding, ManualMark } from "./types.js";
 
 // Alle Muster laufen mit dem Flag "u" (Unicode). Wichtig: \p{Lu} nie zusammen mit dem Flag "i" verwenden,
@@ -35,6 +36,8 @@ export const SEGMENT_BREAK = "\uE000";
 /** Priorität bei Überschneidungen: höher gewinnt. */
 function priorityOf(f: Finding): number {
   if (f.source === "manuell") return 100;
+  // Feld einer Vorlage (ADR-007): Dort steht sicher diese Angabe.
+  if (f.source === "vorlage") return 95;
   if (f.source.startsWith("kontext")) return 75;
   if (f.source === "firma:verzeichnis") return 62;
   switch (f.type) {
@@ -2187,7 +2190,12 @@ function detectAcrossLines(text: string, options: DetectOptions): Finding[] {
 
 export function detectAll(text: string, options: DetectOptions = {}): Finding[] {
   const excluded = new Set((options.excluded ?? []).map((v) => v.trim().toLowerCase()));
+  const vorlage = applyMatchingTemplate(text, options.templates);
+  // In festen Texten der Firma (Briefkopf, Fußzeile) wird nichts ersetzt, außer von Hand markiert.
+  const inFixedText = (f: Finding) =>
+    vorlage !== undefined && f.source !== "manuell" && f.source !== "vorlage" && vorlage.fest.some(([s, e]) => f.start >= s && f.end <= e);
   const raw = [
+    ...(vorlage?.findings ?? []),
     ...detectAcrossLines(text, options),
     ...detectManual(text, options.manual),
     ...detectEmails(text),
@@ -2205,6 +2213,6 @@ export function detectAll(text: string, options: DetectOptions = {}): Finding[] 
     ...detectPersons(text),
     ...detectHealth(text),
     ...detectReligion(text),
-  ].filter((f) => f.value.trim() !== "" && !excluded.has(f.value.trim().toLowerCase()));
+  ].filter((f) => f.value.trim() !== "" && !excluded.has(f.value.trim().toLowerCase()) && !inFixedText(f));
   return splitAtSegments(text, mergeAdjacentAddresses(text, resolveOverlaps(text, raw)));
 }

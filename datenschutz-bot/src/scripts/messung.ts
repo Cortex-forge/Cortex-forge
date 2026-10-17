@@ -14,7 +14,7 @@ import { escapeRegExp } from "../core/detectors.js";
 import { prepareDocument } from "../core/normalize.js";
 import { pseudonymize } from "../core/pseudonymize.js";
 import { ENTITY_LABELS, isEntityType, type EntityType } from "../core/types.js";
-import { loadCompanies } from "../store/settings.js";
+import { loadCompanies, loadTemplates } from "../store/settings.js";
 import { loadTestset } from "./probe-lib.js";
 
 // Ziele aus docs/03-qualitaet/testkonzept.md
@@ -40,6 +40,8 @@ const ablegen = arg("--ablegen");
 const nurZahlen = process.argv.includes("--nur-zahlen");
 const faelle = loadTestset(datei);
 const companies = loadCompanies(CONFIG_DIR);
+// Vorlagen für feste Dokumente (ADR-007) wie in der Ablage; sie greifen nur bei Dokumenten, die zu einer Vorlage passen.
+const templates = loadTemplates(CONFIG_DIR);
 
 interface Zaehler {
   erwartet: number;
@@ -60,7 +62,7 @@ const falscherTyp: string[] = [];
 for (const fall of faelle) {
   // Wie beim Ablegen: Mails entschlüsseln, HTML in Text, Zeichen vereinheitlichen (Review Claude 3 #21).
   const text = prepareDocument(fall.text).text;
-  const { findings } = pseudonymize(text, { companies });
+  const { findings } = pseudonymize(text, { companies, templates });
   const covered = new Uint8Array(text.length);
   for (const f of findings) covered.fill(1, f.start, f.end);
 

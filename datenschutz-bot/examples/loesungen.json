@@ -48,6 +48,26 @@
         { "wert": "Bergweg 12", "typ": "ADRESSE" },
         { "wert": "6020 Innsbruck", "typ": "ADRESSE" }
       ]
+    },
+    {
+      "datei": "musterhotel-buchungsbestaetigung.txt",
+      "art": "hotel",
+      "betreff": "",
+      "sensibel": [
+        { "wert": "Zorwin Xylander", "typ": "PERSON" },
+        { "wert": "Xylander", "typ": "PERSON" },
+        { "wert": "Lärchenweg 7", "typ": "ADRESSE" },
+        { "wert": "8010 Graz", "typ": "ADRESSE" },
+        { "wert": "+43 664 9876543", "typ": "TELEFON" },
+        { "wert": "z.xylander@example.com", "typ": "EMAIL" },
+        { "wert": "14.03.1979", "typ": "GEBURTSDATUM" },
+        { "wert": "Quirina Valdessa", "typ": "PERSON" },
+        { "wert": "Quirina", "typ": "PERSON" },
+        { "wert": "Valdessa", "typ": "PERSON" },
+        { "wert": "G 417 XY", "typ": "KENNZEICHEN" },
+        { "wert": "Xylander Holzbau", "typ": "FIRMA" },
+        { "wert": "Nussallergie", "typ": "GESUNDHEIT" }
+      ]
     }
   ]
 }

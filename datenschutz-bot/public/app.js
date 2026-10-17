@@ -354,6 +354,18 @@ function accountsAi(job) {
   );
 }
 
+/** Erkannte Vorlage (feste Dokumente der Firma) und Abweichungen davon. */
+function vorlageHinweis(vorlage) {
+  if (!vorlage) return null;
+  if (!vorlage.fehlend.length) {
+    return h("div", { class: "callout ok" }, h("strong", { text: "Vorlage erkannt: " }), vorlage.name);
+  }
+  return h("div", { class: "callout warn" },
+    h("strong", { text: "Vorlage erkannt, aber das Dokument weicht ab: " }),
+    `${vorlage.name}. Es fehlt: ${vorlage.fehlend.join(", ")}. Bitte das Original besonders genau prüfen, vielleicht steht die Angabe an anderer Stelle.`,
+  );
+}
+
 function viewNeu(detail) {
   const id = detail.job.id;
   const stale = state.stale === id;
@@ -379,9 +391,12 @@ function viewNeu(detail) {
         )
       : h("div", { class: "callout info" },
           h("strong", { text: "Prüfe, was die KI sehen wird. " }),
-          "Die automatische Erkennung übersieht auf neuen Dokumenten noch etwa jede fünfte Angabe, vor allem Firmen, Gesundheitsangaben und Adressen. Bitte das Original ganz lesen. ",
+          detail.vorlage
+            ? "Die Felder der Vorlage sind sicher geschützt. Freien Text (z. B. Wünsche, Bemerkungen) bitte trotzdem ganz lesen. "
+            : "Die automatische Erkennung übersieht auf neuen Dokumenten noch etwa jede fünfte Angabe, vor allem Firmen, Gesundheitsangaben und Adressen. Bitte das Original ganz lesen. ",
           "Fehlt etwas? Markiere es links im Original und klicke „Schwärzen“. Zu viel ersetzt? „Nicht sensibel“ in der Tabelle.",
         ),
+    vorlageHinweis(detail.vorlage),
     h("div", { class: "panes" },
       h("div", { class: "pane" },
         h("h3", {}, "Original", h("small", { text: "bleibt bei euch" })),

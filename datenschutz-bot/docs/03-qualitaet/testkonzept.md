@@ -51,10 +51,13 @@ Vorgeschlagene Ziele für den Pilot (mit Peter festlegen):
 | Prüfset 1 nach der Arbeit an der Erkennung (daran entwickelt, kein unabhängiger Wert) | 99,1 % (430/434) | 95,6 % (372/389) | [`2026-10-16-messung-pruefset-1-nach-entwicklung.md`](2026-10-16-messung-pruefset-1-nach-entwicklung.md) |
 | **Prüfset 2 (blind, erste Messung)** | **82,0 % (634/773)** | **90,7 % (548/604)** | [`2026-10-16-messung-pruefset-2-blind.md`](2026-10-16-messung-pruefset-2-blind.md) |
 | **Prüfset 2 (blind) nach der vierten Prüfrunde, Stand 0.6.1** | **82,1 % (635/773)** | **90,9 % (550/605)** | [`2026-10-16-messung-pruefset-2-blind-0-6-1.md`](2026-10-16-messung-pruefset-2-blind-0-6-1.md) |
+| Vorlagen-Testset (feste Dokumente, 10 Varianten, mit Vorlage) | 100 % (73/73) | 100 % (68/68) | [`2026-10-17-messung-vorlagen.md`](2026-10-17-messung-vorlagen.md); ohne Vorlage 84,9 % / 46,6 % |
 
 **Einordnung der Arbeit an Prüfset 1:** Auf unbekannten Dokumenten stieg die Trefferquote von 72,8 % (Prüfset 1, blind) auf 82,0 % (Prüfset 2, blind); die Genauigkeit blieb bei rund 91 %. Am Prüfset, an dem entwickelt wurde, stehen 99 %: Ein Teil der Regeln passt genau auf dessen Fälle und überträgt sich nicht. Gut sind jetzt E-Mail, IBAN, Steuer- und SV-Nummern (100 %), Telefon (97,9 %) und Personen (90,5 %). Schwach bleiben Firmen ohne Rechtsform (52 %), Gesundheit (67 %), Religion (60 %), Adressen (79 %) und freie Kennungen (Kunden-, Ausweis-, Kennzeichen-Nummern). Mit Regeln allein werden die Ziele kaum erreicht; der nächste Schritt ist die zweite Erkennungsstufe mit einem lokalen Modell (offene Punkte #2).
 
 Die Änderungen der zweiten Runde kamen aus den Szenarien der Reviews, nicht aus dem Prüfset; das Prüfset wurde danach nur gemessen.
+
+**Vorlagen (0.7.0, ADR-007):** Für feste Dokumente einer Firma ersetzt der Bot die Felder der Vorlage, statt zu raten. Am Vorlagen-Testset sind es 100 %. Das Testset ist zum Entwickeln freigegeben, also kein unabhängiger Wert; ein blindes Prüfset für Vorlagen entsteht mit der ersten echten Firma (offene Punkte #31). Für Dokumente ohne Vorlage gelten weiter die Zahlen der Prüfsets.
 
 **Vierte Prüfrunde (0.6.1):** Die Behebungen kamen aus den Sätzen der Prüfberichte und aus eigenen Gegenproben (Kopien aus PDF: IBAN ohne Leerzeichen, Bezeichnung an der Nummer, Zeilenumbruch mitten in einer Angabe). Prüfset 2 blieb ungeöffnet und wurde nur mit Zahlen gemessen: 82,1 % statt 82,0 %. Regeln verbessern vor allem die Fälle, aus denen sie entstehen.
 

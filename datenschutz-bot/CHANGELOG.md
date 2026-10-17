@@ -1,5 +1,18 @@
 # Änderungen
 
+## [0.7.0] – 2026-10-17 – Vorlagen für feste Dokumente
+
+### Neu
+- Vorlagen je Firma und Dokumentart in `config/vorlagen/` (ADR-007): Der Bot erkennt beim Ablegen selbst, welche Vorlage passt, und ersetzt jedes Feld sicher, auch ungewöhnliche Namen; Briefkopf und Fußzeile der Firma bleiben stehen; Freitext läuft durch die normale Erkennung
+- Fehlt ein Pflichtfeld, zeigt die Oberfläche die Abweichung; die erkannte Vorlage steht in der Prüfansicht und im Protokoll, die KI erfährt nichts davon
+- Musterdokument „Buchungsbestätigung Musterhotel Alpenblick“ mit Vorlage für Vorführungen, als Beispiel in der Oberfläche
+- Anleitung für neue Vorlagen: `config/vorlagen/README.md`
+
+### Qualität
+- Vorlagen-Testset `testset/vorlagen.json` (10 Varianten): 100 % Trefferquote und Genauigkeit; ohne Vorlage 84,9 % / 46,6 %
+- Nachweis misst das Vorlagen-Testset mit; Datenschutz-Probe mit dem Musterdokument (54 Dokumente, 245 Angaben)
+- 135 Tests
+
 ## [0.6.1] – 2026-10-16 – Befunde aus der vierten Prüfrunde (Codex und Claude)
 
 ### Datenschutz

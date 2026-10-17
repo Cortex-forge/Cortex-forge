@@ -27,7 +27,8 @@ import { reidentify, type InventedData } from "../core/reidentify.js";
 import type { EntityType, ManualMark, MappingEntry, PlaceholderInfo } from "../core/types.js";
 import { decrypt, encrypt, KeyError, keyId, loadOrCreateKey, recordMac } from "../core/vault.js";
 import { createFileExclusive, readOptional, removeLeftovers, withFileLock, writeFileAtomic } from "./dateien.js";
-import { loadAccounts, loadCompanies, loadOwnCompany } from "./settings.js";
+import { loadAccounts, loadCompanies, loadOwnCompany, loadTemplates } from "./settings.js";
+import { applyMatchingTemplate } from "../core/templates.js";
 
 export const ARTEN = ["hotel", "buchhaltung", "allgemein"] as const;
 export type JobArt = (typeof ARTEN)[number];
@@ -150,6 +151,14 @@ interface Geheim {
   ergebnis?: ErgebnisFertig;
   /** Kontaktdaten im Ergebnis, die im Original stehen: Die Erkennung hat sie übersehen, die KI hat sie gesehen. */
   lecks?: string[];
+  /** Erkannte Vorlage (ADR-007) und Pflichtfelder, die im Dokument fehlen. */
+  vorlage?: VorlageInfo;
+}
+
+export interface VorlageInfo {
+  id: string;
+  name: string;
+  fehlend: string[];
 }
 
 export interface ProtokollEintrag {
@@ -187,6 +196,8 @@ export interface JobDetail {
   ergebnis?: ErgebnisFertig;
   /** Nur für die Oberfläche: übersehene Angaben, die die KI ins Ergebnis übernommen hat. */
   lecks: string[];
+  /** Nur für die Oberfläche: erkannte Vorlage und fehlende Pflichtfelder. */
+  vorlage?: VorlageInfo;
 }
 
 /** Was die KI über ein Dokument erfährt. */
@@ -473,12 +484,18 @@ export class JobStore {
 
   private pseudonymizeInto(job: StoredJob, secret: Geheim, keep: Pick<KiTeil, "ergebnisKi" | "pruefung"> = {}): void {
     const { text: intern, docLength, konten } = this.internText(job, secret);
+    const templates = loadTemplates(this.configDir);
     const result = pseudonymize(intern, {
       manual: secret.manuell,
       excluded: secret.ausgeschlossen,
       companies: loadCompanies(this.configDir),
+      templates,
       assigned: secret.vergeben ?? {},
     });
+    // Welche Vorlage passt, und fehlt etwas? Das zeigt die Oberfläche bei der Prüfung (ADR-007).
+    const vorlage = applyMatchingTemplate(intern, templates);
+    if (vorlage) secret.vorlage = { id: vorlage.template.id, name: vorlage.template.name, fehlend: vorlage.fehlend };
+    else delete secret.vorlage;
     const parts = result.text.split(SEP_INTERN);
     const docParts = secret.betreff ? 2 : 1;
     if (parts.length !== docParts + konten.length) throw new Error("Interner Fehler: Die Teile des Dokuments ließen sich nicht trennen.");
@@ -590,7 +607,10 @@ export class JobStore {
           : prepared.quelle === "html"
             ? " (HTML in Text umgewandelt)"
             : "";
-      this.log(id, `Dokument abgelegt${herkunft}, ${secret.mapping.length} Angaben durch Platzhalter ersetzt`, quelle);
+      const vorlage = secret.vorlage
+        ? `, Vorlage „${secret.vorlage.name}“${secret.vorlage.fehlend.length ? ` (${secret.vorlage.fehlend.length} Pflichtfeld${secret.vorlage.fehlend.length === 1 ? "" : "er"} fehlt)` : ""}`
+        : "";
+      this.log(id, `Dokument abgelegt${herkunft}${vorlage}, ${secret.mapping.length} Angaben durch Platzhalter ersetzt`, quelle);
       return this.info(job);
     }
     throw new JobError("Das Dokument konnte nicht angelegt werden. Bitte noch einmal versuchen.");
@@ -622,6 +642,7 @@ export class JobStore {
       ausgeschlossen: secret.ausgeschlossen,
       lecks: secret.lecks ?? [],
       ...(secret.ergebnis ? { ergebnis: secret.ergebnis } : {}),
+      ...(secret.vorlage ? { vorlage: secret.vorlage } : {}),
     };
   }
 

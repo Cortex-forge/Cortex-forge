@@ -1,0 +1,28 @@
+Musterhotel Alpenblick ★★★★
+Dorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example
+
+Buchungsbestätigung Nr. 2027-0412
+
+Gast:               Zorwin Xylander
+Anschrift:          Lärchenweg 7
+                    8010 Graz
+Telefon:            +43 664 9876543
+E-Mail:             z.xylander@example.com
+Geburtsdatum:       14.03.1979
+Begleitperson:      Quirina Valdessa
+Kfz-Kennzeichen:    G 417 XY
+Firma (Rechnung):   Xylander Holzbau
+
+Anreise:            12.02.2027
+Abreise:            15.02.2027
+Zimmer:             Doppelzimmer Bergblick, 2 Personen
+Verpflegung:        Halbpension
+Preis:              3 Nächte zu 189,00 € = 567,00 €
+
+Besondere Wünsche:
+Bitte ein ruhiges Zimmer. Frau Valdessa hat eine Nussallergie.
+
+Wir freuen uns auf Ihren Besuch!
+Ihr Team vom Musterhotel Alpenblick
+
+Musterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999

@@ -3,7 +3,7 @@ import path from "node:path";
 import { z } from "zod";
 import type { Konto } from "../core/accounting.js";
 import type { EigeneFirma } from "../core/invoice.js";
-import type { CompanyEntry } from "../core/types.js";
+import { ENTITY_TYPES, type CompanyEntry, type DocumentTemplate, type EntityType } from "../core/types.js";
 
 /** Fehler in einer Konfigurationsdatei. Der Bot bricht dann ab, statt still weniger zu schützen. */
 export class ConfigError extends Error {}
@@ -89,4 +89,46 @@ export function loadOwnCompany(configDir: string): EigeneFirma {
 
 export function loadAccounts(configDir: string): Konto[] {
   return readConfig(path.join(configDir, "kontenplan.json"), kontenSchema, { konten: [] }).konten;
+}
+
+// Vorlagen für feste Dokumente (ADR-007), je Firma und Dokumentart eine Datei in config/vorlagen/.
+const FIELD_TYPES = [...ENTITY_TYPES, "FREITEXT"] as [EntityType | "FREITEXT", ...Array<EntityType | "FREITEXT">];
+const vorlageSchema = z.object({
+  id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,60}$/, "Die Kennung (id) besteht aus Kleinbuchstaben, Ziffern und Bindestrichen"),
+  name: z.string().min(1),
+  erkennen: z.array(z.string().trim().min(3, "Ein Erkennungsmerkmal braucht mindestens 3 Zeichen")).min(1, "Mindestens ein Erkennungsmerkmal"),
+  felder: z
+    .array(
+      z.object({
+        bezeichnung: z.string().trim().min(2),
+        typ: z.enum(FIELD_TYPES),
+        zeilen: z.number().int().min(1).max(10).optional(),
+        pflicht: z.boolean().optional(),
+      }),
+    )
+    .min(1, "Mindestens ein Feld"),
+  unveraendert: z.array(z.string().min(3)).optional(),
+});
+
+export function loadTemplates(configDir: string): DocumentTemplate[] {
+  const dir = path.join(configDir, "vorlagen");
+  if (!fs.existsSync(dir)) return [];
+  const templates: DocumentTemplate[] = [];
+  for (const name of fs.readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
+    const t = readConfig(path.join(dir, name), vorlageSchema, null as never);
+    if (templates.some((x) => x.id === t.id)) throw new ConfigError(`Die Vorlage „${t.id}“ gibt es doppelt (${name}).`);
+    templates.push({
+      id: t.id,
+      name: t.name,
+      erkennen: t.erkennen,
+      felder: t.felder.map((f) => ({
+        bezeichnung: f.bezeichnung,
+        typ: f.typ,
+        ...(f.zeilen !== undefined ? { zeilen: f.zeilen } : {}),
+        ...(f.pflicht !== undefined ? { pflicht: f.pflicht } : {}),
+      })),
+      ...(t.unveraendert ? { unveraendert: t.unveraendert } : {}),
+    });
+  }
+  return templates;
 }

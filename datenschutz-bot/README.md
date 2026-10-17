@@ -87,6 +87,8 @@ Die Antworten der Werkzeuge enthalten nur die Platzhalter-Fassung. Ob dabei etwa
 | Kennnummern | Geburtsdatum, Ausweis/Reisepass, Kfz-Kennzeichen, Kunden-/Vertragsnummer, SV-Nummer |
 | Besondere Kategorien (Art. 9 DSGVO) | Gesundheit (Allergien, Krankheiten, Operationen, Hilfsmittel, Behinderung, Schwangerschaft …), Religion (Konfessionen, Gotteshäuser, Speiseregeln, Feiertage) |
 
+**Feste Dokumente mit Vorlage:** Viele Dokumente einer Firma sind immer gleich aufgebaut (Buchungsbestätigung, Meldeblatt, Rechnung eines Stammlieferanten). Für sie gibt es Vorlagen in `config/vorlagen/` (Anleitung dort). Der Bot erkennt beim Ablegen selbst, welche Vorlage passt, und ersetzt jedes Feld der Vorlage sicher, auch ungewöhnliche Namen. Briefkopf und Fußzeile der Firma bleiben stehen; Wünsche und Bemerkungen laufen durch die normale Erkennung. Fehlt ein Pflichtfeld, zeigt die Oberfläche die Abweichung. Zum Vorführen: Beispiel „Buchungsbestätigung (Vorlage)“ in der Oberfläche. Gemessen am Vorlagen-Testset (`testset/vorlagen.json`, 10 Varianten): 100 % Trefferquote und Genauigkeit; ohne Vorlage wären es 84,9 % und 46,6 %.
+
 **Vor der Erkennung** wird jedes Dokument lesbar und einheitlich gemacht: E-Mails im MIME-Format (`.eml`) werden entschlüsselt (Base64, Quoted-Printable, Zeichensätze, Betreff mit Sonderzeichen, HTML als Text), Anhänge weggelassen; HTML wird zu Text; geschützte Leerzeichen, zerlegte Umlaute, weiche Trennzeichen und Nullbreitenzeichen werden vereinheitlicht. Dateien liest die Oberfläche mit Zeichensatz-Erkennung (UTF-8, UTF-16, Windows-1252); Text mit Ersatzzeichen (�) wird abgelehnt. Was trotzdem codiert im Text steht und lesbaren Inhalt hat, wird als Ganzes geschwärzt.
 
 Beträge, Daten, Mengen und Zimmerwünsche bleiben stehen, weil die KI sie zum Arbeiten braucht. Was fehlt, markiert der Mitarbeiter in der Oberfläche („Schwärzen“); die markierte Stelle wird immer geschwärzt, weitere Vorkommen als ganzes Wort ebenfalls. Was zu viel ersetzt wurde, nimmt er heraus („Nicht sensibel“).
@@ -107,7 +109,7 @@ Beträge, Daten, Mengen und Zimmerwünsche bleiben stehen, weil die KI sie zum A
 
 ## Grenzen des Prototyps
 
-- **Erkennung:** Sie arbeitet mit Regeln (Muster, Namenslisten, Kontext). Ein Name, der nicht in der Liste steht und ohne Anrede, Feld oder Signatur vorkommt, kann durchrutschen. Deshalb gibt es den Prüfschritt vor der Freigabe. Gemessen wird am Entwicklungsset `testset/faelle.json` (100 %) und an unabhängig, blind erstellten Prüfsets. Am blinden Prüfset 2 (`testset/pruefset-2.json`) kommt die Erkennung auf 82 % Trefferquote und 91 % Genauigkeit: Auf neuen Dokumenten rutscht noch knapp jede fünfte Angabe durch, vor allem Firmen ohne Rechtsform, Gesundheitsangaben und Adressen. Der Prüfschritt vor der Freigabe ist deshalb Pflicht. Ergebnisse in `docs/03-qualitaet/`. Für den Pilot kommt ein lokales Modell (z. B. über Ollama oder Presidio) als zweite Stufe dazu.
+- **Erkennung:** Für Dokumente mit Vorlage ist der Schutz der Felder vollständig (siehe oben). Für alle anderen arbeitet sie mit Regeln (Muster, Namenslisten, Kontext). Ein Name, der nicht in der Liste steht und ohne Anrede, Feld oder Signatur vorkommt, kann durchrutschen. Deshalb gibt es den Prüfschritt vor der Freigabe. Gemessen wird am Entwicklungsset `testset/faelle.json` (100 %) und an unabhängig, blind erstellten Prüfsets. Am blinden Prüfset 2 (`testset/pruefset-2.json`, ohne Vorlagen) kommt die Erkennung auf 82 % Trefferquote und 91 % Genauigkeit: Auf neuen Dokumenten rutscht noch knapp jede fünfte Angabe durch, vor allem Firmen ohne Rechtsform, Gesundheitsangaben und Adressen. Der Prüfschritt vor der Freigabe ist deshalb Pflicht. Ergebnisse in `docs/03-qualitaet/`. Für den Pilot kommt ein lokales Modell (z. B. über Ollama oder Presidio) als zweite Stufe dazu.
 - **Dateiformate:** Text (.txt, .md, .csv) und E-Mails (.eml, auch mehrteilig mit HTML). PDF, Word und Scans (OCR) fehlen noch; Anhänge von Mails werden weggelassen.
 - **Betrieb:** Kein Login mit Benutzern und Rollen (nur der Start-Link), Einzelplatz, nur localhost. Ohne `DSB_KEY`/`DSB_KEY_FILE` liegt der Schlüssel neben den Daten; im Echtbetrieb gehört er in einen Schlüsselspeicher (KMS/HSM). Ältere Testdaten aus Version 0.1 lassen sich nicht mehr öffnen (neues Ablageformat); bitte `data/` leeren.
 - **Buchhaltung:** Rechnungsvorlage und Kontenplan sind Beispiele. Pflichtangaben und Konten bitte mit der Steuerberatung prüfen. Der Export ist eine allgemeine CSV, noch kein BMD-, RZL- oder DATEV-Format.
@@ -138,7 +140,7 @@ datenschutz-bot/
 ├── src/test/        Tests (node:test)
 ├── public/          HTML, CSS, JavaScript der Oberfläche
 ├── scripts/         Nachweis-Skript für Merges
-├── config/          eigene Firmendaten, Firmenverzeichnis, Kontenplan (Beispieldaten)
+├── config/          eigene Firmendaten, Firmenverzeichnis, Kontenplan, Vorlagen für feste Dokumente (Beispieldaten)
 ├── examples/        Beispiel-Dokumente und ihr Lösungsblatt
 ├── testset/         Testset und unabhängiges Prüfset mit Lösungsblatt
 └── docs/            Projektordner: Auftrag, Architektur, Datenschutz, Qualität, Reviews, Nachweise, Berichte, Roadmap

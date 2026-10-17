@@ -6,7 +6,7 @@ Bekannte Grenzen und Aufgaben. Neue Punkte unten ergänzen, erledigte mit Datum 
 |---|---|---|---|---|
 | 1 | Erkennung messen (Testset mit Lösungsblatt, Messskript) | hoch | Testkonzept | erledigt 2026-10-16 (`e0437a0`, Typvergleich und Prüfset `d79b5cc` ff.) |
 | 2 | Namen ohne Anrede, die nicht in der Namensliste stehen, können durchrutschen: zweite Erkennungsstufe mit lokalem Modell | hoch | ADR-004, ADR-006 | offen; nach der Messung am blinden Prüfset 2 (82,0 %, nach der vierten Prüfrunde 82,1 %) der wichtigste nächste Schritt. Vorschlag mit Möglichkeiten in ADR-006, braucht Peters OK für neue Abhängigkeiten |
-| 3 | PDF und Scans einlesen | hoch | Prototyp-Grenze | offen |
+| 3 | PDF und Scans einlesen | hoch | Prototyp-Grenze | offen; wichtig für Vorlagen, weil feste Dokumente oft als PDF kommen (bis dahin: Text kopieren) |
 | 4 | Login, Rollen, mehrere Benutzer | hoch (vor Serverbetrieb) | Prototyp-Grenze | offen |
 | 5 | Schlüssel in KMS/HSM bzw. Schlüsselbund statt neben den Daten | mittel | Datenschutzkonzept, Review Claude #6, Claude 2 #13 | teilweise: `DSB_KEY_FILE`, Schlüsselkennung je Dokument (`d79b5cc`), Warnung beim Start, wenn der Schlüssel im Datenordner liegt (`4eb0486`); Schlüsselbund/KMS offen |
 | 6 | Datensicherung mit Löschkonzept | mittel | Datenschutzkonzept | offen |
@@ -31,4 +31,7 @@ Bekannte Grenzen und Aufgaben. Neue Punkte unten ergänzen, erledigte mit Datum 
 | 25 | Testsets um echte Ablagewege ergänzen (Mails, HTML, PDF- und Word-Kopien, CSV-Exporte) | mittel | Review Claude 3 #21 | teilweise: Messung über `prepareDocument`, Entwicklungsset T48–T50 (Base64-HTML-Mail, Quoted-Printable, PDF-Kopie); Word-Kopien und CSV-Exporte offen |
 | 26 | Dokumente aus Versionen vor 0.6.0 (ohne Prüfsumme) lassen sich nur ansehen und verwerfen. Eine freigegebene, nicht abgeschlossene Rechnung mit Nummer lässt sich so nicht abschließen (herunterladen geht). Bei Bedarf: Umstellung mit neuer Fassung und erneuter Prüfung | niedrig | Review Codex 4 #1 | offen, kein solcher Fall bekannt |
 | 27 | „Nicht sensibel“ nimmt eine Angabe mit allen Varianten überall heraus. Ausnehmen für einen Teil der Angabe oder für eine Stelle; vor dem Ausnehmen zeigen, was danach offen steht | mittel | Review Claude 4 #8 | offen; bis dahin: ausnehmen und den Teil, der geschützt bleiben soll, neu markieren |
+| 29 | Vorlagen in der Oberfläche anlegen: Beispiel-Dokument ablegen, Felder einmal markieren, Vorlage speichern | mittel | ADR-007 | offen; heute als Datei in `config/vorlagen/` |
+| 30 | Vorlagen mit Tabellen-Feldern (Positionen, Gästelisten) und Feldern nach Position statt Bezeichnung | niedrig | ADR-007 | offen; Tabellen mit Spaltenköpfen erkennt der Bot schon |
+| 31 | Je Firma ein blindes Vorlagen-Testset aus echten, vorher anonymisierten Dokumenten | hoch (vor dem Pilot) | ADR-007 | offen |
 | 28 | Die Messung zählt erwartete Werte nur als ganze Wörter; gebeugte Formen („Moosbruggers“) und Teile von Doppelnamen zählt nur die Datenschutz-Probe (`d9273e4`) | niedrig | Review Claude 4 #15 | offen; eine Änderung macht die Zahlen mit früheren Messungen nicht mehr vergleichbar, deshalb mit dem nächsten Prüfset |

@@ -1,0 +1,368 @@
+{
+  "_hinweis": "Testset für Vorlagen (ADR-007): Varianten der Buchungsbestätigung des erfundenen Musterhotels Alpenblick. Alle Namen und Daten sind erfunden. Zum Entwickeln freigegeben; ein blindes Prüfset für Vorlagen gibt es noch nicht.",
+  "version": 1,
+  "faelle": [
+    {
+      "id": "V01",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Musterdokument wie in examples/",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0412\n\nGast:               Zorwin Xylander\nAnschrift:          Lärchenweg 7\n                    8010 Graz\nTelefon:            +43 664 9876543\nE-Mail:             z.xylander@example.com\nGeburtsdatum:       14.03.1979\nBegleitperson:      Quirina Valdessa\nKfz-Kennzeichen:    G 417 XY\nFirma (Rechnung):   Xylander Holzbau\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\nPreis:              3 Nächte zu 189,00 € = 567,00 €\n\nBesondere Wünsche:\nBitte ein ruhiges Zimmer. Frau Valdessa hat eine Nussallergie.\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Zorwin Xylander",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Lärchenweg 7",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "8010 Graz",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+43 664 9876543",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "z.xylander@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "14.03.1979",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "Quirina Valdessa",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Valdessa",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "G 417 XY",
+          "typ": "KENNZEICHEN"
+        },
+        {
+          "wert": "Xylander Holzbau",
+          "typ": "FIRMA"
+        },
+        {
+          "wert": "Nussallergie",
+          "typ": "GESUNDHEIT"
+        }
+      ]
+    },
+    {
+      "id": "V02",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Gast mit Namen aus Allerweltswörtern, Firma mit Und-Zeichen",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0518\n\nGast:               Sommer Freitag\nAnschrift:          Am Berg 3\n                    6020 Innsbruck\nTelefon:            0512 123456\nE-Mail:             s.freitag@example.com\nGeburtsdatum:       01.01.1990\nBegleitperson:      Maria Keller\nKfz-Kennzeichen:    I 123 AB\nFirma (Rechnung):   Keller & Sommer\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nBesondere Wünsche:\nHerr Freitag kommt erst um 22 Uhr.\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Sommer Freitag",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Freitag",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Am Berg 3",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6020 Innsbruck",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "0512 123456",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "s.freitag@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "01.01.1990",
+          "typ": "GEBURTSDATUM"
+        },
+        {
+          "wert": "Maria Keller",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "I 123 AB",
+          "typ": "KENNZEICHEN"
+        },
+        {
+          "wert": "Keller & Sommer",
+          "typ": "FIRMA"
+        }
+      ]
+    },
+    {
+      "id": "V03",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Kopie aus PDF: Wert jeweils in der nächsten Zeile",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0533\n\nGast:\nIlka Moosbrugger-Sonnleitner\nAnschrift:\nKirchgasse 12a\n6850 Dornbirn\nTelefon:\n+43 676 5551234\nE-Mail:\nilka.ms@example.com\nAnreise:\n03.03.2027\nAbreise:\n05.03.2027\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Ilka Moosbrugger-Sonnleitner",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Kirchgasse 12a",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6850 Dornbirn",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+43 676 5551234",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "ilka.ms@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "V04",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Export in Großbuchstaben, Nachname zuerst",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0601\n\nGast:               HUBER-MOOSBRUGGER, ANNA-LENA\nAnschrift:          HAUPTPLATZ 4\n                    4020 LINZ\nTelefon:            +43 732 778899\nE-Mail:             a.huber-moosbrugger@example.com\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nBesondere Wünsche:\nFrau Huber-Moosbrugger bringt ihren Hund mit.\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "HUBER-MOOSBRUGGER, ANNA-LENA",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Huber-Moosbrugger",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "HAUPTPLATZ 4",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "4020 LINZ",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+43 732 778899",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "a.huber-moosbrugger@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "V05",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Optionale Felder leer oder mit Strich",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0602\n\nGast:               Bartholomäus Zingerle\nAnschrift:          Ötztaler Straße 88\n                    6430 Ötztal-Bahnhof\nTelefon:            0664 3332211\nE-Mail:             b.zingerle@example.com\nBegleitperson:      –\nKfz-Kennzeichen:    –\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Bartholomäus Zingerle",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Ötztaler Straße 88",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6430 Ötztal-Bahnhof",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "0664 3332211",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "b.zingerle@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    },
+    {
+      "id": "V06",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Gast aus China, Adresse und Telefon im Ausland",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0715\n\nGast:               Wang Lei\nAnschrift:          88 Nanjing Road\n                    200001 Shanghai\nTelefon:            +86 138 0013 8000\nE-Mail:             wang.lei@example.cn\nBegleitperson:      Chen Xiaoyu\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Wang Lei",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "88 Nanjing Road",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "200001 Shanghai",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+86 138 0013 8000",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "wang.lei@example.cn",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Chen Xiaoyu",
+          "typ": "PERSON"
+        }
+      ]
+    },
+    {
+      "id": "V07",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Rechnung an einen Hof ohne Rechtsform, Nachname im Freitext",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0802\n\nGast:               Notburga Gstrein\nAnschrift:          Oberdorf 2\n                    6458 Sölden\nTelefon:            05254 2233\nE-Mail:             hof@gstrein.example\nFirma (Rechnung):   Bergbauernhof Gstrein\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nBesondere Wünsche:\nFrau Gstrein zahlt bar bei der Abreise.\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Notburga Gstrein",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Gstrein",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Oberdorf 2",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6458 Sölden",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "05254 2233",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "hof@gstrein.example",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Bergbauernhof Gstrein",
+          "typ": "FIRMA"
+        }
+      ]
+    },
+    {
+      "id": "V08",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Titel und Adelsname",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-0903\n\nGast:               Univ.-Prof. Dr. Ferdinand von der Leyen-Arco\nAnschrift:          Schlossallee 1\n                    5020 Salzburg\nTelefon:            +43 662 445566\nE-Mail:             f.leyen-arco@example.com\nGeburtsdatum:       30.06.1958\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Ferdinand von der Leyen-Arco",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Schlossallee 1",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "5020 Salzburg",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+43 662 445566",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "f.leyen-arco@example.com",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "30.06.1958",
+          "typ": "GEBURTSDATUM"
+        }
+      ]
+    },
+    {
+      "id": "V09",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Kind und Gesundheit im Freitext",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-1004\n\nGast:               Jelena Marković\nAnschrift:          Ilica 15\n                    10000 Zagreb\nTelefon:            +385 91 2345678\nE-Mail:             jelena.markovic@example.hr\nBegleitperson:      Lukas Marković\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nBesondere Wünsche:\nUnser Sohn Lukas ist Diabetiker, bitte einen Kühlschrank im Zimmer.\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Jelena Marković",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Ilica 15",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "10000 Zagreb",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "+385 91 2345678",
+          "typ": "TELEFON"
+        },
+        {
+          "wert": "jelena.markovic@example.hr",
+          "typ": "EMAIL"
+        },
+        {
+          "wert": "Lukas Marković",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Lukas",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Diabetiker",
+          "typ": "GESUNDHEIT"
+        }
+      ]
+    },
+    {
+      "id": "V10",
+      "art": "hotel",
+      "sprache": "de",
+      "beschreibung": "Pflichtfeld Telefon fehlt (Abweichung von der Vorlage)",
+      "text": "Musterhotel Alpenblick ★★★★\nDorfstraße 1 · 6100 Seefeld in Tirol · Tel. +43 5212 0000 · info@musterhotel-alpenblick.example\n\nBuchungsbestätigung Nr. 2027-1105\n\nGast:               Ottokar Pfurtscheller\nAnschrift:          Dorfplatz 9\n                    6167 Neustift\nE-Mail:             o.pfurtscheller@example.com\n\nAnreise:            12.02.2027\nAbreise:            15.02.2027\nZimmer:             Doppelzimmer Bergblick, 2 Personen\nVerpflegung:        Halbpension\n\nWir freuen uns auf Ihren Besuch!\nIhr Team vom Musterhotel Alpenblick\n\nMusterhotel Alpenblick GmbH · FN 999999x · Landesgericht Innsbruck · UID ATU99999999\n",
+      "sensibel": [
+        {
+          "wert": "Ottokar Pfurtscheller",
+          "typ": "PERSON"
+        },
+        {
+          "wert": "Dorfplatz 9",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "6167 Neustift",
+          "typ": "ADRESSE"
+        },
+        {
+          "wert": "o.pfurtscheller@example.com",
+          "typ": "EMAIL"
+        }
+      ]
+    }
+  ]
+}
